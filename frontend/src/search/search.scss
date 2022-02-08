@@ -1,0 +1,59 @@
+@import "../sass/theme/constants";
+@import "../sass/theme/fonts";
+@import "../sass/theme/mixins";
+@import "../sass/utils/mixins";
+@import "../sass/mediaquery/mediaquery";
+
+#search {
+    background: $page-background-gradient;
+
+    .search-page-content {
+        .title-row {
+            display: flex;
+            align-items: center;
+
+            h1 {
+                margin-right: 20px
+            }
+
+            .search-results-count-container {
+                @include open-sans-bold;
+                @include rounded-background-pointy-upper-left($space-cadet, 5px);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 34px;
+                min-width: 34px;
+
+                .search-results-count {
+                    font-size: 12px;
+                    color: white;
+                }
+            }
+        }
+
+        .search-input-container {
+            margin-top: 20px;
+            flex: 1 1 auto;
+            margin-right: 0;
+
+            input[type=text] {
+                max-width: initial;
+                flex-grow: 1;
+                width: 100%;
+            }
+        }
+
+        .search-results-list {
+            @include rounded-background-pointy-upper-left();
+            margin-top: 25px;
+            background-color: white;
+            padding-left: 15px;
+            padding-right: 15px;
+
+            .search-result-row:last-child .row-content {
+                border-bottom: none;
+            }
+        }
+    }
+}

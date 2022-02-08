@@ -1,0 +1,516 @@
+{
+  "language": {
+    "current_code": "en",
+    "dutch": "'Nederlands",
+    "english": "English"
+  },
+  "action": {
+    "previous": "Previous",
+    "next": "Next",
+    "save": "Save",
+    "search": "Search",
+    "delete": "Delete",
+    "add": "Add",
+    "rate": "Approve or decline",
+    "approve": "Approve",
+    "decline": "Decline",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "ok": "OK",
+    "create_new_doi": "Create a DOI"
+  },
+  "onboarding": {
+    "login": {
+      "welcome": "Welcome to SURFsharekit",
+      "subtitle": "SURFsharekit is a repository for materials that are developed within higher education, such as graduation products, research publications and educational materials. By using Sharekit, students, researchers and teachers are able to share these materials with a specific group or with the whole wide world. The latter can be done on various portals such as the HBO Knowledge Base, Narcis and the Search Portal for digital educational materials.\n\nSURFsharekit is a facility from SURF, the collaborative organisation for ICT in Dutch education and research.",
+      "login": "Login",
+      "help": "Help"
+    },
+    "institute_step": {
+      "title": "Education"
+    },
+    "profile_step": {
+      "title": "Profile",
+      "first_name": "First name",
+      "surname_prefix": "Surname prefix",
+      "surname": "Surname",
+      "organisation": "Organisation",
+      "position": "Position",
+      "email": "Email address organisation",
+      "secondary_email": "Alternative email address"
+    },
+    "start_step": {
+      "title": "Let's share",
+      "text": "You are all set! With Sharekit you can easily and quickly store material and make it freely available.",
+      "start": "Start"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "block_1_title": "Share your material with SURFsharekit",
+    "block_1_button": "New publication",
+    "block_2_title": "What possibilities offers SURFsharekit",
+    "block_2_subtitle": "Easily upload your material and make it freely available.",
+    "block_2_button": "Read more",
+    "block_3_title": "Why share material?",
+    "block_3_bullet_1": "Access to educational and research results.",
+    "block_3_bullet_2": "Support reuse.",
+    "block_3_bullet_3": "Exchange of knowledge.",
+    "my_publications": {
+      "open_title": "Outstanding publications",
+      "title": "Publications",
+      "see_all": "See all",
+      "header": {
+        "title": "TITLE",
+        "status": "STATUS",
+        "date": "EDIT DATE",
+        "author": "AUTHOR"
+      },
+      "loading": "Loading all publications...",
+      "empty": {
+        "title": "No publications found",
+        "subtitle": "Publications that require your attention will become visible here.",
+        "add": "New publication"
+      }
+    }
+  },
+  "export": {
+    "publication_type": "Publication type",
+    "institute_level": "Organisation level",
+    "date_start": "From",
+    "date_until": "Until",
+    "date_format_tooltip": "dd-mm-yyyy, mm-yyyy or yyyy"
+  },
+  "report": {
+    "explanation": "Here you can create an overview of the metadata that are stored in Sharekit, and export it to an Excel file. Choose an organisational unit and / or a publication within a specified period. If you choose to leave all fields empty, all metadata will be exported.\n\nPublic downloads are downloads originating from a external portal. Private downloads are downloads originating from an active user on Sharekit.",
+    "download": "Download report",
+    "title": "Reports",
+    "export": "Export",
+    "dashboard_title": "Report",
+    "report_empty": "No report available.",
+    "report_publications": "Publications",
+    "learning_objects": "Learning materials",
+    "publication_records": "Theses",
+    "research_objects": "Research",
+    "export_type": "Export type"
+  },
+  "search": {
+    "title": "Search results",
+    "user": "User",
+    "group": "Group",
+    "unnamed": "No title",
+    "no_results": "No results.",
+    "view": "View",
+    "publicationrecord": "Thesis or internship report",
+    "learningobject": "Learning material",
+    "researchobject": "Research publication"
+  },
+  "profiles": {
+    "title": "Persons",
+    "add_profile": "Add person",
+    "profile_empty": "No persons found"
+  },
+  "my_publications": {
+    "title": "Publications",
+    "add_publication": "Add publication",
+    "table": {
+      "title": "Title",
+      "organisation": "Organisation",
+      "authors": "Authors",
+      "organisation_level": "Organisation level",
+      "type": "Type",
+      "status": "Status",
+      "last_edited": "Last Edited"
+    }
+  },
+  "organisation": {
+    "title": "Organisation",
+    "loading": "Fetching organisations...",
+    "save_organisation_success_message": "Successfully saved organisation!",
+    "add_layer_popup": {
+      "add_title": "Add layer",
+      "add_to": "To",
+      "add_button": "Add",
+      "edit_title": "Edit layer",
+      "edit_save_button": "Save",
+      "part_of": "Part of",
+      "organisation_layer_name": "Layer name",
+      "organisation_level": "Organisation level",
+      "organisation_level_tooltip": "Organisational units can be placed at different levels in the organisational chart. The levels comply to the filters on the HBO Knowledge Base",
+      "organisation_abbreviation": "Abbreviation"
+    },
+    "type": {
+      "education": "Education",
+      "research": "Research"
+    },
+    "level": {
+      "organisation": "Organisation",
+      "department": "Department",
+      "lectorate": "Lectorate",
+      "discipline": "Discipline",
+      "consortium": "Consortium"
+    },
+    "tab_organizational_chart": "Organisational chart",
+    "tab_roles_rights": "Groups",
+    "tab_users": "Users",
+    "roles_rights": {
+      "group_title": "Group",
+      "group_organisation": "Organisation",
+      "group_organisation_level": "Organisation level",
+      "group_organisation_type": "Organisation type",
+      "group_users": "Users",
+      "groups_empty_title": "No groups found."
+    }
+  },
+  "templates": {
+    "title": "Templates",
+    "templates_list_empty": "No templates found.",
+    "templates_table": {
+      "title": "Title",
+      "organisation": "Organisation",
+      "last_edited": "Last edited"
+    },
+    "titleEN": "Titel EN",
+    "titleNL": "Titel NL",
+    "infoTextNL": "Infotext NL",
+    "infoTextEN": "Infotext EN",
+    "required": "Required",
+    "template_name": "Template name",
+    "template_organisation_level": "Organisation level",
+    "template_type": "Template type"
+  },
+  "popup": {
+    "step": "Step"
+  },
+  "repoitem": {
+    "thesis": "Thesis",
+    "attachment": "Attachment",
+    "teachingmaterials": "Teaching Materials",
+    "researchobject": "Research publication",
+    "popup": {
+      "selectperson": "Person",
+      "selectlearningobject": "Learning material",
+      "details": "Details",
+      "save": "Save",
+      "next": "Next",
+      "search": "Search",
+      "searchoutsidescope": "Include other organisations",
+      "manual": "Manually"
+    },
+    "personinvolvedadd": "Add person involved",
+    "addedlinks": "ADDED",
+    "addlink": "Add link",
+    "addedlearningobjects": "ADDED",
+    "addlearningobject": "Add learning material"
+  },
+  "add_publication": {
+    "button_save": "Save",
+    "button_edit": "Edit",
+    "button_publish": "Publish",
+    "button_depublish": "Depublish",
+    "button_submit": "Submit",
+    "button_save_publish": "Save and publish",
+    "button_save_republish": "Republish",
+    "popup": {
+      "title": "New publication",
+      "organisation_title": "For which organisation do you want to add a publication?",
+      "type_title": "What sort of material do you want to add?",
+      "confirm": "Confirm",
+      "use_template": "Use template",
+      "step1_title": "Organisation",
+      "step2_title": "Publication type",
+      "step3_title": "Choose template",
+      "template_title": "Which template would you like to use?",
+      "no_template": "Don't use template"
+    },
+    "channel_dependency_error": {
+      "title": "Channel dependency errors",
+      "subtitle": "Multiple channels selected, which cannot be selected at the same time. Change your selection."
+    },
+    "no_channel_error": {
+      "title": "No channel selected",
+      "subtitle": "There's no channel selected. please select at least one channel to continue."
+    }
+  },
+  "side_menu": {
+    "dashboard": "Dashboard",
+    "profiles": "Persons",
+    "my_publications": "Publications",
+    "organisation": "Organisation",
+    "templates": "Templates",
+    "reports": "Reports",
+    "trash_can": "Recycle bin",
+    "logout": "Log out",
+    "help": "Help"
+  },
+  "navigation_bar": {
+    "back": "Back",
+    "search": "Search",
+    "publicationrecord": "Thesis or internship report",
+    "learningobject": "Learning material",
+    "researchobject": "Research publication"
+  },
+  "publication": {
+    "required_error": {
+      "title": "Validation",
+      "subtitle": "Please fill in all the required fields"
+    },
+    "copy_confirmation": {
+      "title": "Confirmation",
+      "subtitle": "You're about to make a copy, are you sure?"
+    },
+    "state": {
+      "published": "PUBLISHED",
+      "draft": "DRAFT",
+      "submitted": "SUBMITTED",
+      "approved": "APPROVED",
+      "embargo": "EMBARGO",
+      "declined": "DECLINED",
+      "archived": "ARCHIVED"
+    },
+    "type": {
+      "publication_record": "Thesis or internship report",
+      "learning_object": "Learning material",
+      "research_object": "Research publication"
+    },
+    "request_save_publication_success": "The publication was saved successfully!",
+    "created": "CREATED ON",
+    "lastEdited": "LAST EDITED",
+    "status": "STATUS",
+    "organisation": "ORGANISATION",
+    "created_last_edited_prefix": "By ",
+    "decline_reason_label": "Reason",
+    "decline_reason": "View the reason for rejection here",
+    "decline_reason_popup": {
+      "title": "Reason for rejection"
+    },
+    "missing_decline_reason_popup": {
+      "title": "Missing decline reason",
+      "subtitle": "You're trying to decline this publication without specifying a reason, which is required."
+    },
+    "delete_popup": {
+      "title": "Delete publication?",
+      "subtitle": "Are you sure you want to delete this publication?"
+    }
+  },
+  "vocabulary_field": {
+    "add": "Add vocabulary",
+    "popup": {
+      "step_1_title": "Vocabulary",
+      "step_1_content_title": "Make a choice",
+      "step_2_title": "Main concept",
+      "step_3_title": "Sub concept",
+      "step_4_title": "Sub concept(2)"
+    }
+  },
+  "switch_field": {
+    "on": "on",
+    "off": "off"
+  },
+  "dropdown_field": {
+    "placeholder": "Select..."
+  },
+  "multi_select_dropdown_field": {
+    "placeholder": "Search or select..."
+  },
+  "multi_select_suborganisation_field": {
+    "placeholder": "Search or select...",
+    "inactive": "inactive"
+  },
+  "error_message": {
+    "load_options_failed": "Loading failed, click here to try again",
+    "duplicate_email": "Email address already in use",
+    "request_error": "This action is not valid. Please contact your sitemanager.",
+    "field_required": "This field is required",
+    "field_invalid": "Invalid input",
+    "empty_search": "No results for current query",
+    "file_too_large": "File too large, max 500mb"
+  },
+  "success_message": {
+    "patch_request_success": "Saved successfully!"
+  },
+  "error_pages": {
+    "page_not_found": "Page not available",
+    "page_not_found_subtitle": "Oops! We have no idea what happened here!",
+    "page_not_found_text": "It appears this page does not exist. Possible causes could be an outdated bookmark or favorite page, a search engine that points to an outdated page, an incorrectly spelled address or you do not have rights to view this page.",
+    "page_removed": "Page removed",
+    "page_removed_subtitle": "",
+    "page_removed_text": "It appears this page has been removed and is now inaccessible.",
+    "unauthorized": "Page not available",
+    "unauthorized_subtitle": "Oops! We have no idea what happened here!",
+    "unauthorized_text": "It appears this page does not exist. Possible causes could be an outdated bookmark or favorite page, a search engine that points to an outdated page, an incorrectly spelled address or you do not have rights to view this page.",
+    "forbidden": "Forbidden",
+    "forbidden_subtitle": "You are not allowed to view this page",
+    "forbidden_text": "It appears you're trying to access information unavailable to your account, contact your Site Manager to gain permission",
+    "to_dashboard": "To Dashboard",
+    "help": "Help",
+    "login": "Login"
+  },
+  "personinvolved_field": {
+    "add": "Add involved person"
+  },
+  "file_drop": {
+    "open": "Drag your file(s) here to upload them",
+    "hover": "Drop your file(s) to upload them",
+    "select": "Select"
+  },
+  "attachment_popup": {
+    "file": "File",
+    "no_file": "No file selected."
+  },
+  "loading_indicator": {
+    "loading_text": "Loading..."
+  },
+  "person": {
+    "add": "Add user",
+    "active": "active",
+    "inactive": "inactive",
+    "titulatuur": "Title",
+    "firstName": "First name",
+    "surnamePrefix": "Middle name",
+    "surname": "Surname",
+    "email": "Email address",
+    "name": "Name",
+    "role": "Role",
+    "organisation": "Organisation",
+    "groups": "Groups",
+    "identifiers": "Identifiers",
+    "organisationlevel": "Organisation level",
+    "status": "Status",
+    "skipEmailLabel": "I don't know this persons email address"
+  },
+  "new_profile": {
+    "title": "New person"
+  },
+  "profile": {
+    "tab_profile": "Profile",
+    "tab_notifications": "Notifications",
+    "tab_owned_publications": "Owner of",
+    "tab_mentioned_publications": "Author of",
+    "tab_roles_rights": "Groups",
+    "profile_first_name": "FIRST NAME",
+    "profile_surname_prefix": "SURNAME PREFIX",
+    "profile_surname": "SURNAME",
+    "organisation": "Organisation",
+    "profile_city": "CITY",
+    "profile_email": "EMAIL",
+    "profile_email_alt": "ALTERNATIVE EMAIL",
+    "profile_phone": "PHONENUMBER",
+    "profile_titulatuur": "TITLE",
+    "profile_academic_title": "ACADEMIC TITLE",
+    "profile_initials": "INITIALS",
+    "profile_persistent_identifier": "PERSISTENT IDENTIFIER",
+    "profile_orcid": "ORCID",
+    "profile_isni": "ISNI",
+    "profile_hogeschool_id": "INSTITUTE ID",
+    "profile_function": "FUNCTION",
+    "profile_function_options": {
+      "role_lecturer": "Lecturer",
+      "teacher": "Teacher",
+      "researcher": "Researcher",
+      "student": "Student",
+      "staff_employee": "(Staff) employee",
+      "associate_lecturer": "Associate lecturer",
+      "member_lectureship": "Member of lecturate",
+      "phd": "PhD",
+      "other": "Other"
+    },
+    "profile_linkedin_placeholder": "Enter the url to your linkedin account here",
+    "profile_twitter_placeholder": "Enter the url to your twitter account here",
+    "profile_research_gate_placeholder": "Enter the url to your research gate account here",
+    "tooltips": {
+      "isni": "An ISNI consists of 16 numeric digits, e.g. 0000000115033938",
+      "hogeschool_id": "A unique institute identification number",
+      "dai": "A DAI consists of 9 numeric digits, e.g. 123456785",
+      "orcid": "An ORCID consists of 16 numeric digits, divided into 4 blocks separated by a dash, e.g. 0000-0003-0588-8435"
+    }
+  },
+  "group": {
+    "group": "Group",
+    "organisation": "Organisation",
+    "organisation_level": "Type",
+    "organisation_type": "Type of organisation",
+    "add_person_success_message": "Member added successfully",
+    "remove_person_success_message": "Member removed from group successfully",
+    "members": "Members",
+    "permissions": "Permissions",
+    "templates": "Templates",
+    "add_person_popup": {
+      "title": "Add users"
+    },
+    "remove_popup": {
+      "title": "Remove person from group?",
+      "subtitle": "Are you sure you want to remove this person from this group?"
+    },
+    "permissiontooltips": {
+      "person_samelevel": "This right means that you can change profiles of members of your group",
+      "person_other": "This right means that you can change profiles of all members within the main organisation",
+      "repoitem_repoitemrepoitemfile": "This default right cannot be modified",
+      "repoitem_repoitemlearningobject": "This default right cannot be modified",
+      "repoitem_repoitemlink": "This default right cannot be modified",
+      "repoitem_repoitemperson": "This default right cannot be modified"
+    },
+    "permissioncodes": {
+      "group_default member": "Group Members",
+      "group_siteadmin": "Group Site Managers",
+      "group_supporter": "Group Supporters",
+      "group_staff": "Group Staff",
+      "group_student": "Group Students",
+      "group_lowerlevel": "Groups from suborganisations",
+      "group_samelevel": "Groups from own organisation",
+      "group_own": "Own groups",
+      "institute_lowerlevel": "Suborganisations",
+      "institute_samelevel": "Own organisation",
+      "person_lowerlevel": "Profiles from members of suborganisations",
+      "person_samelevel": "Profiles from members own group",
+      "person_self": "Own profile",
+      "person_other": "Profile from members own organisation",
+      "repoitem_approved": "Approved publications",
+      "repoitem_declined": "Rejected publications",
+      "repoitem_draft": "Drafts",
+      "repoitem_published": "Published publications",
+      "repoitem_submitted": "Submitted publications",
+      "repoitem_report": "Reports",
+      "repoitem_embargo": "Embargoed publications",
+      "repoitem_researchobject": "Research publications",
+      "repoitem_repoitemrepoitemfile": "Add files to a publication",
+      "repoitem_repoitemlearningobject": "Compile learning material",
+      "repoitem_learningobject": "Learning materials",
+      "repoitem_repoitemlink": "Add URLs to a publication",
+      "repoitem_repoitemperson": "Add authors to a publication",
+      "repoitem_publicationrecord": "Thesis or internship reports",
+      "repoitem_author": "Own publications",
+      "template_template": "Manage templates",
+      "repoitem_archived": "Archived publications"
+    },
+    "permissiontypes": {
+      "publish": "Change publish state",
+      "create": "create",
+      "delete": "delete",
+      "edit": "edit",
+      "view": "view",
+      "generate_doi": "create DOI"
+    }
+  },
+  "verification": {
+    "profile": {
+      "delete": {
+        "title": "Are you sure you want to delete this profile?",
+        "subtitle": "Items created by this profile will not be deleted"
+      }
+    },
+    "author": {
+      "delete": {
+        "title": "Are you sure you want to delete this author?",
+        "subtitle": "This author will be removed from this publication"
+      }
+    },
+    "download": {
+      "title": "Are you sure you want to download this file?"
+    },
+    "unsaved_changes": {
+      "title": "Unsaved changes",
+      "subtitle": "The form contains unsaved changes, are you sure you want to leave?"
+    }
+  }
+}

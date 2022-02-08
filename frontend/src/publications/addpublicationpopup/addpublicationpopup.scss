@@ -1,0 +1,94 @@
+@import "../../sass/theme/constants";
+@import "../../sass/theme/fonts";
+@import "../../sass/utils/mixins";
+
+.swal2-container.add-publication-container {
+
+    .swal2-popup.add-publication-popup {
+        padding: 25px 35px;
+        width: 45em;
+        min-height: 200px;
+        justify-content: flex-start;
+
+        .add-publication-content {
+            text-align: left;
+
+            .close-button-container {
+                position: absolute;
+                right: 13px;
+                top: 4px;
+                padding: 7px;
+                cursor: pointer;
+            }
+
+            .popup-title {
+                margin-bottom: 20px;
+            }
+
+            .form-step-list {
+                margin-bottom: 30px;
+            }
+
+            .type-title {
+                margin-bottom: 30px;
+            }
+
+            .institute-options {
+                .institute-option {
+                    display: flex;
+                    align-items: center;
+                    justify-content: flex-start;
+                    position: relative;
+                    border: 1px solid $cultured;
+                    border-radius: 5px;
+                    background-color: white;
+                    min-height: 52px;
+                    padding: 13px 50px 13px 30px;
+                    margin-bottom: 9px;
+                    cursor: pointer;
+
+                    .status-color-indicator {
+                        position: absolute;
+                        background-color: $majorelle;
+                        width: 7px;
+                        height: 100%;
+                        left: 0;
+                        border-top-left-radius: 5px;
+                        border-bottom-left-radius: 5px;
+
+                        &.inactive {
+                            background-color: $grayDark
+                        }
+                    }
+
+                    .icon-container {
+                        background-color: $cultured;
+                        padding: 10px;
+                        border-radius: 4px;
+                        color: $majorelle;
+                    }
+
+                    .title {
+                        @include open-sans;
+                        font-size: 14px;
+                        margin-left: 12px;
+                    }
+                }
+            }
+
+            .button-container {
+                display: block;
+                margin-top: 50px;
+                @include clear-after();
+
+                .previous-button {
+                    float: left;
+                }
+
+                .save-button {
+                    float: right;
+                }
+            }
+        }
+    }
+}

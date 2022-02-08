@@ -1,0 +1,36 @@
+@import "../sass/theme/constants";
+@import "../sass/theme/mixins";
+@import "../sass/utils/mixins";
+
+.organisation-status-label-wrapper {
+    display: flex;
+    margin-right: 75px;
+
+    .organisation-status-label-container {
+        @include open-sans-bold();
+        display: flex;
+        align-items: center;
+        background-color: $cultured;
+        min-width: 110px;
+        max-width: 140px;
+        border-radius: 5px;
+
+        .organisation-status-label-indicator {
+            margin-left: 9px;
+            min-width: 9px;
+            min-height: 9px;
+            border-radius: 9px;
+            background-color: #899194;
+        }
+
+        .organisation-status-label-text {
+            margin-left: 9px;
+            margin-right: 9px;
+            text-transform: uppercase;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 12px;
+        }
+    }
+}

@@ -1,0 +1,112 @@
+@import "../../sass/theme/constants";
+@import "../../sass/theme/fonts";
+@import "../../sass/theme/mixins";
+@import "../../sass/utils/mixins";
+@import "../../sass/mediaquery/mediaquery";
+
+.person-search {
+    .organisation-dropdown {
+        margin-top: 20px;
+
+        .field-input {
+            width: 100%;
+        }
+    }
+
+    .persons-table {
+        height: 300px;
+        margin-top: 20px;
+        margin-bottom: 20px;
+        overflow-y: auto;
+
+        td {
+            padding-top: 10px;
+            padding-bottom: 10px;
+        }
+
+        thead {
+            display: none;
+        }
+    }
+
+    .horizontal-tab-list {
+        margin-top: 20px;
+    }
+
+    .status-icon {
+        text-transform: uppercase;
+    }
+
+    .query-row {
+        margin-top: 20px;
+
+        .checkbox {
+            margin-left: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+    }
+
+    .person-row-image {
+    }
+
+    .person-row-name {
+        @include open-sans-bold;
+        font-size: 12px;
+        line-height: 16px;
+        color: $text-color;
+    }
+
+    .person-row-role {
+        @include open-sans;
+        font-size: 12px;
+        line-height: 16px;
+        color: $text-color;
+    }
+
+    .person-row-institute {
+        @include open-sans;
+        font-size: 12px;
+        line-height: 16px;
+        color: $text-color;
+    }
+
+    .person-row-active-state {
+
+    }
+
+    .empty-message {
+        display: flex;
+        flex-grow: 1;
+        justify-content: center;
+        @include open-sans;
+        padding-top: 20px;
+        font-size: 14px;
+        padding-bottom: 20px;
+    }
+
+    .form-field {
+        position: relative;
+
+        input[type=text] {
+            width: 400px;
+            padding-left: 35px !important;
+        }
+
+        svg {
+            color: $text-color;
+            font-size: 14px;
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+    }
+
+    .save-button-wrapper {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 25px;
+    }
+}

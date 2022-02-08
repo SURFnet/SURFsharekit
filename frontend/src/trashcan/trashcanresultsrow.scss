@@ -1,0 +1,63 @@
+@import "../sass/theme/constants";
+@import "../sass/theme/fonts";
+@import "../sass/theme/mixins";
+@import "../sass/utils/mixins";
+@import "../sass/mediaquery/mediaquery";
+
+
+.search-result-row {
+    @include open-sans;
+    font-size: 12px;
+
+    .row-content {
+        position: relative;
+        display: flex;
+        align-items: center;
+        padding-top: 20px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid $grayLight;
+
+        .icon-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 33px;
+            height: 33px;
+            border-radius: 4px;
+            background-color: $cultured;
+
+            svg {
+                font-size: 16px;
+                color: $majorelle
+            }
+
+            img.search-result-profile-image {
+                width: 33px;
+                height: 33px;
+                border-radius: 4px;
+            }
+        }
+
+        .row-information {
+            margin-left: 15px;
+
+            .search-result-title {
+                @include open-sans-bold;
+            }
+        }
+
+        .row-date {
+            margin-left: 15px;
+            display: flex;
+            flex-direction: row-reverse;
+            flex-grow: 1;
+            margin-right: 40px;
+        }
+
+        .trash-icon-wrapper {
+            position: absolute;
+            right: 15px;
+            cursor: pointer;
+        }
+    }
+}

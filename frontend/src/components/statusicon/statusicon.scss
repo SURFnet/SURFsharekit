@@ -1,0 +1,44 @@
+@import "../../sass/theme/constants";
+@import "../../sass/theme/fonts";
+@import "../../sass/utils/mixins";
+
+.status-icon {
+    @include open-sans-bold;
+    font-size: 10px;
+    border-radius: 5px;
+    height: 23px;
+    display: flex;
+    min-width: 95px;
+    align-items: center;
+    padding-left: 9px;
+    padding-right: 9px;
+    background: rgba(229, 229, 229, 0.25);
+
+    .circle {
+        min-width: 9px;
+        min-height: 9px;
+        border-radius: 100%;
+        margin-right: 6px;
+
+        &.green {
+            background-color: $ocean-green;
+        }
+
+        &.purple {
+            background-color: $majorelle;
+        }
+
+        &.blue {
+            background-color: $vivid-sky;
+        }
+
+        &.red {
+            background-color: $flame;
+        }
+    }
+
+    .text {
+        @include max-number-of-lines(1);
+        word-break: break-all;
+    }
+}

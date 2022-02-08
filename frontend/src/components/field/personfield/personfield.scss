@@ -1,0 +1,57 @@
+@import "../../../sass/theme/fonts";
+
+.file-field-container {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+
+    .file-container {
+        display: flex;
+        flex: 1 1 auto;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 15px;
+        background-color: #F8F8F8;
+        border: 1px solid #F3F3F3;
+        border-radius: 5px;
+
+        .fa-file {
+            margin-right: 25px;
+            width: 10px;
+            height: 14px;
+        }
+
+        .file-title {
+            @include open-sans;
+            flex: 1 0 auto;
+            font-size: 12px;
+        }
+
+        .trash-icon-wrapper {
+            display: flex;
+            margin-left: 25px;
+            padding: 8px;
+            cursor: pointer;
+
+            .fa-trash {
+                width: 11px;
+                height: 12px;
+            }
+        }
+    }
+
+    .new-file-upload-button {
+        padding-left: 15px;
+
+        .upload-file-button {
+
+        }
+    }
+
+}
+
+.field {
+    &.person {
+        cursor: pointer;
+    }
+}

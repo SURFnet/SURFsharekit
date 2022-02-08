@@ -1,0 +1,102 @@
+@import "../../sass/theme/constants";
+@import "../../sass/theme/fonts";
+@import "../../sass/theme/mixins";
+@import "../../sass/utils/mixins";
+@import "../../sass/mediaquery/mediaquery";
+
+.persons-table {
+    height: 300px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    overflow-y: auto;
+
+    td {
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
+
+    thead {
+        display: table-header-group;
+        font-size: 12px;
+        line-height: 14px;
+    }
+
+    tbody {
+        @include open-sans;
+
+        .person-row-image {
+        }
+
+        .person-row-firstname {
+            @include open-sans-bold;
+            font-size: 12px;
+            line-height: 16px;
+            color: $text-color;
+        }
+
+        .person-row-surname {
+            @include open-sans-bold;
+            font-size: 12px;
+            line-height: 16px;
+            color: $text-color;
+        }
+        .person-row-groups {
+            @include open-sans;
+            font-size: 12px;
+            line-height: 16px;
+            color: $text-color;
+        }
+        .person-row-role {
+            @include open-sans;
+            font-size: 12px;
+            line-height: 16px;
+            color: $text-color;
+        }
+        .person-row-institute {
+            @include open-sans;
+            font-size: 12px;
+            line-height: 16px;
+            color: $text-color;
+        }
+
+        .person-row-institute-level {
+            @include open-sans;
+            font-size: 12px;
+            line-height: 16px;
+            color: $text-color;
+        }
+
+        .person-row-active-state {
+
+        }
+
+        .person-row-actions {
+            .flex-row {
+                flex-direction: row-reverse;
+
+                .icon-trash,
+                .fa-plus {
+                    cursor: pointer;
+
+                    &.disabled {
+                        color: $grayDark
+                    }
+                }
+
+                .icon-trash {
+                    margin-right: 12px
+                }
+            }
+        }
+    }
+
+    .empty-message {
+        display: flex;
+        flex-grow: 1;
+        justify-content: center;
+        @include open-sans;
+        padding-top: 20px;
+        font-size: 14px;
+        padding-bottom: 20px;
+    }
+}

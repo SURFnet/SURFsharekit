@@ -1,0 +1,31 @@
+//Show desktop layout
+@mixin media-query-desktop() {
+    @include media-query-min(1024px) {
+        @content;
+    }
+}
+
+//Show mobile & tablet layout
+@mixin media-query-mobile-tablet() {
+    @include media-query-max(1023px) {
+        @content;
+    }
+}
+
+@mixin media-query-min($min-width) {
+    @media only screen and (min-width: $min-width) {
+        @content;
+    }
+}
+
+@mixin media-query-max($max-width) {
+    @media only screen and (max-width: $max-width) {
+        @content;
+    }
+}
+
+@mixin media-query-min-max($min-width, $max-width) {
+    @media only screen and (min-width: $min-width) and (max-width: $max-width) {
+        @content;
+    }
+}

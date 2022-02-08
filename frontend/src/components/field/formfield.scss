@@ -1,0 +1,386 @@
+@import "../../sass/theme/constants";
+@import "../../sass/theme/fonts";
+@import "../../sass/theme/mixins";
+@import "../../sass/utils/mixins";
+
+.form-field-container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+
+    .form-field {
+        flex-grow: 1;
+
+        &.hidden {
+            display: none;
+        }
+
+        &.small {
+            width: 33.33333%;
+            flex-grow: 0;
+        }
+
+        .form-row {
+            display: flex;
+            flex-direction: row;
+        }
+
+        .form-column {
+            display: flex;
+            flex-direction: column;
+
+            &:nth-child(2) {
+                flex-grow: 1;
+            }
+        }
+
+        .field-label {
+            @include open-sans-bold;
+            color: $text-color;
+            font-size: 10px;
+            margin-bottom: 5px;
+        }
+
+        .loading-failed {
+            cursor: pointer;
+            @include open-sans;
+            color: $text-color;
+            font-size: 10px;
+            margin-top: 5px;
+        }
+
+        .field-input-wrapper {
+            display: flex;
+            width: 100%;
+        }
+
+        .hard-hint {
+            position: absolute;
+            margin-left: 7px;
+            margin-top: 5px;
+            font-size: 10px;
+            color: black;
+            opacity: 0.333;
+        }
+
+        .field-input {
+            @include rounded-background-pointy-upper-left();
+            border: 1px solid $input-border-color;
+            @include open-sans;
+            font-size: 12px;
+            line-height: 14px;
+            vertical-align: center;
+            height: 50px;
+            padding: 0px 12px;
+            outline: none;
+
+            flex-grow: 1;
+
+            &::placeholder {
+                @include open-sans-light-italic();
+            }
+
+            &.valid {
+                border: 1px solid $text-color-valid;
+            }
+
+            &.invalid {
+                border: 1px solid $text-color-error;
+            }
+
+            &:focus {
+                border: 1px solid $text-color-active;
+            }
+
+            &.readonly {
+                background: none;
+                border: none;
+                padding: 10px 0;
+                height: auto;
+            }
+
+            &.readonly-hidden {
+                display: none;
+            }
+
+            &.text-area {
+                min-height: 120px;
+                padding-top: 15px;
+
+                resize: none;
+            }
+
+            &.dropdown-container {
+                padding: 0;
+                border: none;
+            }
+
+            &.attachment {
+                border: none;
+                background: none;
+                padding: 0;
+                height: inherit;
+            }
+
+            &.tag {
+                .edit-input {
+                    border: none;
+                    outline: none;
+                    display: inline-block;
+                    min-width: 1px;
+                }
+
+                .edit-suggestion {
+                    color: transparentize($text-color, 0.5);
+                }
+
+                font-size: 12px;
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+            }
+
+            &.checkbox {
+                height: auto;
+                margin-bottom: 4px
+            }
+        }
+
+        .doi-link {
+            text-decoration: underline;
+        }
+
+        .single-date-picker-wrapper {
+            &.readonly-hidden {
+                display: none;
+            }
+        }
+
+        .tag-field-input-wrapper {
+            display: flex;
+            flex-direction: row;
+
+            .surf-icon-button-text {
+                margin-left: 10px;
+            }
+        }
+
+        .tagfield-wrapper {
+            flex: 1 0 auto;
+            max-width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tag-chip-wrapper {
+            margin-top: 15px;
+            display: flex;
+            width: 100%;
+            flex-flow: row wrap;
+
+            .tag-chip {
+                flex: 0 1 auto;
+                @include rounded-background-pointy-upper-left($text-color-active, 8px);
+                padding: 10px;
+                margin: 0 5px 5px;
+
+                @include open-sans();
+                font-size: 12px;
+                line-height: 16px;
+                color: white;
+
+                .remove-icon {
+                    margin-left: 5px;
+                }
+            }
+        }
+
+        .dropdown-container {
+            height: 100%;
+        }
+
+        .field-error {
+            @include open-sans;
+            margin-top: 4px;
+            color: $text-color-error;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .checkbox {
+            background: none;
+            border: none;
+
+            &:valid {
+                border: none;
+            }
+
+            &:invalid {
+                border: none;
+            }
+        }
+    }
+}
+
+.field-button {
+    margin-left: 20px;
+    align-self: center;
+}
+
+.field-required {
+    color: $ocean-green;
+    font-size: 9px;
+    line-height: 12px;
+    margin-right: 4px;
+}
+
+.section-row {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.section-column {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.section-subtitle {
+    @include open-sans();
+    font-size: 12px;
+    line-height: 16px;
+    color: $text-color;
+}
+
+.repoitem-form-popup-title {
+    @include nunito-bold;
+    font-size: 25px;
+    line-height: 34px;
+    margin-bottom: 10px;
+}
+
+.form-step-list {
+    margin-top: 10px;
+    margin-bottom: 10px;
+
+    .form-step-divider {
+        height: 40px;
+        width: 1px;
+        background-color: $input-border-color;
+        margin-left: 20px;
+        margin-right: 20px;
+    }
+
+    .form-step {
+        .form-step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 100%;
+            background-color: rgba(45, 54, 79, 0.15);
+            color: white;
+
+            &.active {
+                background-color: $text-color-active;
+            }
+
+            &.completed {
+                background-color: #c0acf2;
+            }
+        }
+
+        .flex-column {
+            margin-left: 10px;
+            justify-content: center;
+
+            .form-step-number {
+                @include open-sans-bold;
+                line-height: 14px;
+                font-size: 10px;
+                text-transform: uppercase;
+                color: rgba(#899194, 1);
+            }
+
+            .form-step-title {
+                @include nunito-bold;
+                color: $text-color;
+                font-size: 12px;
+                line-height: 16px;
+
+                &.active {
+                    color: $text-color-active;
+                }
+            }
+        }
+    }
+}
+
+.field-tooltip {
+    color: $background-color;
+    background-color: $text-color;
+    display: flex;
+    align-content: center;
+    justify-content: center;
+    font-size: 8px;
+    border-radius: 14px;
+    margin-top: auto;
+    margin-bottom: auto;
+    width: 14px;
+    height: 14px;
+    min-width: 14px;;
+    min-height: 14px;
+    position: relative;
+    margin-left: 4px;
+
+    i {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translateX(-50%) translateY(-50%);
+    }
+
+    .left {
+        right: 120px;
+    }
+
+    .right {
+        left: 120px;
+    }
+
+    .tooltip-popup {
+        @include open-sans;
+        min-width: 200px;
+        top: -20px;
+        font-size: 12px;
+        color: transparent;
+        position: relative;
+
+        .tooltip-content {
+            position: absolute;
+            z-index: 5;
+            color: black;
+            padding: 10px;
+            background-color: $background-color;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .fa-caret-left {
+            z-index: 5;
+            position: absolute;
+            top: 18px;
+            left: -7px;
+            font-size: 19px;
+            color: white;
+        }
+
+        .fa-caret-right {
+            z-index: 5;
+            position: absolute;
+            top: 18px;
+            right: -7px;
+            font-size: 19px;
+            color: white;
+        }
+    }
+}

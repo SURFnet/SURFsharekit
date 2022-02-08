@@ -1,0 +1,51 @@
+@import "../sass/theme/constants";
+@import "../sass/theme/mixins";
+
+.login-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    .login-wrapper {
+        @include rounded-background-pointy-left();
+        background-color: white;
+        max-width: 700px;
+
+        .login-container {
+            display: flex;
+            justify-content: center;
+            flex-direction: column;
+            padding: 40px 90px;
+
+            .logo-wrapper {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                padding-bottom: 60px;
+
+                #login-logo {
+                    width: 178px;
+                }
+            }
+
+            h3 {
+                padding-bottom: 15px;
+            }
+
+            .welcome-text {
+                @include open-sans;
+                font-size: 12px;
+                padding-bottom: 130px;
+            }
+
+            .button-container {
+                display: flex;
+                justify-content: center;
+
+                .icon-button-login-info {
+                    margin-left: 15px;
+                }
+            }
+        }
+    }
+}

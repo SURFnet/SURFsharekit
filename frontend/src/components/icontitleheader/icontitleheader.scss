@@ -1,0 +1,26 @@
+@import "../../sass/theme/constants";
+@import "../../sass/theme/fonts";
+@import "../../sass/theme/mixins";
+@import "../../sass/utils/mixins";
+@import "../../sass/mediaquery/mediaquery";
+
+.icon-title-header {
+    display: flex;
+    align-items: center;
+
+    .icon-header-container {
+        @include rounded-background-pointy-upper-left();
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: white;
+        color: $majorelle;
+        font-size: 24px;
+        width: 82px;
+        height: 82px;
+    }
+
+    h1 {
+        margin-left: 25px;
+    }
+}

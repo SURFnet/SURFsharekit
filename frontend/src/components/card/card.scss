@@ -1,0 +1,25 @@
+@import "../../sass/theme/constants";
+@import "../../sass/theme/fonts";
+@import "../../sass/theme/mixins";
+@import "../../sass/utils/mixins";
+
+.card {
+    @include rounded-background-pointy-upper-left($background-color, 25px);
+    background-color: purple;
+    display: flex;
+    align-items: center;
+    color: $text-color;
+    flex-direction: column;
+    min-height: 280px;
+
+    .content-wrapper {
+        display: flex;
+        flex: 1 1 auto;
+        padding: 20px 20px 50px;
+
+        h2, h3 {
+            padding-bottom: 20px;
+            word-break: break-word;
+        }
+    }
+}

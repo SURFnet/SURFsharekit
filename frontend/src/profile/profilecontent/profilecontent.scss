@@ -1,0 +1,79 @@
+#tab-profile {
+    #profile-form {
+
+        .form-columns-container {
+            .personal-data {
+                flex: 6 0 0;
+                margin-right: 60px;
+
+                > .form-row {
+                    .form-field-container {
+                        &:not(:last-child) {
+                            margin-right: 15px;
+                        }
+                    }
+
+                    .name-first-column {
+                        flex: 1 1 0;
+                        margin-right: 15px;
+
+                        > .form-field-container {
+                            width: auto;
+
+                            &:first-child {
+                                flex: 1 1 0;
+                            }
+
+                            &:last-child {
+                                flex: 0 0 auto;
+                            }
+                        }
+                    }
+
+                    .name-second-column {
+                        flex: 1 1 0;
+                    }
+                }
+            }
+
+            .social-media {
+                flex: 4 0 0;
+
+                > .form-row {
+                    align-items: center;
+                }
+            }
+
+            .form-column {
+                > .form-row {
+                    &:not(:first-child) {
+                        margin-top: 4px;
+                    }
+                }
+            }
+        }
+
+        .column-title {
+            margin-bottom: 20px;
+        }
+
+        #form-buttons {
+            align-self: flex-end;
+
+            #save-button {
+                background: none;
+                padding: 0;
+                align-self: flex-end;
+                margin-top: 20px;
+            }
+
+            #delete-button {
+                background: none;
+                padding: 0;
+                align-self: flex-end;
+                margin-top: 20px;
+                margin-right: 20px;
+            }
+        }
+    }
+}

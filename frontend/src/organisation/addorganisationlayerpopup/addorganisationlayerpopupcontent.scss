@@ -1,0 +1,30 @@
+.swal2-container.add-organisation-layer-container {
+
+    .swal2-popup.add-organisation-layer-popup {
+        padding: 25px 35px;
+        width: 45em;
+        min-height: 300px;
+
+        .add-organisation-layer-content {
+            text-align: left;
+
+            .close-button-container {
+                position: absolute;
+                right: 13px;
+                top: 4px;
+                padding: 7px;
+                cursor: pointer;
+            }
+
+            #add-organisation-layer-form {
+                padding-top: 40px;
+
+                .save-button-wrapper {
+                    display: flex;
+                    justify-content: flex-end;
+                    margin-top: 25px;
+                }
+            }
+        }
+    }
+}

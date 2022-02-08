@@ -1,0 +1,27 @@
+@import "../sass/theme/constants";
+@import "../sass/theme/fonts";
+@import "../sass/theme/mixins";
+@import "../sass/utils/mixins";
+
+.report-count-block {
+    @include rounded-background-pointy-left();
+    background-color: white;
+    padding-left: 35px;
+    padding-right: 35px;
+
+    .report-count-title {
+        font-size: 25px;
+        padding-top: 25px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid $grayLight;
+        text-align: center;
+    }
+
+    .report-count-subtitle {
+        @include open-sans;
+        font-size: 12px;
+        padding-top: 15px;
+        padding-bottom: 25px;
+        text-align: center;
+    }
+}

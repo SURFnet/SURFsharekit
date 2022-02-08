@@ -1,0 +1,83 @@
+@import "../../../sass/theme/constants";
+@import "../../../sass/theme/fonts";
+@import "../../../sass/utils/mixins";
+@import "../../../sass/theme/mixins";
+
+$selectable-size: 16px;
+
+.switch {
+    display: flex;
+    flex-direction: row;
+
+    &.readonly {
+        opacity: 0.5;
+    }
+
+    .switch-icon {
+        border-radius: 16px;
+        width: 57px;
+        height: 26px;
+        display: flex;
+        cursor: pointer;
+
+        &.on {
+            background-color: $positive-color;
+
+            .switch-bulb {
+                right: 4px;
+            }
+
+            .switch-text {
+                left: 6px;
+                margin-right: auto;
+                text-transform: uppercase;
+            }
+        }
+
+        &.off {
+            background-color: $input-border-color;
+
+            .switch-bulb {
+                left: 4px;
+            }
+
+            .switch-text {
+                right: 12px;
+                margin-left: auto;
+                text-transform: uppercase;
+            }
+        }
+
+        .switch-bulb {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 16px;
+            width: 16px;
+            background-color: $background-color;
+            border-radius: 16px;
+            position: relative;
+            margin-top: auto;
+            margin-bottom: auto;
+            font-size: 9px;
+
+            .fa-lock {
+                margin-bottom: 2px;
+            }
+        }
+
+
+        .switch-text {
+            @include open-sans-bold;
+            font-size: 12px;
+            position: relative;
+            margin-top: auto;
+            margin-bottom: auto;
+        }
+    }
+
+    label {
+        line-height: 26px;
+        margin-left: 12px;
+    }
+}

@@ -1,0 +1,44 @@
+// constants to use in the entire app, noted with !default so they can be overriden
+$space-cadet: #2D364F !default;
+$space-cadet-light: #435075 !default;
+$cultured: #F8F8F8 !default;
+$flame: #E35F3C !default;
+$flame-light: #F69E90 !default;
+$majorelle: #7344EE !default;
+$majorelle-light: #906AF1 !default;
+$maximum-yellow: #F3BA5A !default;
+$maximum-yellow-light: #FACD34 !default;
+$ocean-green: #64C3A5 !default;
+$ocean-green-light: #6FD8B6 !default;
+$vivid-sky: #5AC4ED !default;
+$vivid-sky-light: #80D7F1 !default;
+
+$input-border-color: #E5E5E5;
+$background-color: white; // ued as a divider between background and background-light
+$background-color-dark: $cultured; // used as accent color to background
+$text-color: $space-cadet; //used for text on background-color
+$text-color-active: $majorelle;
+$text-color-active-light: $majorelle-light;
+$text-color-error: $flame;
+$text-color-valid: $ocean-green;
+$positive-color: $ocean-green-light;
+$grayDark: #A5AAAE;
+$grayLight: #E5E5E5;
+$grayMedium: #D2D2D2;
+
+$border-color: #E1E7EB;
+$desktop-side-menu-width: 258px;
+$desktop-navigation-bar-height: 90px;
+
+$page-background-gradient: linear-gradient(270deg, #F8F8F8 0%, #F0F0F0 82.57%);
+
+//This exposes the variables to React.
+//After exposure you can import this file and use them.
+//E.g. to use it in React: "import Constants from '../sass/theme/_constants.scss", "backgroundColor={Constants.majorelle}"
+:export {
+    majorelle: $majorelle;
+    majorelleLight: $majorelle-light;
+    inputBorderColor: $input-border-color;
+    textColorValid: $text-color-valid;
+    textColorError: $text-color-error;
+}

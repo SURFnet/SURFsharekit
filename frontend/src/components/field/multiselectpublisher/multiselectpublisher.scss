@@ -1,0 +1,175 @@
+@import "../../../sass/theme/constants";
+@import "../../../sass/theme/fonts";
+@import "../../../sass/theme/mixins";
+@import "../../../sass/utils/mixins";
+
+.multi-select-suborganisation-container {
+  flex-grow: 1;
+
+  &.readonly {
+    .surf-multi-select-suborganisation {
+      .surf-multi-select__control {
+        border: none !important;
+        height: auto;
+        min-height: auto;
+        padding: 10px 0;
+
+        .surf-multi-select__indicators {
+          display: none;
+        }
+
+        .surf-multi-select__value-container {
+          .surf-multi-select__placeholder {
+            position: static;
+            transform: none;
+            top: 0;
+            margin: 0;
+          }
+
+          .surf-multi-select__multi-value {
+            .surf-multi-select__multi-value__label {
+              padding: 8px 12px 8px 12px;
+            }
+
+            .surf-multi-select__multi-value__remove {
+              display: none;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .surf-multi-select-suborganisation {
+    .surf-multi-select__control {
+      @include rounded-background-pointy-upper-left($background-color);
+      min-height: 50px;
+      cursor: pointer;
+      min-width: 130px;
+      padding: 10px 15px 10px 10px;
+      border: 1px solid $input-border-color;
+
+      .surf-multi-select__value-container {
+        padding: 0;
+
+        .surf-multi-select__multi-value {
+          @include rounded-background-pointy-upper-left($majorelle, 8px);
+          background-color: $majorelle;
+          color: white;
+          margin-right: 10px;
+
+          .surf-multi-select__multi-value__label {
+            @include open-sans;
+            color: white;
+            padding: 8px 4px 8px 12px;
+            font-size: 12px;
+          }
+
+          .surf-multi-select__multi-value__remove {
+            &:hover {
+              background-color: $majorelle-light;
+              color: white;
+              border-top-right-radius: 8px;
+              border-bottom-right-radius: 8px;
+            }
+
+            svg {
+              width: 20px;
+              height: 20px;
+            }
+          }
+        }
+
+        .surf-multi-select__placeholder {
+          @include open-sans;
+          font-size: 12px;
+          color: $text-color;
+        }
+
+        .surf-multi-select__custom-select-container {
+          display: flex;
+
+          .surf-multi-select__icon-wrapper {
+            padding-left: 5px;
+            padding-right: 5px;
+
+            .surf-multi-select__custom-select-icon path {
+              fill: $text-color;
+            }
+          }
+
+          .surf-multi-select__text-wrapper {
+            @include open-sans;
+            font-size: 12px;
+            color: $text-color;
+          }
+        }
+      }
+
+      .surf-multi-select__indicator {
+        color: $text-color;
+        padding: 0;
+
+        .svg-inline--fa {
+          height: 0.7em;
+        }
+      }
+    }
+
+    .surf-multi-select__menu {
+      border-radius: 0 0 $default-radius $default-radius;
+      margin-top: 6px;
+      margin-bottom: 0;
+
+      .surf-multi-select__menu-list {
+        padding-top: 0;
+        padding-bottom: 0;
+
+        .surf-multi-select__option {
+          @include open-sans;
+          font-size: 12px;
+          color: $text-color;
+          cursor: pointer;
+
+          &.surf-multi-select__option--is-selected {
+            background-color: rgba(lighten($majorelle, 20%), 0.3);
+            color: $majorelle;
+          }
+
+          &.surf-multi-select__option--is-focused {
+            background-color: rgba($majorelle, 0.3);
+            color: $majorelle;
+          }
+
+          .options-container {
+            display: flex;
+            justify-content: space-between;
+
+            .option-title-container {
+              display: flex;
+              padding-right: 20px;
+
+              .option-title {
+
+              }
+              .option-inactive {
+                padding-left: 5px;
+                font-style: italic;
+                font-weight: bold;
+              }
+            }
+
+            .organisation-status-label-wrapper {
+              margin-right: 0;
+            }
+          }
+        }
+
+        .surf-multi-select__option:last-child {
+          border-bottom-left-radius: $default-radius;
+          border-bottom-right-radius: $default-radius;
+        }
+      }
+    }
+  }
+}

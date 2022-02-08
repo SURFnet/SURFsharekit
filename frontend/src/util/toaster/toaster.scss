@@ -1,0 +1,42 @@
+@import "../../sass/theme/constants";
+@import "../../sass/theme/fonts";
+
+.Toastify__toast-container {
+
+    .Toastify__toast {
+        @include open-sans;
+        font-size: 12px;
+        min-height: initial;
+        margin-bottom: initial;
+        padding: 15px 20px;
+
+        &.Toastify__toast--error {
+            border: 1px solid $flame;
+            border-radius: 5px;
+            background: $flame-light;
+            color: $text-color;
+        }
+
+        &.Toastify__toast--success {
+            border: 1px solid $ocean-green;
+            border-radius: 5px;
+            background: $ocean-green-light;
+            color: $text-color;
+
+            svg {
+                color: white;
+            }
+        }
+
+        .custom-toaster-content {
+            display: flex;
+
+            .icon-wrapper {
+                padding-right: 15px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+        }
+    }
+}

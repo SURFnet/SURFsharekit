@@ -1,0 +1,83 @@
+//Grid System (e.g. allows to use .row for full width and z-span for percentage based widths)
+@import "grid/grid";
+//Styling
+@import "theme/theme";
+
+.main {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: row;
+}
+
+.page-content-container {
+    position: relative;
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.page-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    flex: 1 1 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.page-content {
+    padding-top: 30px + $desktop-navigation-bar-height;
+    padding-bottom: 30px;
+}
+
+.flex-grow {
+    flex-grow: 1;
+}
+
+.flex-row {
+    display: flex;
+    flex-direction: row;
+}
+
+.flex-row-reverse {
+    display: flex;
+    flex-direction: row-reverse;
+}
+
+.flex-center {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+}
+
+.flex-column {
+    display: flex;
+    flex-direction: column;
+}
+
+.hidden {
+    visibility: hidden !important;
+}
+
+.gone {
+    display: none !important;
+}
+
+.flex-reverse-row {
+    display: flex;
+    flex-direction: row-reverse;
+}
+
+.hidden-on-mobile-tablet {
+    @include media-query-mobile-tablet {
+        display: none !important;
+    }
+}
+
+.hidden-on-desktop {
+    @include media-query-desktop {
+        display: none !important;
+    }
+}

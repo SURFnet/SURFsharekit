@@ -1,0 +1,38 @@
+@import "./constants";
+@import "./fonts";
+
+$default-radius: 15px;
+
+@mixin rounded-background-pointy-upper-left($color: white, $radius: $default-radius) {
+    background: $color;
+    border-radius: 2px $radius $radius;
+}
+
+@mixin rounded-background-pointy-upper-right($color: white, $radius: $default-radius) {
+    background: $color;
+    border-radius: $radius 2px $radius $radius;
+}
+
+@mixin rounded-background-pointy-left($color: white, $radius: $default-radius) {
+    background: $color;
+    border-radius: 2px $radius $radius 2px;
+}
+
+@mixin loading-indicator-spinner() {
+    @keyframes rotate360 {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    img {
+        animation: rotate360 1s infinite linear;
+    }
+}
+
+@mixin form-field-label-style() {
+    @include open-sans-bold;
+    color: $text-color;
+    font-size: 10px;
+    margin-bottom: 5px;
+}

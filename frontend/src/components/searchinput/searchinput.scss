@@ -1,0 +1,37 @@
+@import '../../sass/theme/constants';
+@import '../../sass/theme/fonts';
+@import '../../sass/theme/mixins';
+
+.search-input-container {
+    position: relative;
+    margin-right: 12px;
+
+    input[type=text] {
+        @include open-sans;
+        max-width: 220px;
+        background: white;
+        border-radius: 2px 15px 15px;
+        border: 1px solid #E5E5E5;
+        font-weight: 300;
+        font-size: 12px;
+        line-height: 14px;
+        vertical-align: center;
+        height: 50px;
+        padding: 0 12px 0 35px;
+        outline: none;
+        flex-grow: 1;
+
+        &::placeholder {
+            @include open-sans-light-italic();
+        }
+    }
+
+    svg {
+        color: $text-color;
+        font-size: 14px;
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+}

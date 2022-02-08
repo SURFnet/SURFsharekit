@@ -1,0 +1,47 @@
+@import "../sass/theme/constants";
+@import "../sass/theme/fonts";
+@import "../sass/theme/mixins";
+@import "../sass/utils/mixins";
+@import "../sass/grid/grid_mixins";
+@import "../sass/grid/z-span";
+@import "../resources/fontawesome/css/all.css";
+
+#profile {
+    background: $page-background-gradient;
+
+    .page-content {
+
+        > .loading-indicator {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+    }
+
+    .user-header {
+        padding-bottom: 50px;
+    }
+
+    .tab-content-container {
+        padding-top: 50px;
+
+        .tab-title {
+            margin-bottom: 30px;
+        }
+
+        .tab-content {
+            @include rounded-background-pointy-upper-left();
+            padding: 30px 40px;
+        }
+    }
+
+    #tab-publications {
+        .actions-row {
+            display: flex;
+            justify-content: flex-end;
+            padding-bottom: 20px;
+        }
+    }
+}

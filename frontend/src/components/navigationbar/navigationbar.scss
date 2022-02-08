@@ -1,0 +1,102 @@
+@import "../../sass/theme/constants";
+@import "../../sass/theme/fonts";
+@import "../../sass/theme/mixins";
+@import "../../sass/mediaquery/mediaquery";
+@import "../../sass/utils/mixins";
+
+.navigation-bar {
+    position: absolute;
+    z-index: 10;
+    height: $desktop-navigation-bar-height;
+    width: 100%;
+
+    &.navigation-bar-gradient {
+        background: linear-gradient(to top, rgba(248, 248, 248, 0.0), rgba(248, 248, 248, 0.6) 30%, #F0F0F0 70%);
+    }
+
+    .navigation-bar-wrapper {
+        display: flex;
+        justify-content: flex-end;
+        height: 100%;
+
+        .navigation-bar-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex: 1 1 auto;
+
+            .left-content-container {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+
+                .back-button {
+                    @include media-query-mobile-tablet {
+                        display: none;
+                    }
+                }
+
+                .breadcrumbs {
+                    margin-left: 40px;
+
+                    .breadcrumb {
+                        &.clickable {
+                            cursor: pointer;
+                        }
+                    }
+                }
+            }
+
+            .right-content-container {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+
+                .notifications-container {
+                    position: relative;
+                    margin-left: 30px;
+                    display: flex;
+                    cursor: pointer;
+
+                    .fas.fa-bell {
+                        color: $space-cadet;
+
+                        &.light {
+                            color: white;
+                        }
+                    }
+
+                    .notifications-counter {
+                        @include open-sans-bold;
+                        background: #E35F3C;
+                        color: white;
+                        font-size: 10px;
+                        height: 18px;
+                        line-height: 18px;
+                        padding-left: 7px;
+                        padding-right: 7px;
+                        border-radius: 100px;
+                        transform: translate(-5%, -50%);
+                    }
+                }
+            }
+        }
+    }
+
+    .breadcrumbs {
+        @include open-sans;
+        display: flex;
+        flex-direction: row;
+        font-size: 12px;
+
+        //:first-child {
+        //    border-bottom: 1px solid black;
+        //}
+
+        .breadcrumb-divider {
+            height: 10px;
+            width: 10px;
+            margin: auto 10px;
+        }
+    }
+}

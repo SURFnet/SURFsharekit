@@ -1,0 +1,108 @@
+@import "../sass/theme/constants";
+@import "../sass/theme/fonts";
+@import "../sass/theme/mixins";
+@import "../sass/utils/mixins";
+@import "../sass/grid/grid_mixins";
+@import "../sass/grid/z-span";
+@import '../sass/mediaquery/mediaquery';
+
+#edit-template {
+    background: $page-background-gradient;
+
+    .title-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-bottom: 50px;
+
+        .actions-container {
+            display: flex;
+            justify-content: flex-end;
+
+            .save-button {
+                margin-left: 11px;
+            }
+        }
+    }
+
+    .form-elements-container {
+        display: flex;
+
+        .section-quick-links-wrapper {
+            margin-right: 70px;
+
+            @include media-query-mobile-tablet {
+                display: none;
+            }
+
+            .section-quick-links-container {
+                @include rounded-background-pointy-upper-left(white);
+                top: 30px + $desktop-navigation-bar-height;
+                position: sticky;
+                width: 220px;
+                padding: 20px 0;
+
+                .section-quick-link {
+                    height: 48px;
+                    margin-bottom: 13px;
+                    padding: 0 35px;
+                    position: relative;
+                    display: flex;
+                    flex-direction: row;
+                    align-items: center;
+
+                    &:last-child {
+                        margin-bottom: 0;
+                    }
+
+                    .active-indicator {
+                        display: none;
+                        position: absolute;
+                        transform: translateY(-50%);
+                        top: 50%;
+                        left: 0;
+                        background-color: $majorelle;
+                        width: 6px;
+                        height: 100%;
+                        border-radius: 10px;
+
+                        &.active {
+                            display: initial;
+                        }
+                    }
+
+                    h5 {
+                        @include max-number-of-lines(2);
+                        color: $text-color;
+
+                        &.active {
+                            color: $majorelle
+                        }
+                    }
+                }
+            }
+        }
+
+        .form {
+            flex: 1 1 auto;
+
+            .template-meta-field-section-list {
+
+                .template-meta-field-section:first-child {
+                    h3 {
+                        padding-top: 0;
+                    }
+                }
+
+                .template-meta-field-section {
+
+                    h3 {
+                        padding-top: 20px;
+                        padding-bottom: 20px;
+                    }
+                }
+
+            }
+        }
+    }
+}

@@ -1,0 +1,70 @@
+@import "../../sass/theme/constants";
+@import "../../sass/theme/fonts";
+@import "../../sass/theme/mixins";
+@import "../../sass/utils/mixins";
+@import "../../sass/grid/grid_mixins";
+@import "../../sass/grid/z-span";
+@import "../../resources/fontawesome/css/all.css";
+
+.group-permission-table {
+
+    .table-header {
+        display: flex;
+        flex-direction: row-reverse;
+        padding-left: 20px;
+        padding-right: 80px;
+
+        .table-header-item {
+            text-transform: uppercase;
+            width: 100px;
+            text-align: center;
+            @include open-sans-bold;
+            font-size: 10px;
+            margin-bottom: 20px;
+        }
+    }
+
+    .permission-checkbox-row {
+        background-color: $background-color;
+        border-radius: 12px;
+        align-content: center;
+
+        display: flex;
+        flex-direction: row;
+        height: 50px;
+        margin-bottom: 10px;
+
+        padding-left: 20px;
+        padding-right: 80px;
+
+        .checkbox-row-title {
+            @include open-sans-bold;
+            font-size: 12px;
+            line-height: 16px;
+            display: flex;
+            justify-content: left;
+            align-content: center;
+            align-items: center;
+            flex-grow: 0;
+        }
+
+        .checkbox-row-checkboxes {
+            display: flex;
+            flex-direction: row-reverse;
+            flex-grow: 1;
+
+            .checkbox {
+                display: flex;
+                justify-content: center;
+                width: 100px;
+                height: 50px;
+            }
+        }
+    }
+
+    .save-button-wrapper {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 40px;
+    }
+}

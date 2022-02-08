@@ -1,0 +1,83 @@
+@import "../sass/theme/constants";
+@import "../sass/theme/mixins";
+
+.template-meta-field-list {
+    flex: 1 1 auto;
+
+    .template-meta-field-expandable-row-wrapper {
+        background-color: white;
+        cursor: pointer;
+
+        &:first-child {
+            border-top-left-radius: 2px;
+            border-top-right-radius: 15px;
+        }
+
+        &:last-child {
+            border-bottom-left-radius: 15px;
+            border-bottom-right-radius: 15px;
+
+            .template-meta-field-expandable-row-container {
+                border-bottom: none;
+            }
+        }
+
+        .template-meta-field-expandable-row-container {
+            position: relative;
+            border-bottom: 1px solid $grayLight;
+            margin-left: 20px;
+            margin-right: 20px;
+            padding-top: 15px;
+            padding-bottom: 15px;
+
+            .meta-field-row {
+                @include open-sans;
+                font-size: 12px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+
+                .meta-field-row-information {
+                    display: flex;
+                    align-items: center;
+
+                    .icon-chevron {
+                        font-size: 13px;
+                        min-width: 12px;
+                        margin-right: 20px;
+                    }
+
+                    fieldset.switch {
+                        margin-right: 20px;
+
+                        .switch label {
+                            display: none;
+                        }
+                    }
+
+                    .row-text {
+                        display: flex;
+                        align-items: center;
+
+                        .normal-text {
+                            text-overflow: ellipsis;
+                            max-width: 350px;
+                            white-space: nowrap;
+                            overflow: hidden;
+
+                            .white-space {
+                                white-space: pre;
+                            }
+                        }
+                    }
+                }
+            }
+
+            .template-meta-field-form-wrapper {
+                .template-meta-field-form-container {
+                    padding-top: 15px;
+                }
+            }
+        }
+    }
+}

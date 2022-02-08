@@ -1,0 +1,61 @@
+@import "../sass/theme/constants";
+@import "../sass/theme/mixins";
+
+.public-page {
+    height: 100%;
+    background-color: white;
+    display: flex;
+
+    .public-page-content {
+
+        h2 {
+            padding-bottom: 25px;
+        }
+
+        .public-page-row {
+            display: flex;
+            margin-bottom: 10px;
+
+            .data-label {
+                @include open-sans-bold;
+                flex: 1 1 0;
+            }
+
+            .data-value-container {
+                flex: 2 1 0;
+
+                .value-row-subtitle {
+                    font-style: italic;
+                }
+            }
+        }
+    }
+
+    .public-page-footer-wrapper {
+        border-top: 1px solid $grayLight;
+
+        .public-page-footer-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            .footer-logo-container {
+                height: 100%;
+
+                img {
+                    width: 60px;
+                    height: auto;
+                }
+            }
+
+            .footer-text-container {
+                padding-top: 15px;
+                padding-bottom: 15px;
+
+                .footer-text {
+                    font-size: 12px;
+                }
+            }
+        }
+    }
+}

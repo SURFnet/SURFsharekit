@@ -1,0 +1,66 @@
+@import "../../../sass/theme/constants";
+@import "../../../sass/theme/fonts";
+@import "../../../sass/utils/mixins";
+@import "../../../sass/theme/mixins";
+
+$selectable-size: 18px;
+
+.radio {
+    //hide the original checkbox by just moving it waaaaaay left
+    [type="radio"] {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    //show the label on a location relative to new button
+    label {
+        @include open-sans;
+        font-size: 14px;
+        position: relative;
+        line-height: $selectable-size;
+        padding-left: $selectable-size + 10px;
+        display: inline-block;
+        color: $text-color;
+    }
+
+    //show new checkbox
+    [type="radio"] + label:before {
+        content: '';
+        position: absolute;
+        cursor: pointer;
+        left: 0;
+        top: 0;
+        width: $selectable-size;
+        height: $selectable-size;
+        border: 1px solid $input-border-color;
+        border-radius: 50%;
+        background-color: $background-color-dark;
+    }
+
+    [type="radio"] + label:after {
+        width: $selectable-size;
+        height: $selectable-size;
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+
+    [type="radio"]:checked + label:before {
+        border: ($selectable-size * 0.28) solid $text-color-active;
+    }
+
+    [type="radio"]:disabled + label:before {
+        opacity: 0.33;
+        cursor: auto;
+    }
+
+    .option:first-child {
+        margin-top: 5px;
+    }
+
+    .option:not(:first-child) {
+        margin-top: 10px;
+    }
+}

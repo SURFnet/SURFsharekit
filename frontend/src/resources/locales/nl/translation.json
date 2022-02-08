@@ -1,0 +1,514 @@
+{
+  "language": {
+    "current_code": "nl",
+    "dutch": "Nederlands",
+    "english": "English"
+  },
+  "action": {
+    "previous": "Vorige",
+    "next": "Volgende",
+    "save": "Opslaan",
+    "search": "Zoeken",
+    "delete": "Verwijderen",
+    "add": "Toevoegen",
+    "rate": "Beoordelen",
+    "approve": "Goedkeuren",
+    "decline": "Afkeuren",
+    "cancel": "Annuleren",
+    "confirm": "Bevestigen",
+    "ok": "OK",
+    "create_new_doi": "Maak een DOI aan"
+  },
+  "onboarding": {
+    "login": {
+      "welcome": "Welkom bij SURFsharekit",
+      "subtitle": "SURFsharekit is een repository voor materialen die zijn ontwikkeld binnen het hoger onderwijs, zoals afstudeerproducten, onderzoekspublicaties en leermaterialen. Met Sharekit kunnen studenten, onderzoekers en docenten deze materialen delen met een specifieke groep of met de hele wereld. Dat laatste kan op verschillende portalen zoals de HBO Kennisbank, Narcis en Zoekportaal open leermaterialen.\n\nSURFsharekit is een dienst van SURF, de ICT-coöperatie van onderwijs en onderzoek.",
+      "login": "Inloggen",
+      "help": "Help"
+    },
+    "institute_step": {
+      "title": "Opleiding"
+    },
+    "profile_step": {
+      "title": "Profiel",
+      "first_name": "Voornaam",
+      "surname_prefix": "Tussenvoegsel",
+      "surname": "Achternaam",
+      "organisation": "Instelling",
+      "position": "Functie",
+      "email": "E-mailadres instelling",
+      "secondary_email": "Alternatief e-mailadres"
+    },
+    "start_step": {
+      "title": "Let's share",
+      "text": "Je bent er helemaal klaar voor! Met Sharekit kun je eenvoudig en snel materiaal opslaan en vrij beschikbaar maken.",
+      "start": "Starten"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "block_1_title": "Deel je materiaal via SURFsharekit",
+    "block_1_button": "Nieuwe publicatie",
+    "block_2_title": "Wat kun je allemaal met SURFsharekit?",
+    "block_2_subtitle": "Eenvoudig materialen uploaden en vrij beschikbaar maken.",
+    "block_2_button": "Lees meer",
+    "block_3_title": "Waarom materialen delen?",
+    "block_3_bullet_1": "Toegang tot onderwijs- en onderzoeksresultaten",
+    "block_3_bullet_2": "Stimuleren van hergebruik",
+    "block_3_bullet_3": "Uitwisselen van kennis",
+    "my_publications": {
+      "open_title": "Openstaande publicaties",
+      "title": "Publicaties",
+      "see_all": "Bekijk alles",
+      "header": {
+        "title": "TITEL",
+        "status": "STATUS",
+        "date": "BEWERKINGSDATUM",
+        "author": "EIGENAAR"
+      },
+      "loading": "Alle publicaties worden geladen...",
+      "empty": {
+        "title": "Geen publicaties gevonden",
+        "subtitle": "Publicaties waarbij een actie van je wordt verwacht, zie je hier terug.",
+        "add": "Publicatie toevoegen"
+      }
+    }
+  },
+  "report": {
+    "explanation" : "Op deze pagina kun je een rapportage maken van de metadata die in SURFsharekit staat opgeslagen en deze vervolgens exporteren naar Excel. Maak hiervoor een keuze voor het organisatieonderdeel en/of het type publicatie waarvan je de metadata wilt exporteren in een daarvoor opgegeven periode. Wanneer je de keuzeopties leeg laat wordt alle metadata geëxporteerd.\n\nPublic downloads zijn downloads die vanaf een extern portaal hebben plaatsgevonden. Private downloads zijn downloads die een actieve gebruiker binnen Sharekit heeft geïnitieerd.",
+    "download" : "Rapportage downloaden",
+    "title": "Rapportage",
+    "export": "Exporteer",
+    "dashboard_title": "Rapportage",
+    "report_empty": "Geen rapportage beschikbaar.",
+    "report_publications": "Publicaties",
+    "publication_records": "Scripties",
+    "learning_objects": "Leermaterialen",
+    "research_objects": "Onderzoek",
+    "export_type": "Export type"
+  },
+  "search": {
+    "title": "Zoekresultaten",
+    "user": "Gebruiker",
+    "group": "Groep",
+    "no_results": "Geen resultaten.",
+    "unnamed": "Geen titel",
+    "view": "Bekijk",
+    "publicationrecord": "Afstudeerwerk of stageverslag",
+    "learningobject": "Leermateriaal",
+    "researchobject": "Onderzoekspublicatie"
+  },
+  "export": {
+    "publication_type" : "Publicatietype",
+    "institute_level" : "Organisatieonderdeel",
+    "date_start" : "Vanaf",
+    "date_until" : "Tot en met",
+    "date_format_tooltip" : "dd-mm-jjjj, mm-jjjj of jjjj"
+  },
+  "my_publications": {
+    "title": "Publicaties",
+    "add_publication": "Publicatie toevoegen",
+    "table": {
+      "title": "Titel",
+      "organisation": "Organisatie",
+      "authors": "Auteurs",
+      "organisation_level": "Organisatieniveau",
+      "type": "Type",
+      "status": "Status",
+      "last_edited": "Laatst bewerkt"
+    }
+  },
+  "organisation": {
+    "title": "Organisatie",
+    "loading": "Organisaties ophalen...",
+    "save_organisation_success_message": "Organisatie opgeslagen!",
+    "add_layer_popup": {
+      "add_title": "Laag toevoegen",
+      "add_to": "Aan",
+      "add_button": "Toevoegen",
+      "edit_title": "Laag bewerken",
+      "edit_save_button": "Opslaan",
+      "part_of": "Onderdeel van",
+      "organisation_layer_name": "Naam laag",
+      "organisation_level": "Organisatieniveau",
+      "organisation_level_tooltip": "Organisatieonderdelen kunnen op verschillende niveaus in het organogram worden geplaatst. De niveaus komen terug in de vorm van filters op HBO Kennisbank",
+      "organisation_abbreviation": "Afkorting"
+    },
+    "type": {
+      "education": "Onderwijs",
+      "research": "Onderzoek"
+    },
+    "level": {
+      "organisation": "Organisatie",
+      "department": "Afdeling",
+      "lectorate": "Lectoraat",
+      "discipline": "Opleiding",
+      "consortium": "Consortium"
+    },
+    "tab_organizational_chart": "Organogram",
+    "tab_roles_rights": "Groepen",
+    "tab_users": "Gebruikers",
+    "roles_rights": {
+      "group_title": "Groep",
+      "group_organisation_level": "Organisatieniveau",
+      "group_organisation": "Organisatie",
+      "group_organisation_type": "Organisatietype",
+      "group_users": "Gebruikers",
+      "groups_empty_title": "Er zijn nog geen groepen."
+    }
+  },
+  "templates": {
+    "title": "Templates",
+    "templates_list_empty":"Er zijn nog geen templates.",
+    "templates_table": {
+      "title": "Titel",
+      "organisation": "Organisatie",
+      "last_edited": "Laatst bewerkt"
+    },
+    "titleEN" : "Title EN",
+    "titleNL" : "Title NL",
+    "infoTextNL" : "Info tekst NL",
+    "infoTextEN" : "Info tekst EN",
+    "required": "Verplicht",
+    "template_name": "Naam template",
+    "template_organisation_level": "Organisatieniveau",
+    "template_type": "Template soort"
+  },
+  "popup": {
+    "step": "Stap"
+  },
+  "repoitem": {
+    "thesis": "Afstudeerproduct",
+    "attachment": "Bijlage",
+    "teachingmaterials": "Leermateriaal",
+    "researchobject": "Onderzoekspublicatie",
+    "popup": {
+      "selectperson": "Persoon",
+      "selectlearningobject": "Leermateriaal",
+      "details": "Details",
+      "search": "Zoeken",
+      "save": "Opslaan",
+      "next": "Volgende",
+      "manual": "Handmatig",
+      "searchoutsidescope": "Zoeken buiten instelling"
+    },
+    "personinvolvedadd": "Auteur of betrokkene toevoegen",
+    "addedlinks": "TOEGEVOEGD",
+    "addlink": "Link toevoegen",
+    "addedlearningobjects": "TOEGEVOEGD",
+    "addlearningobject": "Leermateriaal toevoegen"
+  },
+  "add_publication": {
+    "button_save": "Opslaan",
+    "button_edit": "Wijzigen",
+    "button_publish": "Publiceren",
+    "button_depublish": "Depubliceren",
+    "button_submit": "Indienen",
+    "button_save_publish": "Opslaan en publiceren",
+    "button_save_republish": "Opnieuw publiceren",
+    "popup": {
+      "title": "Nieuwe publicatie",
+      "organisation_title": "Voor welk organisatieonderdeel wil je materiaal toevoegen?",
+      "type_title": "Welk type materiaal wil je gaan invoeren?",
+      "confirm": "Bevestigen",
+      "use_template": "Template gebruiken",
+      "step1_title": "Organisatie",
+      "step2_title": "Type materiaal",
+      "step3_title": "Template keuze",
+      "template_title": "Welk template wil je gebruiken?",
+      "no_template": "Geen template gebruiken"
+    },
+    "channel_dependency_error": {
+      "title": "Publiceren niet mogelijk",
+      "subtitle": "Er zijn kanalen ingeschakeld die niet tegelijkertijd aan mogen staan. Maak een keuze tussen deze kanalen om verder te gaan."
+    },
+    "no_channel_error": {
+      "title": "Publiceren niet mogelijk",
+      "subtitle": "Er is nog geen kanaal ingeschakeld. Schakel tenminste één kanaal in om verder te gaan."
+    }
+  },
+  "profiles": {
+    "title": "Personen",
+    "add_profile": "Persoon toevoegen",
+    "profile_empty": "Geen personen gevonden"
+  },
+  "side_menu": {
+    "dashboard": "Dashboard",
+    "profiles": "Personen",
+    "my_publications": "Publicaties",
+    "organisation": "Organisatie",
+    "templates": "Templates",
+    "reports": "Rapportage",
+    "trash_can": "Prullenbak",
+    "logout": "Uitloggen",
+    "help": "Help"
+  },
+  "navigation_bar": {
+    "back": "Terug",
+    "search": "Zoeken"
+  },
+  "publication": {
+    "required_error" : {
+      "title" : "Validatie",
+      "subtitle" : "Niet alle verplichte velden zijn ingevuld"
+    },
+    "copy_confirmation" : {
+      "title": "Bevestiging",
+      "subtitle": "Je maakt nu een kopie, weet je dat zeker?"
+    },
+    "state": {
+      "published": "GEPUBLICEERD",
+      "draft": "CONCEPT",
+      "submitted": "INGEDIEND",
+      "approved": "GOEDGEKEURD",
+      "embargo": "EMBARGO",
+      "declined": "AFGEWEZEN",
+      "archived": "GEARCHIVEERD"
+    },
+    "type": {
+      "publication_record": "Afstudeerwerk of stageverslag",
+      "learning_object": "Leermateriaal",
+      "research_object": "Onderzoekspublicatie"
+    },
+    "request_save_publication_success": "Gelukt!",
+    "created": "AANGEMAAKT OP",
+    "lastEdited": "LAATST GEWIJZIGD",
+    "status": "STATUS",
+    "organisation": "ORGANISATIE",
+    "created_prefix": "Door ",
+    "last_edited_prefix": "Door ",
+    "decline_reason_label": "Reden",
+    "decline_reason": "Bekijk hier de reden van afkeuren",
+    "decline_reason_popup": {
+      "title": "Reden voor afkeuren"
+    },
+    "missing_decline_reason_popup": {
+      "title": "Reden voor afkeuren ontbreekt",
+      "subtitle": "Je probeert deze publicatie af te keuren zonder een reden te specificeren, dit is verplicht."
+    },
+    "delete_popup": {
+      "title": "Publicatie verwijderen?",
+      "subtitle": "Weet je zeker dat je deze publicatie wilt verwijderen?"
+    }
+  },
+  "vocabulary_field": {
+    "add" : "Vakvocabulaire toevoegen",
+    "popup": {
+      "step_1_title": "Vocabulaire",
+      "step_1_content_title": "Maak een keuze",
+      "step_2_title": "topbegrip",
+      "step_3_title": "onderwerp",
+      "step_4_title": "subonderwerp"
+    }
+  },
+  "switch_field": {
+    "on": "aan",
+    "off": "uit"
+  },
+  "dropdown_field": {
+    "placeholder": "Selecteer..."
+  },
+  "multi_select_dropdown_field": {
+    "placeholder": "Zoek of selecteer..."
+  },
+  "multi_select_suborganisation_field": {
+    "placeholder":  "Zoek of selecteer...",
+    "inactive": "inactief"
+  },
+  "error_message": {
+    "load_options_failed": "Laden mislukt, klik hier om de opties opnieuw te laden",
+    "duplicate_email": "E-mail reeds in gebruik",
+    "request_error": "Deze actie is ongeldig. Neem contact op met de sitemanager van je instelling.",
+    "field_required": "Dit veld is verplicht",
+    "field_invalid": "Ingevulde waarde ongeldig",
+    "empty_search": "Geen resultaten gevonden",
+    "file_too_large": "Bestand te groot (maximaal 500mb)"
+  },
+  "success_message": {
+    "patch_request_success": "Opgeslagen!"
+  },
+  "error_pages": {
+    "page_not_found": "Pagina niet beschikbaar",
+    "page_not_found_subtitle": "Oeps! We hebben geen idee wat hier gebeurd is!",
+    "page_not_found_text": "Het lijkt erop dat deze pagina niet bestaat. Mogelijke oorzaken kunnen zijn een verouderde bladwijzer of favoriete pagina, een zoekmachine die naar een verouderde pagina verwijst, een onjuist gespeld adres of je hebt geen rechten om deze pagina te bekijken.",
+    "page_removed": "Pagina verwijderd",
+    "page_removed_subtitle": "",
+    "page_removed_text": "Het lijkt erop dat deze pagina is verwijderd en niet meer toegankelijk is.",
+    "unauthorized": "Pagina niet beschikbaar",
+    "unauthorized_subtitle": "Oeps! We hebben geen idee wat hier gebeurd is!",
+    "unauthorized_text": "Het lijkt erop dat deze pagina niet bestaat. Mogelijke oorzaken kunnen zijn een verouderde bladwijzer of favoriete pagina, een zoekmachine die naar een verouderde pagina verwijst, een onjuist gespeld adres of je hebt geen rechten om deze pagina te bekijken.",
+    "forbidden": "Niet toegankelijk",
+    "forbidden_subtitle": "Deze pagina mag je niet bekijken",
+    "forbidden_text": "Het lijkt erop dat je informatie probeert te bereiken die voor jouw account niet zichtbaarbaar is, vraag de Site Manager van je instelling om deze rechten",
+    "to_dashboard": "Naar Dashboard",
+    "help": "Help",
+    "login": "Inloggen"
+  },
+  "personinvolved_field": {
+    "add": "Auteur of betrokkene toevoegen"
+  },
+  "file_drop": {
+    "open": "Sleep hier om je bestand(en) te uploaden",
+    "hover": "Laat je bestand(en) los om ze te uploaden",
+    "select": "Selecteren"
+  },
+  "attachment_popup": {
+    "file": "Bestand",
+    "no_file": "Geen bestand geselecteerd."
+  },
+  "loading_indicator": {
+    "loading_text": "Bezig met laden..."
+  },
+  "person": {
+    "add" : "Gebruiker toevoegen",
+    "active": "actief",
+    "inactive": "inactief",
+    "titulatuur": "Titulatuur",
+    "firstName": "Voornaam",
+    "surnamePrefix": "Tussenvoegsel",
+    "surname": "Achternaam",
+    "email": "E-mail",
+    "name": "Naam",
+    "groups": "Groepen",
+    "identifiers": "Identifiers",
+    "role": "Rol",
+    "organisation": "Organisatie",
+    "organisationlevel": "Organisatieniveau",
+    "status": "Status",
+    "skipEmailLabel" : "Ik weet niet wat het e-mailadres van deze persoon is"
+  },
+  "new_profile" : {
+    "title" : "Nieuw persoon"
+  },
+  "profile": {
+    "tab_profile": "Profiel",
+    "tab_notifications": "Notificaties",
+    "tab_owned_publications": "Invoer",
+    "tab_mentioned_publications": "Auteur van",
+    "tab_roles_rights": "Groepen",
+    "organisation": "Organisatie",
+    "profile_first_name": "VOORNAAM",
+    "profile_surname_prefix": "TUSSENVOEGSEL",
+    "profile_surname": "ACHTERNAAM",
+    "profile_city": "WOONPLAATS",
+    "profile_email": "E-MAILADRES",
+    "profile_email_alt": "ALTERNATIEF E-MAILADRES",
+    "profile_phone": "TELEFOONNUMMER",
+    "profile_titulatuur": "TITULATUUR",
+    "profile_academic_title": "ACADEMISCHE TITEL",
+    "profile_initials": "VOORLETTERS",
+    "profile_persistent_identifier": "DAI (Digital Author Identifier)",
+    "profile_orcid": "ORCID",
+    "profile_isni": "ISNI",
+    "profile_hogeschool_id": "HOGESCHOOL ID",
+    "profile_function": "FUNCTIE",
+    "profile_function_options": {
+      "role_lecturer": "Lector",
+      "teacher": "Docent",
+      "researcher": "Onderzoeker",
+      "student": "Student",
+      "staff_employee": "(Staf)medewerker",
+      "associate_lecturer": "Associate lector",
+      "member_lectureship": "Lid lectoraat",
+      "phd": "PhD",
+      "other": "Overige"
+    },
+    "profile_linkedin_placeholder": "Vul hier de url naar je linkedin account",
+    "profile_twitter_placeholder": "Vul hier de url naar je twitter account",
+    "profile_research_gate_placeholder": "Vul hier de url naar je research gate account",
+    "tooltips": {
+      "isni": "Een ISNI bestaat uit 16 numerieke cijfers, bijvoorbeeld 0000000115033938",
+      "hogeschool_id": "Een uniek identificatienummer van de hogeschool",
+      "dai": "Een DAI bestaat uit 9 numerieke cijfers, bijvoorbeeld 123456785",
+      "orcid": "Een ORCID bestaat uit 16 numerieke cijfers, verdeeld in vier blokken die gescheiden worden door een streepje, bijvoorbeeld: 0000-0003-0588-8435"
+    }
+  },
+  "group": {
+    "group" : "Groep",
+    "organisation" : "Organisatie",
+    "organisation_level" : "Type",
+    "organisation_type" : "Organisatie type",
+    "add_person_success_message" : "Gebruiker toegevoegd",
+    "remove_person_success_message" : "Gebruiker uit groep verwijderd",
+    "add_person_popup": {
+      "title": "Gebruikers toevoegen"
+    },
+    "remove_popup": {
+      "title": "Gebruiker verwijderen?",
+      "subtitle": "Weet je zeker dat je deze gebruiker wilt verwijderen uit deze groep?"
+    },
+    "members": "Groepsleden",
+    "permissions": "Rechten",
+    "templates": "Templates",
+    "permissiontooltips": {
+      "person_samelevel": "Dit recht houdt in dat je profielen van leden van jouw groep mag wijzigen",
+      "person_other": "Dit recht houdt in dat je profielen van alle leden binnen de hoofdorganisatie mag wijzigen",
+      "repoitem_repoitemrepoitemfile": "Dit recht staat altijd aan en kan niet gewijzigd worden",
+      "repoitem_repoitemlearningobject": "Dit recht staat altijd aan en kan niet gewijzigd worden",
+      "repoitem_repoitemlink": "Dit recht staat altijd aan en kan niet gewijzigd worden",
+      "repoitem_repoitemperson": "Dit recht staat altijd aan en kan niet gewijzigd worden"
+    },
+    "permissioncodes": {
+      "group_default member": "Groep Leden",
+      "group_siteadmin": "Groep Site Managers",
+      "group_supporter": "Groep Ondersteuners",
+      "group_staff": "Groep Medewerkers",
+      "group_student": "Groep Studenten",
+      "group_lowerlevel": "Groepen van onderliggende organisatieonderdelen",
+      "group_samelevel": "Groepen van eigen organisatie",
+      "group_own": "Eigen groep",
+      "institute_lowerlevel": "Onderliggende organisatieonderdelen",
+      "institute_samelevel": "Eigen organisatie",
+      "person_lowerlevel": "Profiel van leden van onderliggende organisatieonderdelen",
+      "person_samelevel": "Profiel van leden binnen de eigen groep",
+      "person_self": "Eigen profiel",
+      "person_other": "Profiel van leden binnen de eigen organisatie",
+      "repoitem_approved": "Goedgekeurde publicaties",
+      "repoitem_declined": "Afgewezen publicaties",
+      "repoitem_draft": "Concepten",
+      "repoitem_published": "Gepubliceerde publicaties",
+      "repoitem_submitted": "Ingediende publicaties",
+      "repoitem_report": "Rapportages",
+      "repoitem_embargo": "Publicaties onder embargo",
+      "repoitem_researchobject": "Onderzoekspublicaties",
+      "repoitem_repoitemrepoitemfile": "Bestanden toevoegen aan publicatie",
+      "repoitem_repoitemlearningobject": "Leermateriaal samenstellen",
+      "repoitem_learningobject": "Leermaterialen",
+      "repoitem_repoitemlink": "URLs toevoegen aan publicatie",
+      "repoitem_repoitemperson": "Auteurs toevoegen aan publicatie",
+      "repoitem_publicationrecord": "Afstudeerwerk of stageverslagen",
+      "repoitem_author": "Eigen publicaties",
+      "template_template": "Templates beheren",
+      "repoitem_archived": "Gearchiveerde publicaties"
+    },
+    "permissiontypes": {
+      "publish": "Publicatiestatus wijzigen",
+      "create": "aanmaken",
+      "delete": "verwijderen",
+      "edit": "wijzigen",
+      "view": "inzien",
+      "generate_doi": "DOI aanmaken"
+    }
+  },
+  "verification": {
+    "profile": {
+      "delete": {
+        "title": "Weet je zeker dat je dit profiel wilt verwijderen?",
+        "subtitle": "De door de auteur opgevoerde stukken zullen niet verwijderd worden"
+      }
+    },
+    "author": {
+      "delete": {
+        "title": "Weet je zeker dat je deze auteur wilt verwijderen?",
+        "subtitle": "Deze auteur zal ontkoppeld worden van dit item"
+      }
+    },
+    "download" :{
+      "title": "Weet je zeker dat je dit bestand wilt downloaden?"
+    },
+    "unsaved_changes": {
+      "title": "Aanpassingen niet opgeslagen",
+      "subtitle": "Het formulier is aangepast en nog niet opgeslagen. Weet je zeker dat je deze pagina wilt verlaten?"
+    }
+  }
+}

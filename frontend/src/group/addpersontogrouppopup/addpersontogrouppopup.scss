@@ -1,0 +1,24 @@
+.swal2-container.add-person-container {
+
+    .swal2-popup.add-person-popup {
+        padding: 25px 35px;
+        width: 45em;
+        min-height: 300px;
+
+        .add-person-content {
+            text-align: left;
+
+            .close-button-container {
+                position: absolute;
+                right: 13px;
+                top: 4px;
+                padding: 7px;
+                cursor: pointer;
+            }
+
+            #add-person-form {
+                padding-top: 40px;
+            }
+        }
+    }
+}

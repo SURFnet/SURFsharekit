@@ -1,0 +1,30 @@
+@import "../sass/theme/constants";
+@import "../sass/theme/fonts";
+@import "../sass/theme/mixins";
+@import "../sass/utils/mixins";
+@import "../sass/grid/grid_mixins";
+@import "../sass/grid/z-span";
+@import "../resources/fontawesome/css/all.css";
+
+#group {
+    background: $page-background-gradient;
+
+    .header {
+        display: flex;
+        flex-direction: row;
+
+        .title-icon {
+            margin-right: 30px;
+        }
+
+        .title-text {
+            display: flex;
+            flex-direction: column;
+        }
+    }
+
+    .horizontal-tab-list {
+        margin-top: 40px;
+        margin-bottom: 40px;
+    }
+}

@@ -1,0 +1,127 @@
+@import "../../sass/theme/constants";
+@import "../../sass/theme/fonts";
+@import "../../sass/theme/mixins";
+@import "../../sass/utils/mixins";
+@import "../../sass/mediaquery/mediaquery";
+
+.group-person {
+    .title {
+        @include nunito-bold;
+        font-size: 25px;
+        line-height: 34px;
+        margin-bottom: 20px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+
+        .search-count {
+            display: flex;
+            margin-left: 16px;
+            font-size: 12px;
+            color: white;
+            width: 34px;
+            height: 34px;
+            align-items: center;
+            justify-content: center;
+            @include open-sans-bold;
+            @include rounded-background-pointy-upper-left($space-cadet, 8px);
+        }
+    }
+
+    .persons-table {
+        height: 300px;
+        margin-top: 20px;
+        margin-bottom: 20px;
+        overflow-y: auto;
+
+        td {
+            padding-top: 10px;
+            padding-bottom: 10px;
+        }
+
+        thead {
+            display: table-header-group;
+        }
+    }
+
+    .horizontal-tab-list {
+        margin-top: 20px;
+    }
+
+
+    .status-icon {
+        text-transform: uppercase;
+    }
+
+    thead {
+        @include open-sans-bold;
+        font-size: 12px;
+        line-height: 14px;
+    }
+
+    tbody {
+        .person-row-image {
+        }
+
+        .person-row-name {
+            @include open-sans-bold;
+            font-size: 12px;
+            line-height: 16px;
+            color: $text-color;
+        }
+
+        .person-row-role {
+            @include open-sans;
+            font-size: 12px;
+            line-height: 16px;
+            color: $text-color;
+        }
+
+        .person-row-institute {
+            @include open-sans;
+            font-size: 12px;
+            line-height: 16px;
+            color: $text-color;
+        }
+
+        .person-row-institute-level {
+            @include open-sans;
+            font-size: 12px;
+            line-height: 16px;
+            color: $text-color;
+        }
+
+        .person-row-active-state {
+
+        }
+
+        .person-row-actions {
+            .flex-row {
+                flex-direction: row-reverse;
+
+                .icon-trash,
+                .fa-plus {
+                    cursor: pointer;
+
+                    &.disabled {
+                        color: $grayDark
+                    }
+                }
+
+                .icon-trash {
+                    margin-right: 12px
+                }
+            }
+        }
+    }
+
+    .empty-message {
+        display: flex;
+        flex-grow: 1;
+        justify-content: center;
+        @include open-sans;
+        padding-top: 20px;
+        font-size: 14px;
+        padding-bottom: 20px;
+    }
+}

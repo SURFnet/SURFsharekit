@@ -1,0 +1,20 @@
+@import "constants";
+@import "../mediaquery/mediaquery";
+
+@mixin grid-row-values-desktop() {
+	margin-left: auto;
+	margin-right: auto;
+	padding-left:80px;
+	padding-right:80px;
+	max-width: $max-container-width-desktop + 160px;
+}
+
+@mixin grid-row-values-mobile-tablet() {
+	@include media-query-mobile-tablet {
+		margin-left: auto;
+		margin-right: auto;
+		padding-left: 30px;
+		padding-right: 30px;
+		max-width: $max-container-width-mobile-tablet + 60px;
+	}
+}

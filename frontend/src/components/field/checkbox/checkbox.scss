@@ -1,0 +1,77 @@
+@import "../../../sass/theme/constants";
+@import "../../../sass/theme/fonts";
+@import "../../../sass/utils/mixins";
+@import "../../../sass/theme/mixins";
+
+$selectable-size: 16px;
+
+.checkbox {
+    //hide the original checkbox by just moving it waaaaaay left
+    [type="checkbox"] {
+        position: absolute;
+        left: -9999px;
+    }
+
+    //show the label on a location relative to new button
+    label {
+        @include open-sans;
+        cursor: pointer;
+        font-size: 12px;
+        position: relative;
+        padding-left: $selectable-size + 10px;
+        display: inline-block;
+        color: $text-color;
+    }
+
+    //show new checkbox
+    [type="checkbox"] + label:before {
+        content: '';
+        position: absolute;
+        cursor: pointer;
+        left: 0;
+        top: 0;
+        width: $selectable-size;
+        height: $selectable-size;
+        border: 1px solid $input-border-color;
+    }
+
+    [type="checkbox"] + label:after {
+        width: $selectable-size;
+        height: $selectable-size;
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+
+    //hide selection state if not applicable
+    [type="checkbox"]:not(:checked) + label:before {
+        background-color: $background-color-dark;
+        border-radius: 1px;
+    }
+
+    [type="checkbox"]:checked + label:before {
+        background-color: $text-color-active;
+        font-size: 9px;
+        text-align: center;
+        color: $input-border-color;
+        border-radius: 1px;
+        line-height: $selectable-size;
+
+        content: "\f00c";
+        font-family: "Font Awesome 5 Free";
+
+    }
+
+    [type="checkbox"]:disabled + label:before {
+        opacity: 0.33;
+        cursor: auto;
+    }
+
+    .option:first-child {
+        margin-top: 5px;
+    }
+
+    .option:not(:first-child) {
+        margin-top: 10px;
+    }
+}

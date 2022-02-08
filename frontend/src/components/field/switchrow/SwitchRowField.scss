@@ -1,0 +1,26 @@
+@import "../../../sass/theme/constants";
+
+.switch-row-field {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+    padding-top: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid $grayLight;
+
+    &.hidden {
+        display: none;
+    }
+
+    .switch-row-text {
+        display: flex;
+        align-items: center;
+
+        .normal-text {
+            .white-space {
+                white-space: pre;
+            }
+        }
+    }
+}

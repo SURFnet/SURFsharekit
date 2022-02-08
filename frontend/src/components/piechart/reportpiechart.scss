@@ -1,0 +1,59 @@
+.report-pie-chart {
+
+    &.max-height {
+        display: flex;
+        height: 100%;
+        justify-content: center;
+        align-items: center;
+        font-style: italic;
+    }
+
+    .pie-chart-container {
+        position: relative;
+        width: 50%;
+        margin: auto auto 18px;
+
+        .pie-chart-title-container {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            top: 50%;
+            right: 50%;
+            transform: translate(50%, -50%);
+
+            .pie-chart-subtitle {
+                font-size: 12px;
+            }
+        }
+    }
+
+    .pie-chart-legend {
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+
+        .legend-item:last-child{
+            padding-right: 0;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            padding-right: 6px;
+
+            .legend-item-color-indicator {
+                width: 14px;
+                height: 14px;
+                border-radius: 2px 2px 4px 2px;
+            }
+
+            .legend-item-title {
+                padding-left: 6px;
+                max-width: 65px;
+                font-size: 9px;
+            }
+        }
+    }
+}

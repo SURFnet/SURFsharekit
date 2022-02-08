@@ -1,0 +1,49 @@
+@import "../../../sass/theme/constants";
+@import "../../../sass/theme/fonts";
+@import "../../../sass/theme/mixins";
+@import "../../../sass/utils/mixins";
+
+.surf-button-text {
+    display: flex;
+
+    .surf-button-text-container {
+        @include rounded-background-pointy-upper-right(#2D364F);
+        @include nunito-bold;
+        display: flex;
+        align-items: center;
+        color: white;
+        flex-direction: column;
+        cursor: pointer;
+        font-size: 14px;
+        padding: 10px 30px;
+
+        &.primary {
+            background-color: $space-cadet;
+
+            &:hover,
+            &:active {
+                background-color: $space-cadet-light;
+                color: #F8F8F8;
+            }
+        }
+
+        &.call-to-action {
+            background-color: $majorelle;
+
+            &:hover,
+            &:active {
+                background-color: $majorelle-light;
+                color: white;
+            }
+        }
+
+        &.add {
+            background-color: #64C3A5;
+        }
+
+        &.button-text-disabled {
+            opacity: 0.25;
+            pointer-events: none;
+        }
+    }
+}

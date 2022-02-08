@@ -1,0 +1,159 @@
+@import "../sass/theme/constants";
+@import "../sass/theme/mixins";
+
+.expandable-list {
+    margin-top: 30px;
+
+    .expandable-row-container {
+
+        .expandable-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            border: 1px solid $cultured;
+            border-radius: 5px;
+            background-color: white;
+            min-height: 52px;
+            padding: 13px 50px 13px 30px;
+            margin-bottom: 9px;
+
+            .status-color-indicator {
+                position: absolute;
+                background-color: $majorelle;
+                width: 7px;
+                height: 100%;
+                left: 0;
+                border-top-left-radius: 5px;
+                border-bottom-left-radius: 5px;
+
+                &.inactive {
+                    background-color: $grayDark
+                }
+            }
+
+            .row-information {
+                display: flex;
+                align-items: center;
+
+                .icon-chevron {
+                    font-size: 13px;
+                    min-width: 12px;
+                }
+
+                .icon-organisation-wrapper {
+                    background-color: $cultured;
+                    padding: 10px;
+                    border-radius: 4px;
+                    margin-left: 15px;
+                    margin-right: 15px;
+
+                    svg.inactive path {
+                        fill: $grayDark;
+                    }
+                }
+
+                .row-text {
+                    margin-right: 15px;
+                }
+            }
+
+            .right-row-section {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+
+                .organisation-status-label-wrapper {
+                    display: flex;
+                    margin-right: 75px;
+
+                    .organisation-status-label-container {
+                        @include open-sans-bold();
+                        display: flex;
+                        align-items: center;
+                        background-color: $cultured;
+                        min-width: 110px;
+                        max-width: 140px;
+                        border-radius: 5px;
+
+                        .organisation-status-label-indicator {
+                            margin-left: 9px;
+                            min-width: 9px;
+                            min-height: 9px;
+                            border-radius: 9px;
+                            background-color: #899194;
+                        }
+
+                        .organisation-status-label-text {
+                            margin-left: 9px;
+                            margin-right: 9px;
+                            text-transform: uppercase;
+                            white-space: nowrap;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                            font-size: 12px;
+                        }
+                    }
+                }
+
+                .row-actions {
+                    display: flex;
+
+                    .fa-trash,
+                    .fa-edit,
+                    .fa-plus {
+                        cursor: pointer;
+
+                        &.disabled {
+                            color: $grayDark;
+                            cursor: default;
+                        }
+                    }
+
+                    .fa-trash,
+                    .fa-edit {
+                        margin-right: 12px
+                    }
+                }
+            }
+        }
+
+        .child-rows {
+            margin-left: 25px;
+
+            .expandable-row-loading-indicator {
+                padding-bottom: 9px;
+
+                .loading-indicator img {
+                    width: 30px;
+                }
+
+                .loading-subtitle {
+                    @include open-sans-bold();
+                    flex-grow: 1;
+                    text-align: center;
+                    margin-top: 5px;
+                    font-size: 12px;
+                }
+            }
+        }
+    }
+}
+
+.expandable-list-loading-indicator {
+    @include rounded-background-pointy-upper-left();
+    @include open-sans-bold();
+    background-color: white;
+    display: flex;
+    flex-direction: column;
+    color: $text-color;
+    font-size: 12px;
+    padding-top: 40px;
+    padding-bottom: 40px;
+
+    .loading-subtitle {
+        flex-grow: 1;
+        text-align: center;
+        margin-top: 30px;
+    }
+}

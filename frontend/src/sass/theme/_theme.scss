@@ -1,0 +1,238 @@
+@import "constants";
+@import "fonts";
+@import "mixins";
+
+//used for new lines ( \n ) in translation files
+#root {
+    white-space: pre-line;
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    color: $text-color;
+}
+
+body {
+    font-size: 16px;
+    overflow-y: hidden;
+    background-color: $space-cadet;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+*, *:before, *:after {
+    box-sizing: border-box;
+}
+
+#root {
+    height: 100%;
+
+    .App {
+        height: 100%;
+
+        &.with-environment-banner {
+            height: calc(100% - 50px);
+        }
+
+        .main {
+            height: 100%;
+        }
+    }
+}
+
+input:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 50px transparent inset; /* Change the color to your own background color */
+    -webkit-text-fill-color: $text-color;
+}
+
+input:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 50px transparent inset; /*your box-shadow*/
+    -webkit-text-fill-color: $text-color;
+}
+
+h1, h2, h3, h4, h5 {
+    margin: 0;
+    pointer-events: none;
+    text-align: left;
+}
+
+h1 {
+    @include nunito-black;
+    font-size: 48px;
+    font-weight: 900;
+}
+
+h2 {
+    @include nunito-black;
+    font-size: 36px;
+}
+
+h3 {
+    @include nunito-extra-bold;
+    font-size: 24px;
+}
+
+h4 {
+    @include nunito-bold;
+    font-size: 18px;
+}
+
+h5 {
+    @include nunito-bold;
+    font-size: 14px;
+}
+
+p {
+    font-size: 1.0625em;
+    line-height: 1.9em;
+
+    &.first {
+        margin-top: 0;
+    }
+
+    &.last {
+        margin-bottom: 0;
+    }
+}
+
+fieldset {
+    border: none;
+    padding: 0;
+    min-width: 0;
+}
+
+input, textarea {
+    //Webkit automatically sets the background-color to a non-transparent color when auto-fill occurs
+    //We delay the effect by more than a whole day so the user isn't bothered with it
+    &:-webkit-autofill,
+    &:-webkit-autofill:hover,
+    &:-webkit-autofill:focus,
+    &:-webkit-autofill:active {
+        -webkit-transition-delay: 99999s;
+    }
+
+}
+
+input[type=text], input[type=email], input[type=password], select, textarea {
+    font-size: inherit;
+    padding: 2px 15px;
+    appearance: none;
+    border: none;
+}
+
+select {
+    outline: none;
+    border: none;
+    background-color: white;
+}
+
+select:-moz-focusring {
+    color: transparent;
+    text-shadow: 0 0 0 #000;
+}
+
+img.aligncenter {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+img.alignright {
+    display: block;
+    margin-left: auto;
+}
+
+a {
+    &:focus {
+        outline: none;
+    }
+
+    &:link,
+    &:visited,
+    &:hover,
+    &:active {
+        color: $text-color;
+        text-decoration: none;
+    }
+}
+
+b {
+    font-weight: normal;
+}
+
+ul {
+    list-style-type: disc;
+    list-style-position: inside;
+    padding: 0;
+}
+
+ol {
+    list-style-type: decimal;
+    list-style-position: inside;
+    padding: 0;
+}
+
+ul ul, ol ul {
+    list-style-type: disc;
+    list-style-position: inside;
+    margin-left: 20px;
+}
+
+ol ol, ul ol {
+    list-style-type: lower-latin;
+    list-style-position: inside;
+    margin-left: 20px;
+}
+
+.button {
+    font-size: 1.15em;
+    padding: 12px 15px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+}
+
+button, input[type="submit"], input[type="reset"] {
+    border: none;
+    font: inherit;
+    cursor: pointer;
+    outline: inherit;
+    -webkit-appearance: none; //Fixes weird iOS safari styling
+    border-radius: 0; //Fixes weird iOS safari styling
+}
+
+textarea, input[type="text"] {
+    border-radius: 0; //Fixes weird iOS safari styling
+}
+
+select, input[type="datetime-local"], input[type="date"], input[type="time"] {
+    -webkit-appearance: none; //Fixes weird iOS safari styling
+    border-radius: 0;
+}
+
+.environment-banner {
+    height: 50px;
+    color: white;
+    font-size: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    &.development {
+        background-color: darkgreen;
+    }
+
+    &.test {
+        background-color: orange;
+    }
+
+    &.staging {
+        background-color: orangered;
+    }
+
+    &.acceptance {
+        background-color: red;
+    }
+}

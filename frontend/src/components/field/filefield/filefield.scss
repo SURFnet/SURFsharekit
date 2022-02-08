@@ -1,0 +1,50 @@
+@import "../../../sass/theme/fonts";
+@import "../../../sass/utils/mixins";
+
+.file-field-container {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+
+    .file-container {
+        display: flex;
+        flex: 1 1 auto;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 15px;
+        background-color: #F8F8F8;
+        border: 1px solid #F3F3F3;
+        border-radius: 5px;
+
+        .fa-file {
+            margin-right: 25px;
+            width: 10px;
+            height: 14px;
+        }
+
+        .file-title {
+            @include open-sans;
+            @include max-number-of-lines(1);
+            flex: 1 1 auto;
+            font-size: 12px;
+        }
+    }
+
+    .trash-icon-wrapper {
+        display: flex;
+        cursor: pointer;
+        padding-left: 10px;
+        padding-right: 10px;
+
+        .fa-trash {
+            width: 11px;
+            height: 12px;
+        }
+    }
+
+    .new-file-upload-button {
+        flex: 0 0 auto;
+        padding-left: 0;
+    }
+
+}

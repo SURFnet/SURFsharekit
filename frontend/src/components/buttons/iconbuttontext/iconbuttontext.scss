@@ -1,0 +1,39 @@
+@import "../../../sass/theme/constants";
+@import "../../../sass/theme/fonts";
+@import "../../../sass/theme/mixins";
+@import "../../../sass/utils/mixins";
+
+.surf-icon-button-text {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+
+    &.disabled {
+        opacity: 0.4;
+    }
+
+    &:hover {
+        .icon-button {
+            background-color: $space-cadet-light;
+        }
+
+        .button-text {
+            color: $space-cadet-light;
+        }
+    }
+
+    .icon-button {
+        @include rounded-background-pointy-upper-right($space-cadet, 15px);
+        color: white;
+        height: 34px;
+        width: 34px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .button-text {
+        color: $space-cadet;
+        padding-left: 7px;
+    }
+}

@@ -1,0 +1,87 @@
+@import "../theme/constants";
+
+@mixin for-each-state {
+    @content;
+    &:link,
+    &:visited,
+    &:hover,
+    &:active {
+        @content;
+    }
+}
+
+@mixin background-center-crop() {
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+@mixin background-center-inside() {
+    background-position: center;
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
+@mixin clear-after() {
+    &:after {
+        content: "";
+        clear: both;
+        display: block;
+    }
+}
+
+@mixin loader() {
+    border-radius: 50%;
+    border: 6px solid white;
+    width: 50px;
+    height: 50px;
+    -webkit-animation: spin 1s linear infinite; /* Safari */
+    animation: spin 1s linear infinite;
+
+    /* Safari */
+    @-webkit-keyframes spin {
+        0% {
+            -webkit-transform: rotate(0deg);
+        }
+        100% {
+            -webkit-transform: rotate(360deg);
+        }
+    }
+
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+}
+
+@mixin aspect-ratio($width, $height) {
+    position: relative;
+    &:before {
+        display: block;
+        content: " ";
+        width: 100%;
+        padding-top: ($height / $width) * 100%;
+    }
+
+    > .content {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+    }
+}
+
+@mixin max-number-of-lines($number-of-lines, $line-height: 1.2em) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: $number-of-lines; /* number of lines to show */
+    line-height: $line-height; /* fallback */
+    max-height: $line-height * $number-of-lines;
+}

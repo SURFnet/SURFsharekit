@@ -1,0 +1,61 @@
+@import "../sass/theme/constants";
+@import "../sass/theme/fonts";
+@import "../sass/theme/mixins";
+@import "../sass/utils/mixins";
+@import "../sass/grid/grid_mixins";
+@import "../sass/grid/z-span";
+@import "../resources/fontawesome/css/all.css";
+
+#publications {
+    //background-color: $background-color-dark;
+    background: $page-background-gradient;
+
+    .title-row {
+        display: flex;
+        align-items: center;
+        padding-bottom: 25px;
+
+        .search-count {
+            display: flex;
+            margin-left: 16px;
+            font-size: 12px;
+            color: white;
+            width: 34px;
+            height: 34px;
+            align-items: center;
+            justify-content: center;
+            @include open-sans-bold;
+            @include rounded-background-pointy-upper-left($space-cadet, 8px);
+        }
+    }
+
+    .actions-row {
+        display: flex;
+        justify-content: flex-end;
+        padding-bottom: 20px;
+    }
+}
+
+.empty-list {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    .empty-list-title {
+        @include nunito-extra-bold();
+        font-size: 25px;
+        margin-top: 30px;
+    }
+
+    .empty-list-subtitle {
+        @include nunito-bold();
+        font-size: 12px;
+        margin-top: 10px;
+    }
+
+    .surf-icon-button-text {
+        margin-top: 20px;
+    }
+    padding-bottom: 40px;
+}

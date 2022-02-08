@@ -1,0 +1,56 @@
+@import '../../sass/theme/constants';
+@import '../../sass/theme/fonts';
+@import '../../sass/theme/mixins';
+@import '../../sass/utils/mixins';
+@import '../../sass/mediaquery/mediaquery';
+
+.progress-section-wrapper {
+    top: 20px + $desktop-navigation-bar-height;
+    position: sticky;
+
+    @include media-query-mobile-tablet {
+        display: none;
+    }
+
+    .progress-section-container {
+        @include rounded-background-pointy-upper-left(white);
+        padding: 25px 0;
+
+        .progress-section {
+            min-width: 205px;
+            max-width: 205px;
+            margin-bottom: 13px;
+            padding: 0 35px;
+            position: relative;
+
+            &:last-child {
+                margin-bottom: 0;
+            }
+
+            .active-indicator {
+                display: none;
+                position: absolute;
+                transform: translateY(-50%);
+                top: 50%;
+                left: 0;
+                background-color: $majorelle;
+                width: 6px;
+                height: 48px;
+                border-radius: 10px;
+
+                &.active {
+                    display: initial;
+                }
+            }
+
+            h5 {
+                @include max-number-of-lines(2);
+                color: $text-color;
+
+                &.active {
+                    color: $majorelle
+                }
+            }
+        }
+    }
+}

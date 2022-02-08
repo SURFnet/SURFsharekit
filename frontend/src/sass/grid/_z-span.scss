@@ -1,0 +1,20 @@
+
+@mixin z-span($span-size, $block-count: 12 / $span-size, $gutter-size: 20px, $last: false) {
+    float: left;
+    width: calc(#{(($span-size / 12) * 100%)} - #{$gutter-size * ($block-count - 1) / $block-count});
+    @if $last == false {
+        margin-right: $gutter-size;
+    } @else {
+        margin-right: 0;
+    }
+}
+
+@mixin z-span-last() {
+    margin-right: 0;
+}
+
+@mixin z-span-full() {
+    float: left;
+    width: 100%;
+    margin-right: 0;
+}

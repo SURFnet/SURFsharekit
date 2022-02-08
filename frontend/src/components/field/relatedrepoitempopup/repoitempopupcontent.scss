@@ -1,0 +1,35 @@
+
+.swal2-container.repoitem-container {
+
+    .swal2-popup.repoitem-popup {
+        padding: 25px 35px;
+        width: 45em;
+        min-height: 300px;
+        justify-content: start;
+
+        .repoitem-popup-content {
+            text-align: left;
+
+            .close-button-container {
+                position: absolute;
+                right: 13px;
+                top: 4px;
+                padding: 7px;
+                cursor: pointer;
+            }
+
+            > .loading-indicator {
+                position: absolute;
+                height: 100%;
+                top: 0;
+                transform: translateX(-50%);
+                left: 50%;
+            }
+
+            .save-button-wrapper {
+                display: flex;
+                justify-content: flex-end;
+            }
+        }
+    }
+}

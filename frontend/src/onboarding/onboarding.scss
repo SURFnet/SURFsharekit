@@ -1,0 +1,164 @@
+@import "../sass/theme/constants";
+@import "../sass/theme/mixins";
+
+.onboarding-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    .onboarding-wrapper {
+        @include rounded-background-pointy-left();
+        background-color: white;
+        max-width: 700px;
+        width: 700px;
+
+        .onboarding-container {
+            display: flex;
+            justify-content: center;
+            flex-direction: column;
+            padding: 40px 90px;
+
+            .logo-wrapper {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                padding-bottom: 40px;
+
+                #login-logo {
+                    width: 178px;
+                }
+            }
+
+            .onboarding-steps-list {
+                display: flex;
+                justify-content: center;
+                padding-bottom: 30px;
+            }
+
+            h3 {
+                padding-bottom: 30px;
+                text-align: center;
+            }
+
+            .button-container {
+                display: flex;
+                justify-content: space-between;
+                padding-top: 50px;
+
+                .onboarding-next-button {
+                    flex-direction: row-reverse;
+
+                    .button-text {
+                        padding-left: 0;
+                        padding-right: 7px;
+                    }
+                }
+            }
+        }
+    }
+
+    /***
+    * Institute Step
+    ***/
+    .institute-step-content {
+        @include open-sans;
+
+        .search-input-container {
+            margin-right: 0;
+            margin-bottom: 5px;
+
+            .field-input.text {
+                max-width: initial;
+                width: 100%;
+            }
+        }
+
+        .institute-options-list {
+            min-height: 260px;
+            max-height: 260px;
+            overflow-y: scroll;
+
+            &.loading-state {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .institute-option-row {
+                flex: 1 1 auto;
+                display: flex;
+                align-items: center;
+                cursor: pointer;
+                border: 1px solid #F3F3F3;
+                border-radius: 5px;
+                margin-top: 5px;
+                padding: 10px;
+
+                &.selected-institute {
+                    border: 1px solid $majorelle;
+                }
+
+                .institute-option-icon {
+                    padding: 10px;
+                    background-color: $cultured;
+                    border-radius: 5px;
+                    margin-right: 10px;
+
+                    .svg-inline--fa {
+                        color: $majorelle;
+                    }
+                }
+
+                .institute-option-title {
+                    font-size: 12px;
+                }
+            }
+        }
+    }
+
+    /***
+    * Profile Step
+    ***/
+    .profile-step-content {
+        #onboarding-profile-form {
+
+            > .form-row {
+                .form-field-container {
+                    &:not(:last-child) {
+                        margin-right: 15px;
+                    }
+
+                    .field-label {
+                        text-transform: uppercase;
+                    }
+                }
+            }
+
+            .first-name-field,
+            .surname-field {
+                flex: 1 1 auto;
+            }
+
+            .surname-prefix-field {
+                flex: 2 2 auto;
+            }
+        }
+    }
+
+    /***
+     * Start step
+     ***/
+    .start-step-content {
+        @include open-sans;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+
+        .start-text {
+            font-size: 12px;
+            max-width: 340px;
+            text-align: center;
+            padding-bottom: 25px;
+        }
+    }
+}

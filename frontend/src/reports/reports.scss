@@ -1,0 +1,40 @@
+@import "../sass/theme/constants";
+@import "../sass/theme/fonts";
+@import "../sass/theme/mixins";
+@import "../sass/utils/mixins";
+@import "../sass/grid/grid_mixins";
+@import "../sass/grid/z-span";
+@import "../resources/fontawesome/css/all.css";
+
+#reports {
+    background: $page-background-gradient;
+
+    .actions-row {
+        display: flex;
+        justify-content: center;
+
+        .report-export-button {
+            margin-top: 15px;
+            margin-bottom: 45px;
+        }
+    }
+
+    .explanation-text {
+        margin-top: 20px;
+        margin-bottom: 20px;
+    }
+
+    .report-count-blocks-row {
+        display: flex;
+        justify-content: space-between;
+
+        .report-count-block:last-child {
+            margin-right: 0;
+        }
+
+        .report-count-block {
+            flex-grow: 1;
+            margin-right: 20px;
+        }
+    }
+}

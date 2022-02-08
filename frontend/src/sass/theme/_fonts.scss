@@ -1,0 +1,44 @@
+// Fonts
+// Reference: https://zeroheight.com/3037f8edf/p/93bdd6-typografie
+
+@mixin open-sans-light {
+    font-family: 'Open Sans', sans-serif;
+    font-weight: 300;
+}
+
+@mixin open-sans-light-italic {
+    font-family: 'Open Sans', sans-serif;
+    font-style: italic;
+    font-weight: 300;
+}
+
+@mixin open-sans {
+    font-family: 'Open Sans', sans-serif;
+    font-weight: 400;
+}
+
+@mixin open-sans-italic {
+    font-family: 'Open Sans', sans-serif;
+    font-style: italic;
+    font-weight: 400;
+}
+
+@mixin open-sans-bold {
+    font-family: 'Open Sans', sans-serif;
+    font-weight: 700;
+}
+
+@mixin nunito-bold {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+}
+
+@mixin nunito-extra-bold {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+}
+
+@mixin nunito-black {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 900;
+}

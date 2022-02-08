@@ -1,0 +1,13 @@
+.main.empty-page {
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+    position: relative;
+
+    .dark-gradient-overlay {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(45, 54, 79, 0.6);
+    }
+}
