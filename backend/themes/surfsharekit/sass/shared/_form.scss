@@ -1,0 +1,265 @@
+
+
+$formDesktopInputFieldWidth: 300px;
+$formMobileInputFieldWidth: 250px;
+
+#Form_ContactForm {
+
+    .message.success,
+    .message.error {
+        @include font-roboto-bold;
+        margin-top: -28px;
+        max-width: 390px;
+    }
+
+    .message.error {
+        color: $first-color;
+    }
+
+    fieldset {
+        background: white;
+        border: none;
+        padding: 0;
+        margin: 0;
+
+        .field {
+            position: relative;
+            margin-top: 20px;
+
+            &:first-of-type {
+                margin-top: 0;
+            }
+
+            input,
+            textarea {
+                width: 100%;
+
+                &:focus {
+                    outline: none !important;
+                    border: 1px solid $text-color;
+                }
+            }
+
+            textarea {
+                resize: none;
+                padding: 15px;
+            }
+
+            .message.required,
+            .message.validation {
+                color: $first-color;
+                padding-left: 15px
+            }
+        }
+    }
+
+    label.left {
+        display: none;
+    }
+}
+
+#MemberLoginForm_LoginForm,
+#LostPasswordForm_lostPasswordForm,
+#ChangePasswordForm_ChangePasswordForm {
+
+    .message.bad,
+    .message.good {
+        @include font-roboto-regular;
+        background: white;
+        margin-top: 0;
+        padding: 30px 48px;
+    }
+
+    .message.good {
+        color: $first-color;
+    }
+
+    .message.bad {
+        color: red;
+    }
+
+    fieldset {
+        background: white;
+        border: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .field {
+        width: 100%;
+        border-top: $list-border-color 1px solid;
+        display: flex;
+        flex-wrap: wrap;
+        padding: 22px 48px;
+
+        &:first-of-type {
+            border-top: none;
+        }
+
+        &.required label::after,
+        &.validation label::after {
+            content: "*";
+            color: #d0021b;
+            padding-left: 5px;
+        }
+
+        label.left {
+            @include z-span(3);
+            @include font-roboto-bold;
+            display: flex;
+            flex-grow: 1;
+            align-items: center;
+            color: $text-color;
+        }
+
+        label.right {
+            @include font-roboto-regular;
+            color: $grayed-out-text-color;
+            padding-top: 15px;
+            width: 100%;
+            margin-left: calc(25% + 0px);
+        }
+
+        .message.required,
+        .message.validation {
+            @include font-roboto-regular;
+            color: red;
+            margin-left: calc(25% + 10px);
+            padding-top: 10px;
+            font-size: 0.75em;
+        }
+
+        .middleColumn {
+            @include z-span(9);
+            @include z-span-last;
+
+            input {
+                height: 42px;
+                width: $formDesktopInputFieldWidth;
+                @include font-roboto-regular;
+            }
+
+            select {
+                width: $formDesktopInputFieldWidth;
+                height: 42px;
+                padding-right: 25px;
+                color: $text-color;
+                border-radius: unset;
+                background-color: white;
+                background-image: url('../images/select-dropdown-arrow.svg');
+                background-repeat: no-repeat;
+                background-position: 280px 16px;
+            }
+
+            .phone-field {
+                display: flex;
+
+                .phone-row:nth-child(1) {
+                    width: 78px;
+
+                    input {
+                        padding-left: 10px;
+                        padding-right: 10px;
+                        width: 70px;
+                    }
+                }
+            }
+
+            .read-only-data {
+                color: $text-color;
+                @include font-roboto-regular;
+            }
+
+            .gps-field {
+                .gps-row {
+                    display: flex;
+
+                    label {
+                        @include font-roboto-regular;
+                        color: $text-color;
+                        width: 92px;
+                        padding-right: 15px;
+                        padding-top: 10px;
+                    }
+
+                    input {
+
+                    }
+
+                    &:first-child {
+                        margin-bottom: 9px;
+                    }
+                }
+            }
+
+            .grayed-out-text {
+                @include font-roboto-regular;
+                color: $grayed-out-text-color;
+            }
+
+            .fieldgroup-field {
+                height: 100%;
+                display: flex;
+                align-items: center;
+            }
+        }
+
+        .form-blocks-divider {
+            width: 100%;
+            background-color: $background-color;
+            height: 40px;
+        }
+    }
+
+    .btn-toolbar {
+        display: flex;
+        justify-content: flex-end;
+        padding-top: $default-vertical-margin;
+        position: relative;
+
+        input {
+            @include button-style();
+            padding: 15px 0;
+
+            &.left {
+                position: absolute;
+                left: 0;
+                right: unset;
+                background-color: #2C3E50;
+                color: white;
+
+                &.disabled {
+                    background-color: $disabled-background;
+                }
+            }
+        }
+
+        #ForgotPassword a {
+            color: $secondary-text-color;
+
+            &:hover {
+                color: $first-color;
+            }
+        }
+    }
+}
+
+textarea {
+    resize: none;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+button:focus {
+    outline: none;
+}
+
+input[type=submit] {
+    -webkit-appearance: none;
+}
+
+/* Change the white to any color ;) */
+input:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 30px white inset;
+}

@@ -1,0 +1,11 @@
+---
+Name: surf-sharekit-theme-config
+---
+SilverStripe\View\SSViewer:
+  themes:
+    - '$public'
+    - 'surfsharekit'
+    - '$default'
+
+SilverStripe\i18n\i18n:
+  default_locale: 'en_US'

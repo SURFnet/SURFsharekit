@@ -1,0 +1,81 @@
+// Default
+html.disable-scrolling {
+    overflow-y: hidden;
+}
+
+.main {
+    width: 100%;
+    flex-grow: 1;
+}
+
+.page-content-wrapper {
+    .error-block {
+        background: white;
+        padding: 30px 48px;
+
+        p {
+            @include font-roboto-regular;
+        }
+    }
+}
+
+body {
+    display: flex;
+    background-color: $background-color;
+}
+
+ul.no-style {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}
+
+a.no-style {
+    @include font-roboto-regular;
+    color: $text-color;
+}
+
+a.button {
+    @include button-style();
+
+    &.dark {
+        background-color: $text-color;
+        color: white;
+
+        &:hover {
+        }
+
+        &.disabled {
+        }
+    }
+}
+
+select::-ms-expand {
+    display: none;
+}
+
+input[readonly] {
+    pointer-events: none;
+}
+
+input {
+    border-radius: 0;
+}
+
+.clear-after {
+    @include clear-after;
+}
+
+.clear {
+    clear: both;
+}
+
+.landscape-notice {
+    display: none;
+}
+
+div.link-style {
+    @include font-roboto-regular;
+    color: $first-color;
+}
+

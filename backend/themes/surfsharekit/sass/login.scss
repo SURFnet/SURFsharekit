@@ -1,0 +1,129 @@
+@import "general/include_general";
+@import "shared/form";
+
+div.main {
+    background-color: #f6f6f6;
+    width: 100%;
+    min-height: 100%;
+
+    #MemberLoginForm_LoginForm,
+    #ChangePasswordForm_ChangePasswordForm,
+    #LostPasswordForm_lostPasswordForm,
+    #password-sent {
+        background-color: white;
+        padding: 140px 50px 30px;
+
+        p.message {
+            padding: 0;
+        }
+
+        #MemberLoginForm_LoginForm_Remember_Holder {
+            display: none;
+        }
+
+        &:before {
+            content: "";
+            background-image: url('../images/surf_sharekit_logo.jpg');
+            position: absolute;
+            width: calc(100% - 100px);
+            height: 73px;
+            max-width: 188px;
+            background-position: center;
+            background-size: contain;
+            background-repeat: no-repeat;
+            top: 30px;
+        }
+
+        .field {
+            border: none;
+            padding: 15px 0;
+        }
+
+        label {
+            @include z-span-full
+        }
+
+        .middleColumn {
+            @include z-span-full;
+
+            input {
+                width: 100%;
+                margin-top: 10px;
+            }
+        }
+
+        .btn-toolbar {
+            display: flex;
+            flex-direction: column;
+
+            input {
+                width: 100%;
+                white-space: normal;
+            }
+
+            #ForgotPassword {
+                display: flex;
+                justify-content: center;
+
+                a {
+                    @include font-roboto-regular;
+                }
+            }
+        }
+    }
+}
+
+@media only screen and (min-width: 768px) {
+    div.main {
+
+        #MemberLoginForm_LoginForm,
+        #ChangePasswordForm_ChangePasswordForm,
+        #LostPasswordForm_lostPasswordForm,
+        #password-sent {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 550px;
+
+            div.Actions {
+
+                &:after {
+                    content: "";
+                    clear: both;
+                    display: block;
+                }
+            }
+        }
+    }
+}
+
+@media only screen and (max-width: 767px) {
+
+    div.main {
+        width: calc(100% - 100px);
+        padding: 20px;
+
+        #MemberLoginForm_LoginForm,
+        #ChangePasswordForm_ChangePasswordForm,
+        #LostPasswordForm_lostPasswordForm,
+        #password-sent {
+            position: relative;
+            width: 100%;
+            padding: 160px 30px 20px;
+
+            &:before {
+                width: calc(100% - 60px);
+                height: 100px;
+            }
+
+            div.field {
+                margin-bottom: 20px;
+            }
+
+            div.Actions {
+                margin-top: 10px;
+            }
+        }
+    }
+}

@@ -1,0 +1,15 @@
+---
+Name: zooma-email
+After: '#emailconfig'
+---
+SilverStripe\Core\Injector\Injector:
+  Swift_Transport:
+    class: Swift_SmtpTransport
+    properties:
+      Host: email-smtp.eu-west-1.amazonaws.com
+      Port: 587
+      Encryption: tls
+    calls:
+      Username: [ setUsername, ["`SES_SMTP_USERNAME`"] ] # CONSTANTS IN ENV
+      Password: [ setPassword, ["`SES_SMTP_PASSWORD`"] ]
+      AuthMode: [ setAuthMode, ['login'] ]

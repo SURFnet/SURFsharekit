@@ -1,0 +1,205 @@
+@mixin a-pseudo-classes {
+    &:link,
+    &:visited,
+    &:hover,
+    &:active {
+        @content;
+    }
+}
+
+@mixin default-button-style() {
+    text-decoration: none;
+    font-size: 1em;
+    line-height: 1em;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    text-transform: uppercase;
+    background-color: $button-background-color;
+    color: white;
+    @include font-roboto-bold;
+
+    &:hover {
+        background-color: darken($button-background-color, 10%);
+    }
+
+    &:active {
+        background-color: darken($button-background-color, 20%);
+    }
+
+    &::after {
+        position: absolute;
+        background-color: white;
+        border: $button-background-color 1px solid;
+        top: 3px;
+        left: 3px;
+        width: 100%;
+        height: 100%;
+        content: "";
+        z-index: -1;
+    }
+}
+
+@mixin button-style() {
+    @include default-button-style();
+
+    align-items: center;
+    justify-content: center;
+}
+
+@mixin button-dropdown-style() {
+    @include default-button-style();
+    padding: 0 14px;
+    align-items: center;
+
+    .icon {
+        margin-left: auto;
+    }
+}
+
+@mixin max-number-of-lines($number-of-lines) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: $number-of-lines; /* number of lines to show */
+    line-height: $default-line-height; /* fallback */
+    max-height: $default-line-height * $number-of-lines;
+}
+
+@mixin max-number-of-lines-disabled() {
+    overflow: auto;
+    text-overflow: initial;
+    display: initial;
+    -webkit-box-orient: initial;
+    -webkit-line-clamp: none;
+    line-height: initial;
+    max-height: initial;
+}
+
+@mixin z-span($span-size, $block-count: 12 / $span-size, $gutter-size: 20px, $last: false) {
+    float: left;
+    width: calc(#{(($span-size / 12) * 100%)} - #{$gutter-size * ($block-count - 1) / $block-count});
+    @if $last == false {
+        margin-right: $gutter-size;
+    } @else {
+        margin-right: 0;
+    }
+}
+
+@mixin z-span-last() {
+    margin-right: 0;
+}
+
+@mixin z-span-full() {
+    float: left;
+    width: 100%;
+    margin-right: 0;
+}
+
+@mixin background-center-crop() {
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+@mixin background-center-inside() {
+    background-position: center;
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
+@mixin row-with-margin-media-query-small() {
+    @media only screen and (max-width: (530px + ($default-margin * 2))) {
+        @content;
+    }
+}
+
+@mixin clear-after() {
+    &:after {
+        content: "";
+        clear: both;
+        display: block;
+    }
+}
+
+@mixin remove-list-style() {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+@mixin loader() {
+    border: 6px solid white;
+    border-radius: 50%;
+    border-top: 6px solid $first-color;
+    width: 50px;
+    height: 50px;
+    -webkit-animation: spin 1s linear infinite; /* Safari */
+    animation: spin 1s linear infinite;
+
+    /* Safari */
+    @-webkit-keyframes spin {
+        0% {
+            -webkit-transform: rotate(0deg);
+        }
+        100% {
+            -webkit-transform: rotate(360deg);
+        }
+    }
+
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+}
+
+@mixin aspect-ratio($width, $height) {
+    position: relative;
+
+    &:before {
+        display: block;
+        content: " ";
+        width: 100%;
+        padding-top: ($height / $width) * 100%;
+    }
+
+    > .content {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+    }
+}
+
+@mixin card() {
+    border: $border-color 1px solid;
+
+    .content {
+        .image {
+            @include background-center-crop;
+        }
+    }
+
+    &:hover {
+        cursor: pointer;;
+        box-shadow: 0 3px 10px rgba(60, 80, 80, .2);
+    }
+}
+
+@mixin text-shadow-default() {
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 50);
+}
+
+@mixin card-shadow-overlay-default() {
+    box-shadow: inset 0 0 0 1000px rgba(0, 0, 0, .15);
+}
+
+
+

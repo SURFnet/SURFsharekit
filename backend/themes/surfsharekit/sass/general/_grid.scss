@@ -1,0 +1,127 @@
+$susy: (
+        columns: 12,
+        gutters: 1/10,
+        container: 1200px,
+        global-box-sizing: border-box,
+        gutter-position: after,
+);
+
+@include border-box-sizing;
+
+.row {
+    @include container;
+
+    .one {
+        @include span(1);
+    }
+    .two {
+        @include span(2);
+    }
+    .three {
+        @include span(3);
+    }
+    .four {
+        @include span(4);
+    }
+    .five {
+        @include span(5);
+    }
+    .six {
+        @include span(6);
+    }
+    .seven {
+        @include span(7);
+    }
+    .eight {
+        @include span(8);
+    }
+    .nine {
+        @include span(9);
+    }
+    .ten {
+        @include span(10);
+    }
+    .eleven {
+        @include span(11);
+    }
+    .twelve {
+        @include span(12);
+    }
+}
+
+.small-row {
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 770px;
+
+    &:after{
+        content: " ";
+        display: block;
+        clear: both;
+    }
+}
+
+@media only screen and (max-width: (get-container-width() + ($default-margin * 2))) {
+    .row.with-margin {
+        margin-left: $default-margin;
+        margin-right: $default-margin;
+    }
+}
+
+@media only screen and (max-width: (770px + ($default-margin * 2))) {
+    .small-row.with-margin {
+        margin-left: $default-margin;
+        margin-right: $default-margin;
+    }
+}
+
+/* Tablets */
+@media only screen and (max-width: 900px) {
+    .row.with-margin {
+        &.tablet{
+            max-width: 100%;
+            margin-left: $default-margin;
+            margin-right: $default-margin;
+        }
+    }
+}
+
+/* Mobile wide/Smaller Tablets */
+@media only screen and (max-width: 767px) {
+    .row.with-margin {
+        margin-left: $default-margin;
+        margin-right: $default-margin;
+        max-width: 100%;
+
+        &.tablet{
+            max-width: 100%;
+            margin-left: $default-margin;
+            margin-right: $default-margin;
+        }
+    }
+}
+
+@include row-with-margin-media-query-small {
+    .row.with-margin {
+        margin-left: $default-margin;
+        margin-right: $default-margin;
+    }
+}
+
+/* Small Screen Mobile */
+@media only screen and (max-width: 480px) {
+    .row.with-margin {
+        margin-left: $default-margin-small;
+        margin-right: $default-margin-small;
+
+        &.tablet{
+            margin-left: $default-margin-small;
+            margin-right: $default-margin-small;
+        }
+    }
+
+    .small-row.with-margin {
+        margin-left: $default-margin-small;
+        margin-right: $default-margin-small;
+    }
+}

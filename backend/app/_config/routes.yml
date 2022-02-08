@@ -1,0 +1,23 @@
+---
+Name: surf-sharekit-routes-config
+After: framework/_config/routes#coreroutes
+---
+SilverStripe\Control\Director:
+  rules:
+    'api/v1/files//$Action/$ID/$Relations/$RelationNam': 'SurfSharekit\Api\FileJsonApiController'
+    'api/v1/generateAccessToken': 'SurfSharekit\Api\AccessTokenApiController'
+    'api/v1/reports': 'SurfSharekit\Api\ReportsJsonApiController'
+    'api/v1/search': 'SurfSharekit\Api\SearchApiController'
+    'api/v1/upload': 'SurfSharekit\Api\UploadFileApiController'
+    'api/v1/login': 'SurfSharekit\Api\ConextLoginApiController'
+    'api/v1/csv': 'SurfSharekit\Api\CSVJsonApiController'
+    'api/v1/operations': 'SurfSharekit\Api\OperationsJsonApiController'
+    'api/oaipmh/v1': 'SurfSharekit\Api\OaipmhApiController'
+    'api/sru/v1': 'SurfSharekit\Api\SruApiController'
+    'api/v1/repoItems//$Uuid/doi': 'SurfSharekit\Api\DoiApiController'
+    'api/jsonapi/v1//$Action/$ID/$Relations/$RelationName': 'SurfSharekit\Api\ExternalJsonApiController'
+    'api/v1//$Action/$ID/$Relations/$RelationName': 'SurfSharekit\Api\InternalJsonApiController'
+    'api/oaipmh/channel/v1//$channel': 'SurfSharekit\Api\OaipmhChannelApiController'
+    'api/jsonapi/channel/v1//$channel/$Action/$ID/$Relations/$RelationName': 'SurfSharekit\Api\ExternalChannelJsonApiController'
+    'api/sru/channel/v1//$channel': 'SurfSharekit\Api\SruChannelApiController'
+    '$Controller//$Action/$ID/': '*'

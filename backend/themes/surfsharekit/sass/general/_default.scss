@@ -1,0 +1,138 @@
+html,body {
+    @include font-roboto-regular;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    color: $text-color;
+}
+
+body {
+    font-size: 16px;
+    line-height: 1.55em;
+    background-color: #F6F8F9;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4 {
+    @include font-roboto-bold;
+    $color: $first-color;
+    margin: 0;
+}
+
+h1 {
+    font-size: 2.94em;
+    line-height:1.0em;
+}
+
+h2 {
+    font-size: 2em;
+    line-height: 1.1em;
+}
+
+h3 {
+    font-size: 1.52em;
+    line-height: 1.1em;
+}
+
+h4 {
+    font-size: 1.06em;
+    line-height: 1.0em;
+}
+
+p {
+    @include font-roboto-regular;
+    color: $text-color;
+    line-height: 1.5em;
+
+    &.first {
+        margin-top: 0;
+    }
+    &.last {
+        margin-bottom: 0;
+    }
+}
+
+input[type=text], input[type=email], input[type=password], input, select, textarea {
+    @include font-roboto-regular;
+    border: 1px solid #E9E9E9;
+    font-size: inherit;
+    padding: 2px 15px;
+    appearance: none;
+}
+
+input[type=text], input[type=email], input[type=password], select{
+    height: 48px;
+}
+
+select {
+  outline: none;
+}
+
+img.aligncenter {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+img.alignright {
+    display: block;
+    margin-left: auto;
+}
+
+a {
+    @include font-roboto-regular;
+
+    &:focus {
+        outline: none;
+    }
+
+    &:link,
+    &:visited,
+    &:hover,
+    &:active {
+        color: $first-color;
+        text-decoration: underline;
+    }
+}
+
+b {
+    @include font-roboto-bold;
+    font-weight: normal;
+}
+
+/* Medium Screen/Large Tablets */
+@media only screen and (max-width: 1024px) {
+
+}
+
+/* Tablets */
+@media only screen and (max-width: 900px) {
+
+}
+
+/* Mobile wide/Smaller Tablets */
+@media only screen and (max-width: 768px) {
+    h1 {
+        font-size: 2.35em;
+    }
+
+    h2 {
+        font-size: 1.6em;
+    }
+}
+
+/* Small Screen Mobile */
+@media only screen and (max-width: 480px) {
+    body {
+        font-size: 16px;
+    }
+
+    h1 {
+        font-size: 1.9em;
+    }
+
+    h2 {
+        font-size: 1.28em;
+    }
+}

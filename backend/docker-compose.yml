@@ -1,0 +1,37 @@
+version: '3.7'
+services:
+  silverstripe-7.4:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      SS_DATABASE_CLASS: MySQLDatabase
+      SS_DATABASE_NAME: silverstripe
+      SS_DATABASE_SERVER: database
+      SS_DATABASE_USERNAME: ${SS_DATABASE_USERNAME}
+      SS_DATABASE_PASSWORD: ${SS_DATABASE_PASSWORD}
+      SS_DEFAULT_ADMIN_USERNAME: ${SS_DEFAULT_ADMIN_USERNAME}
+      SS_DEFAULT_ADMIN_PASSWORD: ${SS_DEFAULT_ADMIN_PASSWORD}
+      SS_ENVIRONMENT_TYPE: dev
+      APPLICATION_ENVIRONMENT: dev
+      SS_BASE_URL: http://localhost:8080
+    links:
+      - database
+    restart: always
+    ports:
+      - 8080:80
+    volumes:
+      - .:/var/www/html
+
+  database:
+    image: mariadb:10
+    restart: always
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: silverstripe
+    volumes:
+      - db-data:/var/lib/mysql
+
+volumes:
+  db-data:

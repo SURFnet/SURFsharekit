@@ -1,0 +1,48 @@
+{
+    "name": "silverstripe/installer",
+    "type": "silverstripe-recipe",
+    "description": "The SilverStripe Framework Installer",
+    "require": {
+        "php": ">=7.2.24",
+        "silverstripe/recipe-plugin": "^1.2",
+        "silverstripe/recipe-cms": "4.5.1@stable",
+        "zircote/swagger-php": "~3.0.3",
+        "tuupola/base62": "^1.0",
+        "ramsey/uuid": "^3.7",
+        "ralouphie/mimey": "^2.1.0",
+        "guzzlehttp/guzzle": "~6.0",
+        "symbiote/silverstripe-gridfieldextensions": "^3",
+        "silverstripe/s3": "^1.0",
+        "nathancox/hasoneautocompletefield": "^2.11"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^5.7",
+        "nikic/php-parser": "4.3.*"
+    },
+    "extra": {
+        "resources-dir": "_resources",
+        "project-files-installed": [
+            "app/.htaccess",
+            "app/_config.php",
+            "app/_config/mysite.yml",
+            "app/src/Page.php",
+            "app/src/PageController.php"
+        ],
+        "public-files-installed": [
+            ".htaccess",
+            "index.php",
+            "web.config"
+        ],
+        "expose": [
+            "app/src/javascript",
+            "themes/surfsharekit/css",
+            "themes/surfsharekit/images",
+            "themes/surfsharekit/javascript"
+        ]
+    },
+    "config": {
+        "process-timeout": 600
+    },
+    "prefer-stable": true,
+    "minimum-stability": "dev"
+}

@@ -1,0 +1,302 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Surf Sharekit - RESTful API Documentation",
+        "description": "Surf Sharekit API with OAI - PMH and JSON (based on JSONAPI specification) support.",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "email": "apiteam@swagger.io"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "0.1"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8888/surf-sharekit-cms/api/v1/",
+            "description": "Staging Surf Sharekit Development"
+        }
+    ],
+    "paths": {
+        "/institutes": {
+            "get": {
+                "tags": [
+                    "Institute"
+                ],
+                "summary": "Returns a list of  Institutes",
+                "responses": {
+                    "200": {
+                        "description": "A Institute resource"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Institute"
+                ],
+                "summary": "Create Institute",
+                "requestBody": {
+                    "description": "Create Institute object",
+                    "required": true,
+                    "content": {
+                        "application/vnd.api+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Institute"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Errorless body on success",
+                        "headers": {
+                            "Location": {
+                                "description": "An URL-link to the posted object",
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/templates": {
+            "get": {
+                "tags": [
+                    "Template"
+                ],
+                "summary": "Returns a list of  Templates",
+                "responses": {
+                    "200": {
+                        "description": "A Template resource"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Template"
+                ],
+                "summary": "Create Template",
+                "requestBody": {
+                    "description": "Create Template object",
+                    "required": true,
+                    "content": {
+                        "application/vnd.api+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Template"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Errorless body on success",
+                        "headers": {
+                            "Location": {
+                                "description": "An URL-link to the posted object",
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/templateMetaFields": {
+            "get": {
+                "tags": [
+                    "TemplateMetaField"
+                ],
+                "summary": "Returns a list of  TemplateMetaFields",
+                "responses": {
+                    "200": {
+                        "description": "A TemplateMetaField resource"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "TemplateMetaField"
+                ],
+                "summary": "Create TemplateMetaField",
+                "requestBody": {
+                    "description": "Create TemplateMetaField object",
+                    "required": true,
+                    "content": {
+                        "application/vnd.api+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TemplateMetaField"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Errorless body on success",
+                        "headers": {
+                            "Location": {
+                                "description": "An URL-link to the posted object",
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/metaFields": {
+            "get": {
+                "tags": [
+                    "MetaField"
+                ],
+                "summary": "Returns a list of  MetaFields",
+                "responses": {
+                    "200": {
+                        "description": "A MetaField resource"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "MetaField"
+                ],
+                "summary": "Create MetaField",
+                "requestBody": {
+                    "description": "Create MetaField object",
+                    "required": true,
+                    "content": {
+                        "application/vnd.api+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MetaField"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Errorless body on success",
+                        "headers": {
+                            "Location": {
+                                "description": "An URL-link to the posted object",
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/metaFieldTypes": {
+            "get": {
+                "tags": [
+                    "MetaFieldType"
+                ],
+                "summary": "Returns a list of  MetaFieldTypes",
+                "responses": {
+                    "200": {
+                        "description": "A MetaFieldType resource"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "MetaFieldType"
+                ],
+                "summary": "Create MetaFieldType",
+                "requestBody": {
+                    "description": "Create MetaFieldType object",
+                    "required": true,
+                    "content": {
+                        "application/vnd.api+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MetaFieldType"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Errorless body on success",
+                        "headers": {
+                            "Location": {
+                                "description": "An URL-link to the posted object",
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Institute": {
+                "title": "JSON:API conform GET Institute model",
+                "description": "Institute model",
+                "properties": {
+                    "title": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "Template": {
+                "title": "JSON:API conform GET Template model",
+                "description": "Template model",
+                "properties": {
+                    "title": {
+                        "type": "string"
+                    },
+                    "repoType": {
+                        "type": "string",
+                        "enum": [
+                            "Scriptie"
+                        ]
+                    }
+                },
+                "type": "object"
+            },
+            "TemplateMetaField": {
+                "title": "JSON:API conform GET TemplateMetaField model",
+                "description": "TemplateMetaField model",
+                "properties": {
+                    "sortOrder": {
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "MetaField": {
+                "title": "JSON:API conform GET MetaField model",
+                "description": "MetaField model",
+                "properties": {
+                    "title": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "MetaFieldType": {
+                "title": "JSON:API conform GET MetaFieldType model",
+                "description": "MetaFieldType model",
+                "properties": {
+                    "title": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            }
+        }
+    }
+}

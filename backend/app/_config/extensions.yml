@@ -1,0 +1,99 @@
+---
+Name: surf-sharekit-uuiddataobject-config
+---
+
+#api and conext Member Extensions
+SilverStripe\Security\Member:
+  extensions:
+    - SurfShareKit\Api\ConextMemberExtension
+    - SurfSharekit\Api\ApiMemberExtension
+    - UuidExtension
+    - UuidRelationExtension
+    - SurfSharekit\Models\DataObjectAuditExtension
+    - SilverStripe\Versioned\Versioned.versioned
+SurfShareKit\Models\Person:
+  extensions:
+    - SurfSharekit\Models\MemberPermisionExtension
+
+SilverStripe\Assets\File:
+  extensions:
+    - UuidExtension
+    - SurfSharekit\Models\DataObjectAuditExtension
+
+#institute and conext Group Extensions
+SilverStripe\Security\Group:
+  extensions:
+    - SurfShareKit\Models\InstituteGroupExtension
+    - SurfShareKit\Models\GroupPermissionExtension
+    - UuidExtension
+    - UuidRelationExtension
+    - SurfSharekit\Models\DataObjectAuditExtension
+
+#uuiddataobject Objects
+SurfSharekit\Models\MetaField:
+  extensions:
+    - UuidExtension
+    - UuidRelationExtension
+    - SurfSharekit\Models\DataObjectAuditExtension
+SurfSharekit\Models\MetaFieldOption:
+  extensions:
+    - UuidExtension
+    - UuidRelationExtension
+    - SurfSharekit\Models\DataObjectAuditExtension
+SurfSharekit\Models\MetaFieldType:
+  extensions:
+    - UuidExtension
+    - UuidRelationExtension
+    - SurfSharekit\Models\DataObjectAuditExtension
+SurfSharekit\Models\RepoItem:
+  extensions:
+    - UuidExtension
+    - UuidRelationExtension
+    - SurfSharekit\Models\DataObjectAuditExtension
+SurfSharekit\Models\RepoItemMetaField:
+  extensions:
+    - UuidExtension
+    - UuidRelationExtension
+    - SurfSharekit\Models\DataObjectAuditExtension
+SurfSharekit\Models\RepoItemMetaFieldValue:
+  extensions:
+    - UuidExtension
+    - UuidRelationExtension
+    - SurfSharekit\Models\DataObjectAuditExtension
+SurfSharekit\Models\Template:
+  extensions:
+    - UuidExtension
+    - UuidRelationExtension
+    - SurfSharekit\Models\DataObjectAuditExtension
+SurfSharekit\Models\TemplateMetaField:
+  extensions:
+    - UuidExtension
+    - UuidRelationExtension
+    - SurfSharekit\Models\DataObjectAuditExtension
+SurfSharekit\Models\TemplateSection:
+  extensions:
+    - UuidExtension
+    - UuidRelationExtension
+    - SurfSharekit\Models\DataObjectAuditExtension
+SurfSharekit\Models\DefaultMetaFieldOptionPart:
+  extensions:
+    - UuidExtension
+    - UuidRelationExtension
+    - SurfSharekit\Models\DataObjectAuditExtension
+SurfSharekit\Models\Institute:
+  extensions:
+    - UuidExtension
+    - UuidRelationExtension
+    - SurfSharekit\Models\DataObjectAuditExtension
+SurfSharekit\Models\MigrationLog:
+  extensions:
+    - UuidExtension
+SurfSharekit\Models\RepoItemSummary:
+  extensions:
+    - UuidRelationExtension
+SilverStripe\Admin\LeftAndMain:
+  extensions:
+    - EnvironmentBannerLeftAndMainExtension
+SilverStripe\Security\MemberAuthenticator\LostPasswordHandler:
+  extensions:
+    - LostPasswordExtension

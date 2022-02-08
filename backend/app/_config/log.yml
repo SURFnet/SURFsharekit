@@ -1,0 +1,13 @@
+---
+Name: zooma-log
+---
+
+SilverStripe\Core\Injector\Injector:
+  Psr\Log\LoggerInterface:
+    calls:
+      LogFileHandler: [ pushHandler, [ %$LogFileHandler ] ]
+  LogFileHandler:
+    class: Monolog\Handler\StreamHandler
+    constructor:
+      - "`LOCAL_LOG_PATH`"
+      - "`LOG_LEVEL`"

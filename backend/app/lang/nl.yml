@@ -1,0 +1,8 @@
+nl:
+  Page:
+    DESCRIPTION: 'Algemente content pagina'
+    PLURALNAME: 'Pagina''s'
+    PLURALS:
+      one: 'Een pagina'
+      other: '{count} Pagina''s'
+    SINGULARNAME: 'Pagina'

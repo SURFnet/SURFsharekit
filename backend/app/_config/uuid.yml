@@ -1,0 +1,7 @@
+---
+Name: uuid
+After: '#corefieldtypes'
+---
+SilverStripe\Core\Injector\Injector:
+  Uuid:
+    class: DBUuid
