@@ -48,10 +48,10 @@ function ReactRollsAndRightsTable(props) {
             },
             {
                 Header: () => {
-                    return [t('organisation.roles_rights.group_title'), ' ',
+                    return [<span className={"border"}>{t('organisation.roles_rights.group_title')}</span>, ' ',
                         <ReactTableSortIcon sortOrder={currentSortBy} name={'title'}/>]
                 },
-                accessor: 'title',
+                accessor: t('language.current_code') === 'nl' ? 'labelNL' : 'labelEN',
                 className: 'bold-text',
                 Cell: (tableInfo) => {
                     return <div>{tableInfo.cell.value}</div>
@@ -62,7 +62,7 @@ function ReactRollsAndRightsTable(props) {
             },
             {
                 Header: () => {
-                    return [t('organisation.roles_rights.group_organisation'), ' ',
+                    return [<span className={"border"}>{t('organisation.roles_rights.group_organisation')}</span>, ' ',
                         <ReactTableSortIcon sortOrder={currentSortBy} name={'partOf.title'}/>]
                 },
                 accessor: 'partOf.title',
@@ -73,7 +73,7 @@ function ReactRollsAndRightsTable(props) {
             },
             {
                 Header: () => {
-                    return [t('organisation.roles_rights.group_organisation_level'), ' ',
+                    return [<span className={"border"}>{t('organisation.roles_rights.group_organisation_level')}</span>, ' ',
                         <ReactTableSortIcon sortOrder={currentSortBy} name={'partOf.level'}/>]
                 },
                 accessor: 'partOf.level',
@@ -88,7 +88,7 @@ function ReactRollsAndRightsTable(props) {
             },
             {
                 Header: () => {
-                    return [t('organisation.roles_rights.group_users'), ' ',
+                    return [<span className={"border"}>{t('organisation.roles_rights.group_users')}</span>, ' ',
                         <ReactTableSortIcon sortOrder={currentSortBy} name={'persons'}/>]
                 },
                 accessor: 'amountOfPersons',
@@ -105,6 +105,7 @@ function ReactRollsAndRightsTable(props) {
                 accessor: 'actions',
                 className: 'group-row-actions',
                 disableSortBy: true,
+                disableLink: true,
                 style: {
                     minWidth: "100px"
                 },
@@ -177,14 +178,16 @@ function ReactRollsAndRightsTable(props) {
             params: {
                 'include': 'partOf',
                 'fields[institutes]': 'level,title,type',
-                'fields[groups]': 'title,partOf,amountOfPersons,permissions',
+                'fields[groups]': 'title,partOf,amountOfPersons,permissions,roleCode,labelNL,labelEN',
+                'filter[roleCode][NEQ]': 'Default Member',
+//                'filter[level]': 'organisation,consortium',
                 'page[size]': 10,
                 'page[number]': pageIndex + 1
             }
         };
 
         if (query.length > 0) {
-            config.params['filter[title][LIKE]'] = '%' + query + '%'
+            config.params['filter[labelEN,labelNL][LIKE]'] = '%' + query + '%'
         }
 
         if (sortBy.length > 0) {

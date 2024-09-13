@@ -119,7 +119,9 @@
 
                     .fa-trash,
                     .fa-edit,
-                    .fa-plus {
+                    .fa-plus,
+                    .fa-toggle-on,
+                    .fa-toggle-off {
                         cursor: pointer;
 
                         &.disabled {
@@ -129,7 +131,9 @@
                     }
 
                     .fa-trash,
-                    .fa-edit {
+                    .fa-edit,
+                    .fa-toggle-on,
+                    .fa-toggle-off {
                         margin-right: 12px
                     }
                 }

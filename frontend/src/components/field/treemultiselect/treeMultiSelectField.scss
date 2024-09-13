@@ -8,7 +8,7 @@
     flex-grow: 1;
 
     .plus-button {
-        justify-content: center;
+        justify-content: start;
 
         &.with-top-margin {
             margin-top: 30px;
@@ -52,27 +52,6 @@
 
     .document-icon {
         margin-left: 33px;
-    }
-
-    .related-repoitem-title {
-        flex-grow: 1;
-        font-size: 12px;
-
-        //This will happen in read only
-        &:not(:first-child) {
-            margin-left: 30px;
-        }
-    }
-
-    .related-repoitem-subtitle {
-        margin-left: 20px;
-        font-size: 12px;
-
-        &.person-involved-subtitle {
-            @include max-number-of-lines(2);
-            min-width: 240px;
-            max-width: 240px;
-        }
     }
 
     .edit-icon {

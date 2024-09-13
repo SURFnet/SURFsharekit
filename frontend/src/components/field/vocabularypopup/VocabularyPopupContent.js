@@ -38,6 +38,7 @@ function VocabularyPopupContent(props) {
         const [currentStepIndex, setCurrentStepIndex] = useState(0);
         const [previouslySelectedOptions, setPreviouslySelectedOptions] = useState([]);
         const [options, setOptions] = useState([]);
+        const [optionsUnavailable, setOptionsUnavailable] = useState(false);
         const [selectedOption, setSelectedOption] = useState(null);
         const [selectedCheckboxes, setSelectedCheckboxes] = useState([]);
         const [currentQuery, setCurrentQuery] = useState("");
@@ -47,6 +48,10 @@ function VocabularyPopupContent(props) {
         const STEP_AMOUNT = 4;
         const [searchValue, setSearchValue] = useState('');
         const firstUpdate = useRef(true);
+
+        useEffect(() => {
+            setOptionsUnavailable(options.every((item) => item.hasChildren === false))
+        }, [options])
 
         useEffect(() => {
             if(!firstUpdate.current){
@@ -70,7 +75,7 @@ function VocabularyPopupContent(props) {
         useEffect(() => {
             clearOptionsAndActivateLoader()
             const parentOptionId = getSelectedOptionParentId();
-            getVocabulary(props, parentOptionId, (response) => {
+            getVocabulary(props, parentOptionId,(response) => {
                 setOptions(response.data);
                 setNoOptionsTextAndHideLoader(response)
             });
@@ -183,35 +188,32 @@ function VocabularyPopupContent(props) {
         return(
             <div>
                 <h3>{t('vocabulary_field.add')}</h3>
-
-                <div className='flex-row form-step-list'>
+                <div className='flex-row form-step-list justify-between'>
                     <FormStep
                         active={currentStepIndex === 0}
                         number={1}
-                        title={t('vocabulary_field.popup.step_1_title')}
                         onClick={() => {handleStepClick(0)}}
                         completed={previouslySelectedOptions.length >= 1 && currentStepIndex !== 0}/>
                     <div className='form-step-divider'/>
                     <FormStep
                         active={currentStepIndex === 1}
                         number={2}
-                        title={t('vocabulary_field.popup.step_2_title')}
                         onClick={() => {handleStepClick(1)}}
-                        completed={previouslySelectedOptions.length >= 2 && currentStepIndex !== 1}/>
+                        completed={previouslySelectedOptions.length >= 2 && currentStepIndex !== 1}
+                        stepDisabled={(optionsAreEmpty || optionsUnavailable) && currentStepIndex < 1}/>
                     <div className='form-step-divider'/>
                     <FormStep
                         active={currentStepIndex === 2}
                         number={3}
-                        title={t('vocabulary_field.popup.step_3_title')}
                         onClick={() => {handleStepClick(2)}}
-                        completed={previouslySelectedOptions.length >= 3 && currentStepIndex !== 2}/>
+                        completed={previouslySelectedOptions.length >= 3 && currentStepIndex !== 2}
+                        stepDisabled={(optionsAreEmpty || optionsUnavailable) && currentStepIndex < 2}/>
                     <div className='form-step-divider'/>
                     <FormStep
                         active={currentStepIndex === 3}
                         number={4}
-                        title={t('vocabulary_field.popup.step_4_title')}
                         onClick={() => {handleStepClick(3)}}
-                        completed={selectedCheckboxes.length !== 0 && currentStepIndex !== (STEP_AMOUNT - 1)}/>
+                        stepDisabled={(optionsAreEmpty || optionsUnavailable) && currentStepIndex < 3}/>
                 </div>
 
                 <div>
@@ -227,7 +229,7 @@ function VocabularyPopupContent(props) {
                             debouncedQueryChange(e.target.value)
                         }}
                         value={searchValue}/>
-                    {currentStepIndex !== (STEP_AMOUNT - 1)
+                    { !optionsUnavailable
                         ? <RadioGroup
                             name={"vocabulary-popup-radio-group"}
                             readonly={false}
@@ -237,6 +239,7 @@ function VocabularyPopupContent(props) {
                                     return o.value === change
                                 })
                                 setSelectedOption(selectedOption)
+                                if (selectedOption.hasChildren === true) { setOptionsAreEmpty(false) } else { setOptionsAreEmpty(true) }
                                 if(isOptionPreviouslySelectedForCurrentStep()){
                                     removePreviouslySelectedOptionsAfterCurrentIndex(selectedOption)
                                 }
@@ -262,7 +265,6 @@ function VocabularyPopupContent(props) {
                     }
 
                     {loaderActive ? <LoadingIndicator/> : null}
-                    {optionsAreEmpty ? <span className={"empty-options-text"}>There are no options to choose from.</span> : null}
 
                     <PopupButtons
                         {...props}
@@ -305,7 +307,7 @@ function VocabularyPopupContent(props) {
                                     handleAddButtonClick()
                                 }}/>
 
-                    {currentStepIndex !== (STEP_AMOUNT - 1) && <ButtonText text={props.buttonText ?? t('action.next')}
+                    { currentStepIndex !== (STEP_AMOUNT - 1) && !optionsAreEmpty && <ButtonText text={props.buttonText ?? t('action.next')}
                                                                     buttonType={"callToAction"}
                                                                     disabled={props.selectedOption === null && currentStepIndex === 0 && previouslySelectedOptions.length === 0 || selectedOption === null}
                                                                     className={"save-button"}
@@ -352,11 +354,15 @@ function VocabularyPopupContent(props) {
                 "filter[fieldKey]": props.name,
                 "filter[ParentOption]": parentOptionId ?? 'null',
                 "filter[isRemoved][EQ]": 0,
-                "sort": label,
                 'page[number]': 1,
                 'page[size]': 1000,
             }
         };
+
+        // Sort on label when retainOrder is false
+        if (!props.retainOrder) {
+            vocabularyCallConfig.params.sort = label
+        }
 
         Api.jsonApiGet('metaFieldOptions', onValidate, onSuccess, onLocalFailure, onServerFailure, vocabularyCallConfig);
     }
@@ -380,11 +386,15 @@ function VocabularyPopupContent(props) {
                 "filter[ParentOption]": parentOptionId ?? 'null',
                 "filter[value][LIKE]": '%' + searchQuery + '%',
                 "filter[isRemoved][EQ]": 0,
-                "sort": label,
                 'page[number]': 1,
                 'page[size]': 1000,
             }
         };
+
+        // Sort on label when retainOrder is false
+        if (!props.retainOrder) {
+            config.params.sort = label
+        }
 
         Api.jsonApiGet('metaFieldOptions', onValidate, onSuccess, onLocalFailure, onServerFailure, config);
     }

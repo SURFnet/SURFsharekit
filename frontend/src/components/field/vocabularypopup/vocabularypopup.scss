@@ -59,7 +59,7 @@
       fieldset {
         height: 250px;
         overflow-y: scroll;
-        border-bottom: 1px solid #E5E5E5;;
+        border-bottom: 1px solid #E5E5E5;
       }
 
       .institute-options {
@@ -112,8 +112,6 @@
         justify-content: flex-end;
         flex-wrap: wrap;
         gap: 15px;
-        margin-right: -15px;
-        @include clear-after();
 
         .previous-button {
           justify-self: flex-start;

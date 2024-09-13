@@ -8,9 +8,9 @@ export function ReactStatusTableCell(props) {
     return (
         <div className={"status-label-wrapper"}>
             <div className={"status-label-container"}>
-                <div className={"status-label-indicator"} style={{backgroundColor: RepoItemHelper.getStatusColor(rowItem.status)}}/>
+                <div className={"status-label-indicator"} style={{backgroundColor: RepoItemHelper.getStatusColor(rowItem)}}/>
                 <div className={"status-label-text"}>
-                    {rowItem.isArchived ? i18n.t('publication.state.archived') : RepoItemHelper.getStatusText(rowItem.status)}
+                    {rowItem.isArchived ? i18n.t('publication.state.archived') : RepoItemHelper.getStatusText(rowItem)}
                 </div>
             </div>
         </div>

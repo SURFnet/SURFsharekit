@@ -5,6 +5,7 @@
     flex: 1 1 auto;
     display: flex;
     align-items: center;
+    gap: 12px;
 
     .file-container {
         display: flex;
@@ -12,9 +13,9 @@
         justify-content: space-between;
         align-items: center;
         padding: 12px 15px;
-        background-color: #F8F8F8;
-        border: 1px solid #F3F3F3;
-        border-radius: 5px;
+        background-color: #E5E5E5;
+        border: 1px solid #D2D2D2;
+        border-radius: 2px 12px 12px 12px;
 
         .fa-file {
             margin-right: 25px;

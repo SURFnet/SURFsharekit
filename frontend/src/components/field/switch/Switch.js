@@ -26,18 +26,17 @@ export function SwitchField(props) {
 
     function Switch(switchProps) {
         return (
-            <div className='switch'
+            <div className={`switch ${props.extraSwitchCss ? props.extraSwitchCss : ''}`}
                  onClick={(e) => {
                      e.stopPropagation()
                      if (!switchProps.disabled) {
-                         const newIsChecked = !isChecked
-                         setIsChecked(newIsChecked)
-                         switchProps.onChange(newIsChecked)
+                         setIsChecked(!isChecked)
+                         switchProps.onChange(!isChecked)
                      }
                  }}
             >
                 {isChecked ? <OnIcon props={switchProps}/> : <OffIcon props={switchProps}/>}
-                <label>
+                <label className={props.customCss && props.customCss}>
                     {switchProps.placeholder}
                 </label>
             </div>

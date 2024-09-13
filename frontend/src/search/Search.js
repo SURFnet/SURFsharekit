@@ -10,6 +10,7 @@ import {HelperFunctions} from "../util/HelperFunctions";
 import {EmptyState} from "../components/emptystate/EmptyState";
 import {Redirect} from "react-router-dom";
 import {StorageKey, useAppStorageState} from "../util/AppStorage";
+import useDocumentTitle from "../util/useDocumentTitle";
 
 function Search(props) {
     const {t} = useTranslation();
@@ -18,6 +19,8 @@ function Search(props) {
     const [totalCount, setTotalCount] = useState(0);
     const debouncedQueryChange = HelperFunctions.debounce(setCurrentQuery)
     const [user] = useAppStorageState(StorageKey.USER);
+
+    useDocumentTitle("Search")
 
     useEffect(() => {
         if (currentQuery && currentQuery.length > 0) {
@@ -29,7 +32,7 @@ function Search(props) {
     }, [currentQuery]);
 
     if (user === null) {
-        return <Redirect to={'unauthorized?redirect=search'}/>
+        return <Redirect to={'login?redirect=search'}/>
     }
 
     function SearchResultsList() {
@@ -118,7 +121,7 @@ function Search(props) {
         const config = {
             params: {
                 'fields[repoItems]': 'title,repoType',
-                'fields[groups]': 'title',
+                'fields[groups]': 'title,labelNL,labelEN',
                 'fields[persons]': 'name',
                 'filter[query]': searchQuery,
                 'filter[isRemoved]': 0,

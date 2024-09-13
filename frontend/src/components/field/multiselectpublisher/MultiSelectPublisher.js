@@ -7,17 +7,32 @@ import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faChevronDown} from "@fortawesome/free-solid-svg-icons";
 import {components} from "react-select";
 import {OrganisationStatusLabel} from "../../../organisation/OrganisationStatusLabel";
-import AsyncSelect from "react-select/async/dist/react-select.esm";
-import Api from "../../../util/api/Api";
 import debounce from "debounce-promise";
+import AsyncSelect from "react-select/async";
+import Api from "../../../util/api/Api";
+import {SwitchField} from "../switch/Switch";
 
 function MultiSelectPublisher(props) {
     const {t} = useTranslation();
     const history = useHistory();
     const [selectedOptionValues, setSelectedOptionValues] = useState(getInitialValues())
-
+    const [showInactive, setShowInactive] = useState(0);
     const loadOptions = inputValue => promiseOptions(inputValue)
     const debouncedLoadOptions = debounce(loadOptions, 1000)
+    const isMultiSelectInstitute =  props.attributeKey?.toLowerCase() === "allowedforinstitute"
+
+    // MultiSelectInstitute logic
+    const getInitialShowMultiSelectInstituteField = () => {
+        if (props.formState) {
+            const accessRightState = Object.values(props.formState).find(state => state.field.attributeKey === 'AccessRight');
+            if (accessRightState && accessRightState.state) {
+                const selectedOption = accessRightState.field.options.find(o => o.key === accessRightState.state);
+                return selectedOption.value === "restrictedaccess";
+            }
+        }
+        return false;
+    };
+    const [showMultiSelectInstituteField, setShowMultiSelectInstituteField] = useState(getInitialShowMultiSelectInstituteField)
 
     let classAddition = '';
     classAddition += (props.readonly ? ' disabled readonly' : '');
@@ -32,6 +47,10 @@ function MultiSelectPublisher(props) {
     }
 
     const style = {
+        label: (base: state) => ({
+            ...base,
+            paddingRight: '10px'
+        }),
         control: (base, state) => ({
             ...base,
             border: '1px solid ' + (state.isFocused ? Constants.majorelle : borderColor) + ' !important', //else will be overwritten by field-input style
@@ -41,7 +60,37 @@ function MultiSelectPublisher(props) {
             ...base,
             display: (props.readonly) ? 'none' : 'block'
         }),
+
+        /** Used to display differently for MultiSelectInstitute */
+        multiValueRemove: (base, state) => {
+            return (state.data.isFixed && isMultiSelectInstitute) ? {
+                ...base,
+                display: 'none',
+            } : base;
+        },
+        multiValueLabel: (base, state) => {
+            return (state.data.isFixed && isMultiSelectInstitute) ? {
+                ...base,
+                paddingRight: '12px !important',
+            } : base;
+        },
+        clearIndicator: (base, state) => {
+            return (isMultiSelectInstitute) ? {
+                ...base,
+                display: 'none',
+            } : base;
+        }
     };
+
+    useEffect(() => {
+        if (props.formState) {
+            const accessRightState = Object.values(props.formState).find(state => state.field.attributeKey === 'AccessRight')
+            if (accessRightState && accessRightState.state) {
+                const selectedOption = accessRightState.field.options.find(o => o.key === accessRightState.state)
+                setShowMultiSelectInstituteField(selectedOption.value === "restrictedaccess")
+            }
+        }
+    }, [props.formState])
 
     useEffect(() => {
         if (props.register) {
@@ -59,14 +108,15 @@ function MultiSelectPublisher(props) {
     }, [selectedOptionValues])
 
     function getInitialValues() {
-        if(props.defaultValue) {
-            return props.defaultValue.map(optionData => {
+        if (props.defaultValue) {
+            return props.defaultValue.map((optionData, index) => {
                 return {
                     value: optionData.id,
                     optionTitle: optionData.summary.title,
                     optionLabel: null,
                     isRemoved: null,
                     label: optionData.summary.title,
+                    isFixed: index === 0
                 }
             });
         }
@@ -76,7 +126,7 @@ function MultiSelectPublisher(props) {
 
     function getOptionValues() {
         const parseSelectedOptionValues = () => {
-            if(selectedOptionValues) {
+            if (selectedOptionValues) {
                 return selectedOptionValues.map(selectedOptionValue => {
                     return JSON.stringify({
                         id: selectedOptionValue.value,
@@ -108,7 +158,7 @@ function MultiSelectPublisher(props) {
     const Option = optionProps => {
 
         let inactiveOption;
-        if(optionProps.data.isRemoved) {
+        if (optionProps.data.isRemoved) {
             inactiveOption = <span>({t('multi_select_suborganisation_field.inactive')})</span>
         }
 
@@ -129,13 +179,13 @@ function MultiSelectPublisher(props) {
         new Promise(resolve => {
             getRootOrganisations(inputValue, (data) => {
                 const options = data.map(optionData => {
-
                     return {
                         value: optionData.id,
                         optionTitle: optionData.summary.title,
                         optionLabel: optionData.level,
                         isRemoved: optionData.isRemoved,
                         label: optionData.summary.title,
+                        isFixed: false
                     }
                 })
                 resolve(options)
@@ -144,10 +194,23 @@ function MultiSelectPublisher(props) {
 
     let placeholder = (props.readonly) ? "-" : t('multi_select_suborganisation_field.placeholder')
 
+    if (!showMultiSelectInstituteField && isMultiSelectInstitute) {
+        return null;
+    }
+
     return (
         <div className={"multi-select-suborganisation-container" + classAddition}>
+            {!props.readonly && props.showInactiveSwitch && <div className={"inactive-switch"}>
+                <div className={"switch-row-text"}>
+                    <h5 className={"bold-text"}>{t("organisation.tab_organizational_inactive")}</h5>
+                </div>
+                <SwitchField defaultValue={showInactive}
+                             onChange={setShowInactive}/>
+            </div>}
+
+            {/* https://stackoverflow.com/questions/54107238/clear-cached-options-on-async-select*/}
             <AsyncSelect
-                key={props.name + t('language.current_code')}
+                key={props.name + t('language.current_code') + showInactive}
                 isDisabled={props.readonly}
                 className="surf-multi-select-suborganisation"
                 classNamePrefix="surf-multi-select"
@@ -156,9 +219,12 @@ function MultiSelectPublisher(props) {
                     IndicatorSeparator: () => null,
                     Option
                 }}
-                defaultValue={getInitialValues()}
-                cacheOptions={true}
+                value={selectedOptionValues}
+                isClearable={props.attributeKey?.toLowerCase() === "allowedforinstitute" ? selectedOptionValues.filter((v) => !v.isFixed) : true}
+                defaultValue={selectedOptionValues}
+                cacheOptions={false}
                 defaultOptions={true}
+                showInactive={showInactive}
                 loadOptions={inputValue => debouncedLoadOptions(inputValue)}
                 isSearchable={true}
                 isMulti={true}
@@ -166,7 +232,7 @@ function MultiSelectPublisher(props) {
                 styles={style}
                 onChange={
                     (selection) => {
-                        if(selection && selection.length > 0) {
+                        if (selection && selection.length > 0) {
                             setSelectedOptionValues(selection);
                         } else {
                             setSelectedOptionValues(null);
@@ -201,11 +267,14 @@ function MultiSelectPublisher(props) {
             params: {
                 'filter[level]': 'organisation,consortium',
                 'fields[institutes]': 'isRemoved,title,summary,level',
-                'filter[scope]': "off",
+                'filter[scope]': 'off',
                 'sort': 'title'
             }
         };
 
+        if (!showInactive) {
+            config.params['filter[inactive]'] = '0';
+        }
         if (searchQuery.length > 0) {
             config.params['filter[title][LIKE]'] = '%' + searchQuery + '%'
         }

@@ -34,7 +34,7 @@ function ProfileRolesRightsContent(props) {
                 },
                 {
                     Header: t('group.group'),
-                    accessor: 'title',
+                    accessor: t('language.current_code') === 'nl' ? 'labelNL' : 'labelEN',
                     className: 'bold-text',
                     style: {
                         width: "25%"

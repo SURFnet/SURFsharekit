@@ -8,7 +8,7 @@ class ApiRequests {
         const config = {
             params: {
                 'fields[institutes]': 'title,conextCode,permissions,isUsersConextInstitute,isBaseScopeForUser',
-                'fields[groups]': 'title,permissions,userPermissions,roleCode,codeMatrix,partOf'
+                'fields[groups]': 'title,permissions,userPermissions,roleCode,codeMatrix,partOf,labelNL,labelEN'
             }
         };
         Api.jsonApiGet('persons/' + user.id + '?include=groups,groups.partOf,groups.partOf.image', onValidate, onSuccess, onLocalFailure, onServerFailure, config);
@@ -31,7 +31,7 @@ class ApiRequests {
         function onServerFailure(error) {
             Toaster.showServerError(error)
             if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                history.push('/unauthorized');
+                history.push('/login');
             }
             errorCallback()
         }

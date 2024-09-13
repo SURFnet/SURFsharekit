@@ -4,12 +4,22 @@ import {Jsona} from "jsona";
 import Toaster from "../toaster/Toaster";
 import VerificationPopup from "../../verification/VerificationPopup";
 import i18n from 'i18next';
+import {toast} from "react-toastify";
+
+function redirectToNotFound() {
+    window.location = '/notfound'
+}
+
+function redirectToLogin() {
+    window.location = "/login"
+}
 
 class Api {
     static dataFormatter = new Jsona();
+
     static jsonApiGet(url, validate, onSuccess, onLocalFailure, onServerFailure, config = {}) {
 
-        if(typeof config.cancelToken !== typeof undefined){
+        if (typeof config.cancelToken !== typeof undefined) {
             config.cancelToken.cancel("Operation canceled due to new request.");
         }
         let cancelToken = axios.CancelToken.source();
@@ -21,6 +31,7 @@ class Api {
                 try {
                     response.meta = response.data.meta
                     response.links = response.data.links
+                    response.filters = response.data.filters
                     response.data = Api.dataFormatter.deserialize(response.data);
 
                     validate(response);
@@ -30,14 +41,24 @@ class Api {
                 }
             })
             .catch(function (error) {
-                if(!axios.isCancel(error)) {
-                    onServerFailure(error);
-                }else{
+                if (!axios.isCancel(error)) {
+                    // Prevent toaster is request is aborted
+                    if (error.code !== "ECONNABORTED") {
+                        if (error.response.status === 404) {
+                            redirectToNotFound()
+                        } else if (error.response.status === 401) {
+                            redirectToLogin()
+                            toast.dismiss()
+                        } else {
+                            onServerFailure(error);
+                        }
+                    }
+                } else {
                     console.log('cancelled');
                 }
             })
             .then(function () {
-                // always executed
+
             });
         return cancelToken;
     }
@@ -53,7 +74,14 @@ class Api {
                 }
             })
             .catch(function (error) {
-                onServerFailure(error);
+                if (error.response.status === 404) {
+                    redirectToNotFound()
+                } else if (error.response.status === 401) {
+                    redirectToLogin()
+                    toast.dismiss()
+                } else {
+                    onServerFailure(error);
+                }
             })
             .then(function () {
                 // always executed
@@ -72,7 +100,14 @@ class Api {
                 }
             })
             .catch(function (error) {
-                onServerFailure(error);
+                if (error.response.status === 404) {
+                    redirectToNotFound()
+                } else if (error.response.status === 401) {
+                    redirectToLogin()
+                    toast.dismiss()
+                } else {
+                    onServerFailure(error);
+                }
             })
             .then(function () {
                 // always executed
@@ -91,7 +126,14 @@ class Api {
                 }
             })
             .catch(function (error) {
-                onServerFailure(error);
+                if (error.response.status === 404) {
+                    redirectToNotFound()
+                } else if (error.response.status === 401) {
+                    redirectToLogin()
+                    toast.dismiss()
+                } else {
+                    onServerFailure(error);
+                }
             })
             .then(function () {
                 // always executed
@@ -111,7 +153,14 @@ class Api {
                 }
             })
             .catch(function (error) {
-                onServerFailure(error);
+                if (error.response.status === 404) {
+                    redirectToNotFound()
+                } else if (error.response.status === 401) {
+                    redirectToLogin()
+                    toast.dismiss()
+                } else {
+                    onServerFailure(error);
+                }
             })
             .then(function () {
                 // always executed

@@ -2,18 +2,18 @@
 $space-cadet: #2D364F !default;
 $space-cadet-light: #435075 !default;
 $cultured: #F8F8F8 !default;
-$flame: #E35F3C !default;
+$flame: rgb(227, 95, 60) !default;
 $flame-light: #F69E90 !default;
-$majorelle: #7344EE !default;
+$majorelle: rgb(115,68,238) !default;
 $majorelle-light: #906AF1 !default;
-$maximum-yellow: #F3BA5A !default;
+$maximum-yellow: rgb(243, 186, 90) !default;
 $maximum-yellow-light: #FACD34 !default;
-$ocean-green: #64C3A5 !default;
+$ocean-green: rgb(100, 195, 165) !default;
 $ocean-green-light: #6FD8B6 !default;
 $vivid-sky: #5AC4ED !default;
 $vivid-sky-light: #80D7F1 !default;
 
-$input-border-color: #E5E5E5;
+$input-border-color: #899194;
 $background-color: white; // ued as a divider between background and background-light
 $background-color-dark: $cultured; // used as accent color to background
 $text-color: $space-cadet; //used for text on background-color
@@ -25,6 +25,8 @@ $positive-color: $ocean-green-light;
 $grayDark: #A5AAAE;
 $grayLight: #E5E5E5;
 $grayMedium: #D2D2D2;
+$grayStatus: #899194;
+$pageGray: #F1F1F1;
 
 $border-color: #E1E7EB;
 $desktop-side-menu-width: 258px;

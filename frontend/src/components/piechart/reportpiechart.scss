@@ -31,7 +31,7 @@
 
     .pie-chart-legend {
         display: flex;
-        justify-content: space-between;
+        row-gap: 10px;
         flex-wrap: wrap;
 
         .legend-item:last-child{
@@ -51,7 +51,7 @@
 
             .legend-item-title {
                 padding-left: 6px;
-                max-width: 65px;
+                max-width: 75px;
                 font-size: 9px;
             }
         }

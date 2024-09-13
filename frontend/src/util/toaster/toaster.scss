@@ -5,26 +5,71 @@
 
     .Toastify__toast {
         @include open-sans;
-        font-size: 12px;
-        min-height: initial;
-        margin-bottom: initial;
-        padding: 15px 20px;
+        min-height: 51px;
+        border-radius: 5px;
+        border: 1px solid;
+        color: $space-cadet;
+        font-weight: 400;
+        font-size: 14px;
+        position: relative;
 
         &.Toastify__toast--error {
-            border: 1px solid $flame;
-            border-radius: 5px;
-            background: $flame-light;
-            color: $text-color;
+            border-color: $flame;
+            background: color-mix(in srgb, $flame 25%, white);
+
+            .icon-wrapper {
+                svg {
+                    color: $flame;
+                }
+            }
+
+            .custom-toaster-close-button {
+                color: $flame;
+            }
+        }
+
+        &.Toastify__toast--warning {
+            border-color: $maximum-yellow;
+            background: color-mix(in srgb, $maximum-yellow 25%, white);
+
+            .icon-wrapper {
+                svg {
+                    color: $maximum-yellow;
+                }
+            }
+
+            .custom-toaster-close-button {
+                color: $maximum-yellow;
+            }
         }
 
         &.Toastify__toast--success {
-            border: 1px solid $ocean-green;
-            border-radius: 5px;
-            background: $ocean-green-light;
-            color: $text-color;
+            border-color: $ocean-green;
+            background: color-mix(in srgb, $ocean-green 25%, white);
 
-            svg {
-                color: white;
+            .icon-wrapper {
+                svg {
+                    color: $ocean-green;
+                }
+            }
+
+            .custom-toaster-close-button {
+                color: $ocean-green;
+            }
+        }
+
+        &.Toastify__toast--info {
+            border-color: $majorelle;
+            background: color-mix(in srgb, $majorelle 25%, white);
+
+            .icon-wrapper {
+                svg {
+                    color: $majorelle;
+                }
+            }
+
+            .custom-toaster-close-button {
+                color: $majorelle;
             }
         }
 
@@ -32,11 +77,61 @@
             display: flex;
 
             .icon-wrapper {
-                padding-right: 15px;
                 display: flex;
                 justify-content: center;
                 align-items: center;
+                min-width: 46px;
             }
         }
+
+        .custom-toaster-close-button {
+            position: absolute;
+            top: 2px;
+            right: 6px;
+            font-size: 14px;
+        }
+
+        .custom-toaster-text {
+            padding-right: 12px;
+        }
     }
+
+
+
+    //.Toastify__toast {
+    //    @include open-sans;
+    //    font-size: 12px;
+    //    min-height: initial;
+    //    margin-bottom: initial;
+    //    padding: 15px 20px;
+    //
+    //    &.Toastify__toast--error {
+    //        border: 1px solid $flame;
+    //        border-radius: 5px;
+    //        background: $flame-light;
+    //        color: $text-color;
+    //    }
+    //
+    //    &.Toastify__toast--success {
+    //        border: 1px solid $ocean-green;
+    //        border-radius: 5px;
+    //        background: $ocean-green-light;
+    //        color: $text-color;
+    //
+    //        svg {
+    //            color: white;
+    //        }
+    //    }
+    //
+    //    .custom-toaster-content {
+    //        display: flex;
+    //
+    //        .icon-wrapper {
+    //            padding-right: 15px;
+    //            display: flex;
+    //            justify-content: center;
+    //            align-items: center;
+    //        }
+    //    }
+    //}
 }

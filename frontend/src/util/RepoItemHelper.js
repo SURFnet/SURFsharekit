@@ -16,7 +16,7 @@ class RepoItemHelper {
     static getTitle(repoItem) {
         if (repoItem.title && repoItem.title.length > 0) {
             return repoItem.title;
-        } else if (repoItem.sections) {
+        } else if (this.getSectionsFromSteps(repoItem)) {
             const answers = this.getAnswerValuesForAttributeKey(repoItem, "Title");
 
             if (answers && Array.isArray(answers) && answers.length > 0) {
@@ -36,9 +36,19 @@ class RepoItemHelper {
     }
 
     static getAllFields(repoItem) {
-        return (repoItem.sections ?? []).reduce((total, val) => {
+        return (this.getSectionsFromSteps(repoItem) ?? []).reduce((total, val) => {
             return total.concat(val.fields);
         }, []);
+    }
+
+    static getSectionsFromSteps(repoItem) {
+        let sections = [];
+        repoItem.steps.forEach(step => {
+           step.templateSections.forEach(section => {
+               sections.push(section)
+           })
+        })
+        return sections
     }
 
     static getAnswerValuesForAttributeKey(repoItem, attributeKey) {
@@ -70,7 +80,7 @@ class RepoItemHelper {
 
         if (field !== null) {
             const fieldType = formFieldHelper.getFieldType(field.fieldType);
-            if (fieldType === 'tag') {
+            if (fieldType === 'tag' || fieldType === 'dropdowntag') {
                 // let tagAnswers = formDataAnswerValue ? JSON.parse(formDataAnswerValue) : [];
                 let tagAnswers = formDataAnswerValue ?? [];
                 tagAnswers.forEach((tagOption) => {
@@ -87,7 +97,7 @@ class RepoItemHelper {
                             "labelNL": tagOption.labelNL,
                             "labelEN": tagOption.labelEN,
                             "coalescedLabelEN": tagOption.coalescedLabelEN,
-                            "coalescedLabelNL": tagOption.coalescedLabelNL
+                            "coalescedLabelNL": tagOption.coalescedLabelNL,
                         })
                     }
                 })
@@ -123,7 +133,7 @@ class RepoItemHelper {
                         "value": value ? 1 : 0
                     }
                 });
-            } else if (fieldType === "radio" || fieldType === "dropdown") {
+            } else if (fieldType === "radio" || fieldType === "dropdown" || fieldType === "rightofusedropdown") {
                 if (formDataAnswerValue) {
                     answerArray = [{
                         "repoItemID": null,
@@ -157,7 +167,7 @@ class RepoItemHelper {
                 } else {
                     answerArray = []
                 }
-            } else if(fieldType === 'multiselectsuborganisation') {
+            } else if(fieldType === 'multiselectsuborganisation' || fieldType === 'multiselectsuborganisationswitch') {
                 // let instituteAnswer = formDataAnswerValue ? JSON.parse(formDataAnswerValue) : null;
                 answerArray = [];
                 if(formDataAnswerValue) {
@@ -171,7 +181,7 @@ class RepoItemHelper {
                         })
                     })
                 }
-            } else if(fieldType === 'multiselectpublisher') {
+            } else if(fieldType === 'multiselectpublisher' || fieldType === 'multiselectpublisherswitch' || fieldType === 'multiselectinstitute') {
                 // let instituteAnswer = formDataAnswerValue ? JSON.parse(formDataAnswerValue) : null;
                 answerArray = [];
                 if(formDataAnswerValue) {
@@ -201,7 +211,8 @@ class RepoItemHelper {
                 fieldType === "attachment" ||
                 fieldType === "personinvolved" ||
                 fieldType === "repoitemlink" ||
-                fieldType === "repoitemlearningobject") {
+                fieldType === "repoitemlearningobject" ||
+                fieldType === "repoitemresearchobject") {
                 let repoItemFieldAnswers = formDataAnswerValue ? JSON.parse(formDataAnswerValue) : [];
                 repoItemFieldAnswers.forEach((relatedRepoItem) => {
                     answerArray.push({
@@ -299,18 +310,32 @@ class RepoItemHelper {
         return repoItem.repoType.toLowerCase() === 'repoitemlearningobject';
     }
 
+    static repoItemIsRepoItemResearchObject(repoItem) {
+        return repoItem.repoType.toLowerCase() === 'repoitemresearchobject';
+    }
+
+    static repoItemIsRepoItemLinkObject(repoItem) {
+        return repoItem.repoType.toLowerCase() === 'repoitemlink';
+    }
+
     static repoItemIsAttachment(repoItem) {
         return repoItem.repoType.toLowerCase() === 'repoitemrepoitemfile';
     }
 
-    static getStatusColor(status) {
-        switch (status.toLowerCase()) {
+    static repoItemIsDataset(repoItem) {
+        return repoItem.repoType.toLowerCase() === "dataset"
+    }
+
+    static getStatusColor(repoItem) {
+        switch (repoItem.status.toLowerCase()) {
             case 'draft':
                 return "#899194";
             case 'published':
                 return "#64C3A5";
             case 'submitted':
-                return "#80D7F1";
+                return "#F3BA5A";
+            case 'revising':
+                return "#F3BA5A";
             case 'approved':
                 return "#64C3A5";
             case 'declined':
@@ -320,14 +345,25 @@ class RepoItemHelper {
         }
     }
 
-    static getStatusText(status) {
-        switch (status.toLowerCase()) {
+    static getStatusText(repoItem) {
+
+        if (repoItem.isRemoved) {
+            return i18n.t('publication.state.deleted');
+        }
+
+        if (repoItem.isArchived) {
+            return i18n.t('publication.state.archived');
+        }
+
+        switch (repoItem.status.toLowerCase()) {
             case 'draft':
                 return i18n.t('publication.state.draft');
             case 'published':
                 return i18n.t('publication.state.published');
             case 'submitted':
                 return i18n.t('publication.state.submitted');
+            case 'revising':
+                return i18n.t('publication.state.revising');
             case 'approved':
                 return i18n.t('publication.state.approved');
             case 'declined':
@@ -353,6 +389,12 @@ class RepoItemHelper {
                 break;
             case 'researchobject':
                 typeTitle = i18n.t("repoitem.researchobject")
+                break;
+            case 'dataset':
+                typeTitle = i18n.t("repoitem.dataset")
+                break;
+            case 'project':
+                typeTitle = i18n.t("repoitem.project")
                 break;
         }
         return typeTitle

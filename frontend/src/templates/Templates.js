@@ -4,13 +4,16 @@ import {Redirect} from "react-router-dom";
 import Page from "../components/page/Page";
 import React from "react";
 import {ReactTemplatesTable} from "./ReactTemplatesTable";
+import useDocumentTitle from "../util/useDocumentTitle";
 
 function Templates(props) {
     const {t} = useTranslation();
     const [user] = useAppStorageState(StorageKey.USER);
 
+    useDocumentTitle("Templates")
+
     if (user === null) {
-        return <Redirect to={'unauthorized?redirect=templates'}/>
+        return <Redirect to={'login?redirect=templates'}/>
     }
 
     const content = <div>

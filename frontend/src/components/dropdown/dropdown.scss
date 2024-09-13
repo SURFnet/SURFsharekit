@@ -17,6 +17,10 @@
         }
     }
 
+    .surf-select__input-container {
+        position: absolute;
+    }
+
     .surf-select__control {
         @include rounded-background-pointy-upper-left($background-color);
         height: 50px;
@@ -97,4 +101,22 @@
             }
         }
     }
+}
+
+.align-center {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 5px 0;
+}
+
+.option-image {
+
+    z-index: 99;
+
+    :hover {
+        height: 100px;
+    }
+
+    max-height: 14px;
 }

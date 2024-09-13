@@ -5,7 +5,7 @@ import {useTranslation} from "react-i18next";
 import Api from "../util/api/Api";
 import Toaster from "../util/toaster/Toaster";
 import HorizontalTabList from "../components/horizontaltablist/HorizontalTabList";
-import GroupPermissionTable from "./grouppermissiontable/GroupPermissionTable";
+import GroupPermissionTab from "./grouppermissiontable/GroupPermissionTab";
 import GroupPersonTable from "./grouppersontable/GroupPersonTable";
 
 function Group(props) {
@@ -23,23 +23,26 @@ function Group(props) {
         groupContent = [
             <HorizontalTabList
                 key={"tab-titles"}
-                tabsTitles={[t('group.members') /*, t('group.permissions') */]}
+                tabsTitles={[t('group.members') , t('group.permissions')]}
                 selectedIndex={currentIndex} onTabClick={setCurrentIndex}/>,
             (currentIndex === 0 &&
-                <GroupPersonTable key={"group-person-table"}
-                                  group={group}
-                                  reloadGroup={() => getGroupObjectFromApi(false)}
-                                  history={props.history}/>),
+                <GroupPersonTable
+                    key={"group-person-table"}
+                    group={group}
+                    reloadGroup={() => getGroupObjectFromApi(false)}
+                    history={props.history}/>),
             (currentIndex === 1 &&
-                <GroupPermissionTable key={"group-permission-table"}
-                                      reloadGroup={() => getGroupObjectFromApi(false)}
-                                      group={group}/>)
+                <GroupPermissionTab
+                    key={"group-permission-table"}
+                    group={group}
+                />
+            )
         ]
     }
     const content = <div>
         <div className={"header"}>
             <div className={"title-text"}>
-                <h1>{group ? group.title : "\u00a0"}</h1>
+                <h1>{group ? (t('language.current_code') === 'nl' ? group.labelNL : group.labelEN) : "\u00a0"}</h1>
                 <h5>{group ? group.partOf.title : "\u00a0"}</h5>
             </div>
         </div>
@@ -59,7 +62,7 @@ function Group(props) {
                          title: 'side_menu.organisation'
                      },
                      {
-                         title: group ? group.title : 'group.group'
+                         title: group ? (t('language.current_code') === 'nl' ? group.labelNL : group.labelEN) : 'group.group'
                      },
                  ]}
                  showBackButton={true}
@@ -69,7 +72,7 @@ function Group(props) {
         showLoader && GlobalPageMethods.setFullScreenLoading(true)
         const config = {
             params: {
-                'fields[groups]': 'partOf,title,amountOfPersons,codeMatrix,userPermissions,permissions',
+                'fields[groups]': 'partOf,title,amountOfPersons,codeMatrix,userPermissions,permissions,labelNL,labelEN',
                 'include': 'partOf'
             }
         }

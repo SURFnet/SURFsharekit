@@ -1,6 +1,5 @@
 import i18n from "i18next";
 import Api from "./api/Api";
-import {useTranslation} from "react-i18next";
 
 export class HelperFunctions {
 
@@ -36,12 +35,22 @@ export class HelperFunctions {
 
         //Filter null values
         memberInstitutes = memberInstitutes.filter(institute =>
-            institute !== null
+            institute !== null && institute.isHidden !== 1
         ).map(institute => {
             return institute
         });
 
-        return memberInstitutes
+        function instituteSort(a, b) {
+            if (a.title > b.title) {
+                return 1;
+            }
+            if (b.title > a.title) {
+                return -1;
+            }
+            return 0;
+        }
+
+        return memberInstitutes.sort(instituteSort)
     }
 
     static getMemberDefaultInstitute(member) {
@@ -69,10 +78,10 @@ export class HelperFunctions {
 
     static getDateFormat(date, options) {
         let dateString = date;
-        if(date && date.length > 0) {
+        if (date && date.length > 0) {
             const result = date.split(" ")
             //Fixes crash on Safari. This fix places a 'T' between each date part, so '2020-10-06 08:41:59' becomes '2020-10-06T08:41:59'
-            if(result.length === 2) {
+            if (result.length === 2) {
                 dateString = result.join("T");
             }
         }
@@ -118,5 +127,17 @@ export class HelperFunctions {
 
             Api.jsonApiGet('metaFieldOptions', onValidate, onSuccess, onFailure, onFailure, config);
         }
+    }
+
+    static truncate(input, maxLength, ellipsis = true) {
+        if (input === null || input === undefined) {
+            return "";
+        }
+
+        if (input.length > maxLength) {
+            return input.substring(0, maxLength) + (ellipsis ? "..." : "");
+        }
+
+        return input;
     }
 }

@@ -17,7 +17,7 @@ html, body {
 body {
     font-size: 16px;
     overflow-y: hidden;
-    background-color: $space-cadet;
+    background: linear-gradient(270deg, #F8F8F8 0%, #F0F0F0 82.57%);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
@@ -31,10 +31,6 @@ body {
 
     .App {
         height: 100%;
-
-        &.with-environment-banner {
-            height: calc(100% - 50px);
-        }
 
         .main {
             height: 100%;
@@ -235,4 +231,12 @@ select, input[type="datetime-local"], input[type="date"], input[type="time"] {
     &.acceptance {
         background-color: red;
     }
+}
+
+.no-touch {
+    pointer-events: none;
+}
+
+.no-pointer {
+    cursor: default;
 }

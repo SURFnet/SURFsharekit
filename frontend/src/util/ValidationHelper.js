@@ -16,6 +16,17 @@ class ValidationHelper {
         return (value !== null && typeof value !== 'undefined')
     }
 
+    static isURL(value) {
+        if(typeof value === "string") {
+            const regex = /(https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9]+\.[^\s]{2,}|www\.[a-zA-Z0-9]+\.[^\s]{2,})/gi
+
+            if(value.match(regex)) {
+                return true
+            }
+        }
+        return false
+    }
+
     /**
      * Used to check if a repoItem has channel dependency conflicts.
      * Only one of the following channel types are allowed to be 'enabled':

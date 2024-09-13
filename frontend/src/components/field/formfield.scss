@@ -23,15 +23,52 @@
         .form-row {
             display: flex;
             flex-direction: row;
+
+            .has-message {
+                display: flex;
+                flex-direction: row;
+                gap: 32px;
+
+                > div {
+                    &:first-child {
+                        min-width: 196px;
+                    }
+                }
+            }
+        }
+
+
+
+        .mr-1 {
+            margin-right: 4px;
+        }
+
+        .required-indicator {
+            display: flex;
+            flex-direction: column;
+            padding-top: 14px;
+
+            &:nth-child(2) {
+                flex-grow: 1;
+            }
         }
 
         .form-column {
             display: flex;
             flex-direction: column;
+            padding: 14px 0 0 0;
 
             &:nth-child(2) {
                 flex-grow: 1;
             }
+        }
+
+        .grey-background {
+            background: $cultured;
+            border-radius: 5px;
+            border: 1px solid #F3F3F3;
+            padding-left: 21px;
+            margin: 14px 0;
         }
 
         .field-label {
@@ -54,6 +91,10 @@
             width: 100%;
         }
 
+        .text-field {
+            position: relative;
+        }
+
         .hard-hint {
             position: absolute;
             margin-left: 7px;
@@ -64,17 +105,23 @@
         }
 
         .field-input {
-            @include rounded-background-pointy-upper-left();
+            @include rounded-background-pointy-upper-left('transparent');
             border: 1px solid $input-border-color;
             @include open-sans;
             font-size: 12px;
             line-height: 14px;
             vertical-align: center;
-            height: 50px;
+            min-height: 50px;
             padding: 0px 12px;
-            outline: none;
 
+            outline: none;
             flex-grow: 1;
+
+            &.switch {
+                .switch-icon {
+                    align-self: center;
+                }
+            }
 
             &::placeholder {
                 @include open-sans-light-italic();
@@ -113,6 +160,7 @@
             &.dropdown-container {
                 padding: 0;
                 border: none;
+                min-width: 50%;
             }
 
             &.attachment {
@@ -137,7 +185,6 @@
                 font-size: 12px;
                 display: flex;
                 flex-direction: row;
-                align-items: center;
             }
 
             &.checkbox {
@@ -234,26 +281,6 @@
     margin-right: 4px;
 }
 
-.section-row {
-    width: 100%;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-}
-
-.section-column {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-}
-
-.section-subtitle {
-    @include open-sans();
-    font-size: 12px;
-    line-height: 16px;
-    color: $text-color;
-}
-
 .repoitem-form-popup-title {
     @include nunito-bold;
     font-size: 25px;
@@ -268,7 +295,7 @@
     .form-step-divider {
         height: 40px;
         width: 1px;
-        background-color: $input-border-color;
+        background-color: $grayLight;
         margin-left: 20px;
         margin-right: 20px;
     }
@@ -287,6 +314,11 @@
 
             &.completed {
                 background-color: #c0acf2;
+                cursor: pointer;
+
+                &:hover {
+                    background-color: $text-color-active;
+                }
             }
         }
 
@@ -301,29 +333,19 @@
                 text-transform: uppercase;
                 color: rgba(#899194, 1);
             }
-
-            .form-step-title {
-                @include nunito-bold;
-                color: $text-color;
-                font-size: 12px;
-                line-height: 16px;
-
-                &.active {
-                    color: $text-color-active;
-                }
-            }
         }
     }
 }
 
+.form-step-disabled {
+    text-decoration: line-through;
+}
+
 .field-tooltip {
-    color: $background-color;
-    background-color: $text-color;
     display: flex;
     align-content: center;
     justify-content: center;
     font-size: 8px;
-    border-radius: 14px;
     margin-top: auto;
     margin-bottom: auto;
     width: 14px;
@@ -333,7 +355,20 @@
     position: relative;
     margin-left: 4px;
 
+    &:not(.has-element) {
+        color: $background-color;
+        background-color: $text-color;
+        border-radius: 14px;
+    }
+
+    .info-icon-wrapper {
+        width: 14px;
+        height: 14px;
+        cursor: pointer;
+    }
+
     i {
+        pointer-events: none;
         position: absolute;
         top: 50%;
         left: 50%;
@@ -346,6 +381,13 @@
 
     .right {
         left: 120px;
+    }
+
+    .tooltip-link {
+        color: blue !important;
+        &:visited {
+            color: purple !important;
+        }
     }
 
     .tooltip-popup {
@@ -383,4 +425,56 @@
             color: white;
         }
     }
+}
+
+.element-tooltip {
+    position: relative;
+    display: flex;
+
+    .tooltip-wrapper {
+        position: absolute;
+        background: white;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        color: black;
+        z-index: 5;
+        padding: 10px;
+        font-size: 12px;
+        border-radius: 4px;
+        transform: translateY(-50%);
+        top: 50%;
+
+        .fa-caret-left, .fa-caret-right {
+            &.tooltip-arrow {
+                z-index: 5;
+                position: absolute;
+                font-size: 19px !important;
+                color: $background-color;
+                top: calc(50% - 9px);
+            }
+        }
+
+        .fa-caret-left {
+            left: -7px;
+        }
+
+        .fa-caret-right {
+            right: -7px;
+        }
+
+        &.left {
+            right: calc(100% + 5px);
+        }
+
+        &.right {
+            left: calc(100% + 5px);
+        }
+
+        span {
+            display: block;
+        }
+    }
+}
+
+.pointer {
+    cursor: pointer;
 }

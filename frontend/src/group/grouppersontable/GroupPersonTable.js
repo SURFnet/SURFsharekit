@@ -30,8 +30,13 @@ function GroupPersonTable(props) {
     }, [])
 
     useEffect(() => {
+        setPageNumber(1)
         getPersons()
-    }, [query, pageNumber, sortOrder])
+    }, [query])
+
+    useEffect(() => {
+        getPersons()
+    }, [pageNumber, sortOrder])
 
     return (
         <div className={'group-person flex-column'}>
@@ -87,7 +92,7 @@ function GroupPersonTable(props) {
         function onSuccess(response) {
             setIsLoading(false)
             setPageNumber(1)
-            Toaster.showToaster({message: t("group.remove_person_success_message")})
+            Toaster.showToaster({type: 'info', message: t("group.remove_person_success_message")})
             getPersons()
         }
 
@@ -153,7 +158,7 @@ function GroupPersonTable(props) {
     function showAddPersonToGroupPopup() {
         const onPersonAdded = (onPersonAdded) => {
             getPersons()
-            Toaster.showToaster({message: t("group.add_person_success_message")})
+            Toaster.showToaster({type: 'info', message: t("group.add_person_success_message")})
             props.reloadGroup()
         }
 
@@ -164,4 +169,5 @@ function GroupPersonTable(props) {
 
     }
 }
+
 export default GroupPersonTable;

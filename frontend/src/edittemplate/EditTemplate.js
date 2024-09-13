@@ -7,7 +7,7 @@ import {TemplateMetaFieldExpandableRow} from "./TemplateMetaFieldExpandableRow";
 import Api from "../util/api/Api";
 import Toaster from "../util/toaster/Toaster";
 import LoadingIndicator from "../components/loadingindicator/LoadingIndicator";
-import {FormField} from "../components/field/FormField";
+import {FormField, FormSection, FormSectionsContainer} from "../components/field/FormField";
 import {useForm} from "react-hook-form";
 import RepoItemHelper from "../util/RepoItemHelper";
 
@@ -19,13 +19,24 @@ function EditTemplate(props) {
     const [isLoading, setIsLoading] = useState(false);
     const {register, handleSubmit, errors, setValue} = useForm();
     let templatePatchData = null;
-    let setActiveSection = null
+    // let setActiveSection = null
     let scrollSectionsContainer = null
     let scrollSections = null
+
+    let sections = template ? getSectionsFromSteps(template) : []
 
     useEffect(() => {
         getTemplate()
     }, [])
+
+/*    useEffect(() => {
+        if(template) {
+            window.addEventListener("scroll", handleScroll)
+        }
+        return () => {
+            window.removeEventListener("scroll", handleScroll)
+        }
+    }, [template])*/
 
     const TemplateMetaFieldSections = (templateSectionProps) => {
         return (
@@ -81,7 +92,7 @@ function EditTemplate(props) {
                 </div>
             </div>
             <div className={"form-elements-container"}>
-                <SectionQuickLinks/>
+                {/*<SectionQuickLinks/>*/}
                 <div className={"form"}>
                     <form key={"edit-template-form"}
                           id={"edit-template-form"}
@@ -129,7 +140,7 @@ function EditTemplate(props) {
                                 </div>
                             </div>
                         </div>
-                        <TemplateMetaFieldSections sections={template.sections}/>
+                        <TemplateMetaFieldSections sections={sections}/>
                         <button type="submit"
                                 form="edit-template-form"
                                 ref={formSubmitButton}
@@ -144,7 +155,6 @@ function EditTemplate(props) {
                  history={props.history}
                  activeMenuItem={"templates"}
                  contentRef={contentRef}
-                 onScroll={handleScroll}
                  content={content}
                  breadcrumbs={[
                      {
@@ -167,13 +177,24 @@ function EditTemplate(props) {
         patchTemplate(templatePatchData)
     }
 
-    function handleScroll() {
-        if (!scrollSections) {
-            scrollSectionsContainer = contentRef.current.querySelector("#edit-template-form .template-meta-field-section-list")
-            scrollSections = contentRef.current.querySelectorAll("#edit-template-form .template-meta-field-section-list > .template-meta-field-section")
+    function getSectionsFromSteps(template) {
+        let sections = [];
+        if(template) {
+            template.steps.forEach(step => {
+                sections = step.templateSections.map(section => {return section})
+            })
         }
-        const scrollBottom = (contentRef.current.scrollTop + contentRef.current.clientHeight)
-        const targetOffset = (contentRef.current.clientHeight / 2)
+        return sections
+    }
+
+   /* function handleScroll(event) {
+        const body = document.getElementById("root")
+        if (!scrollSections) {
+            scrollSectionsContainer = body.querySelector("#edit-template-form .template-meta-field-section-list")
+            scrollSections = body.querySelectorAll("#edit-template-form .template-meta-field-section-list > .template-meta-field-section")
+        }
+        const scrollBottom = event.currentTarget.pageYOffset + body.clientHeight
+        const targetOffset = body.clientHeight * 0.5
         let activeSectionIndex = 0;
         for (const sectionRef of scrollSections) {
             if (scrollBottom < (sectionRef.offsetTop + targetOffset)) {
@@ -186,16 +207,16 @@ function EditTemplate(props) {
         if(scrollBottom >= (scrollSectionsContainer.offsetTop + scrollSectionsContainer.clientHeight)) {
             activeSectionIndex = (scrollSections.length - 1)
         }
-        setActiveSection(activeSectionIndex)
-    }
+        // setActiveSection(activeSectionIndex)
+    }*/
 
-    function SectionQuickLinks() {
-        const [activeSectionIndex, setActiveSectionIndex] = useState(0);
-        setActiveSection = setActiveSectionIndex
+    /*function SectionQuickLinks() {
+        // const [activeSectionIndex, setActiveSectionIndex] = useState(0);
+        // setActiveSection = setActiveSectionIndex
 
         let sectionsHtml = []
-        for (let i = 0; i < template.sections.length; i++) {
-            const templateSection = template.sections[i]
+        for (let i = 0; i < sections.length; i++) {
+            const templateSection = sections[i]
             const activeClass = (i === activeSectionIndex) ? "active" : ""
             sectionsHtml.push(<div key={i} className={"section-quick-link"}>
                 <div className={"active-indicator " + activeClass}/>
@@ -210,12 +231,12 @@ function EditTemplate(props) {
                 {sectionsHtml}
             </div>
         </div>
-    }
+    }*/
 
     function configureTemplatePatchData(metaFieldValues = null, formData = null) {
         if (!templatePatchData) {
             let fieldList = []
-            template.sections.forEach((section) => {
+            sections.forEach((section) => {
                 section.fields.forEach((templateMetaField) => {
 
                     const formSwitchValue = formData[templateMetaField.key];

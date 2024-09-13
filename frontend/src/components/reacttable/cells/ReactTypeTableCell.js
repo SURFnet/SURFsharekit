@@ -12,6 +12,8 @@ export function ReactTypeTableCell(props) {
             case 'publicationrecord': return t('publication.type.publication_record');
             case 'researchobject': return t('publication.type.research_object');
             case 'learningobject': return t('publication.type.learning_object');
+            case 'dataset': return t('publication.type.dataset');
+            case 'project': return t('publication.type.project');
             default: return "-"
         }
     }

@@ -12,6 +12,7 @@ import {TrashcanResultRow} from "./TrashcanResultRow";
 import Api from "../util/api/Api";
 import Toaster from "../util/toaster/Toaster";
 import MemberPositionOptionsHelper from "../util/MemberPositionOptionsHelper";
+import useDocumentTitle from "../util/useDocumentTitle";
 
 function TrashCan(props) {
     const {t} = useTranslation();
@@ -23,12 +24,14 @@ function TrashCan(props) {
     const pageSize = 10;
     const [user] = useAppStorageState(StorageKey.USER);
 
+    useDocumentTitle("Trash Can")
+
     useEffect(() => {
         search(currentQuery)
     }, [currentQuery, pageIndex]);
 
     if (user === null) {
-        return <Redirect to={'unauthorized?redirect=trashcan'}/>
+        return <Redirect to={'login?redirect=trashcan'}/>
     }
 
     function SearchResultsList() {
@@ -100,6 +103,9 @@ function TrashCan(props) {
                 <h1>{t("side_menu.trash_can")}</h1>
                 <div className={"search-count"}>{totalCount}</div>
             </div>
+            <div className={"trashcan-disclaimer"}>
+                {t("trash.disclaimer")}
+            </div>
             <SearchInput placeholder={t("navigation_bar.search")}
                          defaultValue={props.match.params.searchQuery}
                          onChange={(e) => {
@@ -143,7 +149,7 @@ function TrashCan(props) {
         const config = {
             params: {
                 'fields[repoItems]': 'title,repoType,permissions,lastEdited',
-                'fields[groups]': 'title,permissions,lastEdited',
+                'fields[groups]': 'title,permissions,lastEdited,labelNL,labelEN',
                 'fields[persons]': 'name,permissions,position,lastEdited',
                 'filter[query]': searchQuery,
                 'filter[isRemoved]': 1,

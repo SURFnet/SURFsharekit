@@ -1,11 +1,10 @@
-import React from 'react';
-import {BrowserRouter as Router, Route, Switch} from "react-router-dom";
+import React, {useEffect, useState} from 'react';
+import {BrowserRouter as Router, Redirect, Route, Switch, useLocation} from "react-router-dom";
 import "./sass/main.scss";
 import Dashboard from "./dashboard/Dashboard";
 import Login from "./login/Login";
 import NotFound from "./errorpages/NotFound";
 import Publications from "./publications/Publications";
-import EditPublication from "./editpublication/EditPublication";
 import {Slide, ToastContainer} from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
 import './util/toaster/toaster.scss'
@@ -25,8 +24,23 @@ import Profiles from "./profiles/Profiles";
 import NewProfile from "./profiles/newprofile/NewProfile";
 import {version} from "./appversion.json"
 import Removed from "./errorpages/Removed";
+import Projects from "./projects/Projects";
+import {useGlobalState} from "./util/GlobalState";
+import {mobileTabletMaxWidth} from "./Mixins";
+import Publication from "./publication/Publication";
+import ForbiddenFile from "./errorpages/ForbiddenFile";
+import PrivacyStatement from "./privacystatement/PrivacyStatement";
+import TextPage from "./components/textpage/TextPage";
 
 function App() {
+
+    const [isEnvironmentBannerVisible, setIsEnvironmentBannerVisible] = useGlobalState("isEnvironmentBannerVisible",false);
+
+    useEffect(() => {
+        if (process.env.REACT_APP_ENVIRONMENT_TYPE !== 'live') {
+            setIsEnvironmentBannerVisible(true);
+        }
+    }, [])
 
     function includeToastify() {
         return <ToastContainer
@@ -43,20 +57,18 @@ function App() {
         />
     }
 
-    return (
-        [
-            <Router>
-                <link
-                    href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,700;0,800;0,900;1,700;1,800;1,900&family=Open+Sans:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap"
-                    rel="stylesheet"/>
+    localStorage.setItem(`cached-version`, version)
 
-                <div className={"App " + (hasEnvironmentBanner() ? 'with-environment-banner' : '')}>
-                    <Switch>
-                        {appRoutes.map(r => <Route path={r.path} exact={r.exact} component={r.component}/>)}
-                    </Switch>
-                    {includeToastify()}
-                </div>
-            </Router>]
+    return (
+        <Router>
+            <div className={"App"}>
+                <Switch>
+                    <Redirect from="/:url*(/+)" to={window.location.pathname.slice(0, -1)} />
+                    {appRoutes.map(r => <Route path={r.path} exact={r.exact} component={r.component}/>)}
+                </Switch>
+                {includeToastify()}
+            </div>
+        </Router>
     );
 }
 
@@ -79,7 +91,7 @@ export const appRoutes = [
     {
         path: '/publications/:id',
         exact: true,
-        component: EditPublication
+        component: Publication
     },
     {
         path: '/organisation',
@@ -95,6 +107,16 @@ export const appRoutes = [
         path: '/templates/:id',
         exact: true,
         component: EditTemplate
+    },
+    {
+        path: '/projects',
+        exact: true,
+        component: Projects
+    },
+    {
+        path: '/projects/:id',
+        exact: true,
+        component: Publication
     },
     {
         path: '/reports',
@@ -152,6 +174,11 @@ export const appRoutes = [
         component: Unauthorized
     },
     {
+        path: '/forbiddenfile',
+        exact: false,
+        component: ForbiddenFile
+    },
+    {
         path: '/forbidden',
         exact: false,
         component: Forbidden
@@ -177,42 +204,20 @@ export const appRoutes = [
         component: Dashboard
     },
     {
+        path: '/privacy',
+        exact: true,
+        component: TextPage
+    },
+    {
+        path: '/cookies',
+        exact: true,
+        component: TextPage
+    },
+    {
         path: '/',
         exact: false,
         component: NotFound
-    },
-]
-
-let usingEnvironmentBanner = false;
-
-export function EnvironmentBanner() {
-    if (process.env.REACT_APP_ENVIRONMENT_TYPE === 'dev') {
-        usingEnvironmentBanner = true;
-        return <div className={'environment-banner development'}>
-            DEVELOPMENT ENVIRONMENT
-        </div>
-    } else if (process.env.REACT_APP_ENVIRONMENT_TYPE === 'test') {
-        usingEnvironmentBanner = true;
-        return <div className={'environment-banner test'}>
-            TEST ENVIRONMENT
-        </div>
-    } else if (process.env.REACT_APP_ENVIRONMENT_TYPE === 'staging') {
-        usingEnvironmentBanner = true;
-        return <div className={'environment-banner staging'}>
-            STAGING ENVIRONMENT
-        </div>
-    } else if (process.env.REACT_APP_ENVIRONMENT_TYPE === 'acceptance') {
-        usingEnvironmentBanner = true;
-        return <div className={'environment-banner acceptance'}>
-            ACCEPTANCE ENVIRONMENT
-        </div>
-    } else {
-        return <div/>
     }
-}
-
-export function hasEnvironmentBanner() {
-    return usingEnvironmentBanner === true;
-}
+]
 
 export default App;

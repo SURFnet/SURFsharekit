@@ -15,7 +15,7 @@ class AddPersonToGroupPopup {
             html: (
                 <AddPersonToGroupPopupContent
                     groupToAddTo={groupToAddTo}
-                    onPersonSelected={(selectedPerson) => {
+                    onAddButtonClick={(selectedPerson) => {
                         addPersonToGroup(selectedPerson)
                     }}
                     onCancel={() => {
@@ -37,7 +37,6 @@ class AddPersonToGroupPopup {
 
         function addPersonToGroup(person) {
             GlobalPageMethods.setFullScreenLoading(true)
-            SwalAddPersonToGroupPopup.clickConfirm();
 
             const config = {
                 headers: {
@@ -59,8 +58,8 @@ class AddPersonToGroupPopup {
 
             function onSuccess(response) {
                 GlobalPageMethods.setFullScreenLoading(false)
-                SwalAddPersonToGroupPopup.clickConfirm();
                 onPersonSelected(person)
+                SwalAddPersonToGroupPopup.clickConfirm();
             }
 
             function onServerFailure(error) {

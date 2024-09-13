@@ -91,7 +91,7 @@ export function OrganisationDropdownField(props) {
 
         const config = {
             params: {
-                'filter[level]': 'organisation',
+                'filter[level]': 'organisation,consortium',
                 'filter[scope]': 'off',
                 'filter[isRemoved]': 'false',
                 'fields[institutes]': 'title,summary',

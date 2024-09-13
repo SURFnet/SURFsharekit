@@ -11,13 +11,14 @@ import {useHistory} from "react-router-dom";
 import {OrganisationStatusLabel} from "../../../organisation/OrganisationStatusLabel";
 import debounce from "debounce-promise";
 import {register} from "../../../serviceWorker";
+import {SwitchField} from "../switch/Switch";
 
 function MultiSelectSuborganisation(props) {
     const {t} = useTranslation();
     const history = useHistory();
     const [selectedOptionValues, setSelectedOptionValues] = useState(getInitialValues())
     const isFirstLoad = useRef(true);
-
+    const [showInactive, setShowInactive] = useState(0);
     const loadOptions = inputValue => promiseOptions(inputValue)
     const debouncedLoadOptions = debounce(loadOptions, 1000)
 
@@ -147,8 +148,17 @@ function MultiSelectSuborganisation(props) {
 
     return (
         <div className={"multi-select-suborganisation-container" + classAddition}>
+            {!props.readonly && props.showInactiveSwitch && <div className={"inactive-switch"}>
+                <div className={"switch-row-text"}>
+                    <h5 className={"bold-text"}>{t("organisation.tab_organizational_inactive")}</h5>
+                </div>
+                <SwitchField defaultValue={showInactive}
+                             onChange={setShowInactive}/>
+            </div>}
+
+            {/* https://stackoverflow.com/questions/54107238/clear-cached-options-on-async-select*/}
             <AsyncSelect
-                key={props.name + t('language.current_code')}
+                key={props.name + t('language.current_code') + showInactive}
                 isDisabled={props.readonly}
                 className="surf-multi-select-suborganisation"
                 classNamePrefix="surf-multi-select"
@@ -157,7 +167,7 @@ function MultiSelectSuborganisation(props) {
                     IndicatorSeparator: () => null,
                     Option
                 }}
-                defaultValue={getInitialValues()}
+                defaultValue={selectedOptionValues}
                 cacheOptions={true}
                 defaultOptions={true}
                 loadOptions={inputValue => debouncedLoadOptions(inputValue)}
@@ -206,6 +216,9 @@ function MultiSelectSuborganisation(props) {
             }
         };
 
+        if (!showInactive) {
+            config.params['filter[inactive]'] = '0';
+        }
         if (searchQuery.length > 0) {
             config.params['filter[title][LIKE]'] = '%' + searchQuery + '%'
         }

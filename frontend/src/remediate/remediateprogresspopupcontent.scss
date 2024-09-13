@@ -1,0 +1,25 @@
+@import "../sass/theme/constants";
+@import "../sass/theme/fonts";
+@import "../sass/theme/mixins";
+@import "../sass/utils/mixins";
+
+.swal2-container.remediate-progress-container {
+
+    .swal2-popup.remediate-progress-popup {
+        padding: 25px 35px;
+        width: 45em;
+        min-height: 300px;
+
+        .remediate-progress-content {
+            text-align: left;
+
+            .close-button-container {
+                position: absolute;
+                right: 13px;
+                top: 4px;
+                padding: 7px;
+                cursor: pointer;
+            }
+        }
+    }
+}

@@ -3,10 +3,10 @@ import Toaster from "../../../util/toaster/Toaster";
 import Api from "../../../util/api/Api";
 import RepoItemPopup from "../relatedrepoitempopup/RelatedRepoItemPopup";
 import {useHistory} from "react-router-dom";
+import {useEffect} from "react";
 
-export function showRepoItemPopup(currentFormReducerStateRef, field, repoItemToShowId, file, onSuccessCallback, baseRepoItem, repoItemIdsToExcludeInSearch = []) {
-
-    function onSuccessfulSaveOfRelatedRepoItem(savedRelatedRepoItem) {
+export function showRepoItemPopup(currentFormReducerStateRef, field, repoItemToShowId, files, onSuccessCallback, baseRepoItem, repoItemIdsToExcludeInSearch = [], getRepoItemFunction = null, repoItems = []) {
+    function onSuccessfulSaveOfRelatedRepoItem(savedRelatedRepoItems) {
         let currentFieldAnswers = null;
         Object.keys(currentFormReducerStateRef).forEach(function (key, value) {
             if (key === field.key) {
@@ -18,26 +18,37 @@ export function showRepoItemPopup(currentFormReducerStateRef, field, repoItemToS
             currentFieldAnswers = []
         }
 
-        let newRepoItemFieldAnswers
-        const existingItem = currentFieldAnswers.find((findItem) => { return findItem.id === savedRelatedRepoItem.id })
-        if(existingItem) {
-            existingItem.summary = savedRelatedRepoItem.summary
-            newRepoItemFieldAnswers = {
-                [field.key]: [
-                    ...currentFieldAnswers
-                ]
-            };
-        } else {
-            newRepoItemFieldAnswers = {
-                [field.key]: [
-                    ...currentFieldAnswers,
+        let newRepoItemFieldAnswers = {}
+        savedRelatedRepoItems.forEach(savedRelatedRepoItem => {
+            const existingItem = currentFieldAnswers.find((findItem) => { return findItem.id === savedRelatedRepoItem.id })
+            if(existingItem) {
+                existingItem.summary = savedRelatedRepoItem.summary
+                newRepoItemFieldAnswers = {
+                    [field.key]: [
+                        ...currentFieldAnswers
+                    ]
+                };
+            } else {
+                newRepoItemFieldAnswers = {
+                    [field.key]: [
+                        ...currentFieldAnswers,
+                        {
+                            id: savedRelatedRepoItem.id,
+                            summary: savedRelatedRepoItem.summary
+                        }
+                    ]
+                };
+
+                // update current fieldAnswers so the newRepoItemFieldAnswers don't overwrite each other
+                currentFieldAnswers.push(
                     {
                         id: savedRelatedRepoItem.id,
                         summary: savedRelatedRepoItem.summary
                     }
-                ]
-            };
-        }
+                )
+
+            }
+        })
 
         const newFormReducerState = {
             ...currentFormReducerStateRef,
@@ -52,10 +63,10 @@ export function showRepoItemPopup(currentFormReducerStateRef, field, repoItemToS
         console.log("Cancel Related RepoItem popup pressed")
     }
 
-    RepoItemPopup.show(repoItemToShowId, file, onSuccessfulSaveOfRelatedRepoItem, onCancel, baseRepoItem, repoItemIdsToExcludeInSearch)
+    RepoItemPopup.show(repoItemToShowId, files, onSuccessfulSaveOfRelatedRepoItem, onCancel, baseRepoItem, repoItemIdsToExcludeInSearch, getRepoItemFunction, repoItems)
 }
 
-export function createRelatedRepoItem(repoType, instituteId, history, successCallback) {
+export function createRelatedRepoItem(repoType, instituteId, history, successCallback, failureCallback) {
 
     function validator(response) {
         const repoItemData = response.data ? response.data.data : null;
@@ -65,16 +76,17 @@ export function createRelatedRepoItem(repoType, instituteId, history, successCal
     }
 
     function onSuccess(response) {
-        const relatedRepoItem = response.data.data
-        successCallback(relatedRepoItem)
+        successCallback(Api.dataFormatter.deserialize(response.data))
     }
 
     function onLocalFailure(error) {
         Toaster.showDefaultRequestError()
+        failureCallback(error)
     }
 
     function onServerFailure(error) {
         Toaster.showServerError(error)
+        failureCallback(error)
         if (error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
             history.push('/login?redirect=' + window.location.pathname);
         }
@@ -157,7 +169,6 @@ export function removeValues(currentFormReducerStateRef, field, value, successCa
 }
 
 export function createValues(currentFormReducerStateRef, field, value, successCallback){
-    console.log(`value to be added: ${value}`)
     let currentFieldAnswers = null;
     Object.keys(currentFormReducerStateRef).forEach(function (key, value) {
         if (key === field.key) {
@@ -170,13 +181,14 @@ export function createValues(currentFormReducerStateRef, field, value, successCa
     }
 
     const newRepoItemFieldAnswers = {
-        [field.key]: [...currentFieldAnswers, ...value]
+        [field.key]: [...currentFieldAnswers,  ...value]
     }
 
     const newFormReducerState = {
       ...currentFormReducerStateRef,
       ...newRepoItemFieldAnswers
     }
+
     successCallback(newFormReducerState);
 }
 

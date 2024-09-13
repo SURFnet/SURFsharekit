@@ -3,8 +3,9 @@ import React, {useEffect, useState} from "react";
 import './persontablewithsearch.scss'
 import '../field/formfield.scss'
 import StatusIcon from "../statusicon/StatusIcon";
+import {ReactComponent as IconClaimPerson } from "../../resources/icons/claim-person-icon.svg";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faEdit, faPlus, faTrash} from "@fortawesome/free-solid-svg-icons";
+import {faEdit, faPlus, faTrash, faExclamationCircle} from "@fortawesome/free-solid-svg-icons";
 import IconButtonText from "../buttons/iconbuttontext/IconButtonText";
 import {HelperFunctions} from "../../util/HelperFunctions";
 import {ReactTableSearchInput} from "../reacttable/filterrow/ReacTableFilterItems";
@@ -17,6 +18,10 @@ import {
 import {ProfileBanner} from "../profilebanner/ProfileBanner";
 import {roleKeyToTranslationKey} from "../../util/MemberPositionOptionsHelper";
 import {ReactTableHelper} from "../../util/ReactTableHelper";
+import MergeProfilePopup from "../../profile/mergeprofilespopup/MergeProfilesPopup";
+import ClaimRequestPopup from "../../profile/claimrequest/ClaimRequestPopup";
+import {useHistory} from "react-router-dom";
+import {StorageKey, useAppStorageState} from "../../util/AppStorage";
 
 function PersonTableWithSearch(props) {
     const sortOrder = props.sortOrder
@@ -28,6 +33,7 @@ function PersonTableWithSearch(props) {
     const [searchOutOfScope, setSearchOutOfScope] = useState(false);
     const [query, setQuery] = useState('');
     const {t} = useTranslation();
+    const history = useHistory();
     const columns = React.useMemo(
         () => {
             return [
@@ -42,8 +48,11 @@ function PersonTableWithSearch(props) {
                 },
                 {
                     Header: () => {
-                        return <div>{t('person.firstName')} <ReactTableSortIcon sortOrder={sortOrder}
-                                                                                name={'firstName'}/>
+                        return <div>
+                            <span className={"border"}>{t('person.firstName')}</span>
+                            <ReactTableSortIcon
+                                sortOrder={sortOrder}
+                                name={'firstName'}/>
                         </div>
                     },
                     accessor: 'firstName',
@@ -57,7 +66,9 @@ function PersonTableWithSearch(props) {
                 },
                 {
                     Header: () => {
-                        return <div>{t('person.surname')} <ReactTableSortIcon sortOrder={sortOrder} name={'surname'}/>
+                        return <div>
+                            <span className={"border"}>{t('person.surname')}</span>
+                            <ReactTableSortIcon sortOrder={sortOrder} name={'surname'}/>
                         </div>
                     },
                     accessor: 'surname',
@@ -71,7 +82,9 @@ function PersonTableWithSearch(props) {
                 },
                 {
                     Header: () => {
-                        return <div>{t('person.role')} <ReactTableSortIcon sortOrder={sortOrder} name={'position'}/>
+                        return <div>
+                            <span className={"border"}>{t('person.role')}</span>
+                            <ReactTableSortIcon sortOrder={sortOrder} name={'position'}/>
                         </div>
                     },
                     accessor: 'position',
@@ -85,10 +98,10 @@ function PersonTableWithSearch(props) {
                 },
                 {
                     Header: () => {
-                        return <div>{t('person.groups')}</div>
+                        return <div className={"border"}>{t('person.groups')}</div>
                     },
                     disableSortBy: true,
-                    accessor: 'groupTitles',
+                    accessor: t('language.current_code') === 'nl' ? 'groupLabelsNL' : 'groupLabelsEN',
                     className: 'person-row-groups',
                     Cell: (tableInfo) => {
                         return <div>{ReactTableHelper.concatenateCellValue(tableInfo.cell.value)}</div>
@@ -99,19 +112,19 @@ function PersonTableWithSearch(props) {
                 },
                 {
                     Header: () => {
-                        return <div>{t('person.identifiers')}</div>
+                        return <div className={"border"}>{t('person.identifiers')}</div>
                     },
                     disableSortBy: true,
                     accessor: 'identifiers',
                     className: 'person-row-groups',
                     Cell: (tableInfo) => {
-                        console.log(tableInfo.row.original)
-                        return <div>{[
+                        const values = [
                             tableInfo.row.original.persistentIdentifier,
                             tableInfo.row.original.orcid,
                             tableInfo.row.original.isni,
                             tableInfo.row.original.hogeschoolId
-                        ].join("\n")}</div>
+                        ].filter(value => value !== null && value !== "");
+                        return <div>{values.join("\n")}</div>;
                     },
                     style: {
                         width: "20%"
@@ -120,8 +133,11 @@ function PersonTableWithSearch(props) {
                 {
 
                     Header: () => {
-                        return <div>{t('person.status')} <ReactTableSortIcon sortOrder={sortOrder}
-                                                                             name={'hasLoggedIn'}/>
+                        return <div>
+                            <span className={"border"}>{t('person.status')} </span>
+                            <ReactTableSortIcon
+                                sortOrder={sortOrder}
+                                name={'hasLoggedIn'}/>
                         </div>
                     },
                     accessor: 'hasLoggedIn',
@@ -138,6 +154,7 @@ function PersonTableWithSearch(props) {
                     accessor: 'permissions',
                     className: 'person-row-actions',
                     disableSortBy: true,
+                    disableLink: true,
                     style: {
                         width: "20%"
                     },
@@ -145,7 +162,18 @@ function PersonTableWithSearch(props) {
                         const permissions = tableInfo.cell.value
                         const canEdit = (permissions.canEdit)
                         const canDelete = (permissions.canEdit && props.canEdit && tableInfo.row.original.groupCount > 1)
-                        return <div className={'flex-row'}>
+                        return <div className={"flex-row"}>
+                            {props.claimIconEnabled &&
+                                <IconClaimPerson
+                                    title={t("profile.claim_popup.tooltip")}
+                                    onClick={(e) => {
+                                        e.stopPropagation()
+                                        const person = tableInfo.row.original.id
+                                        const personInstitutes = tableInfo.row.original.rootInstitutesSummary
+                                        ClaimRequestPopup.show(history, person, personInstitutes)
+                                    }}
+                                />
+                            }
                             {showDelete && <FontAwesomeIcon icon={faTrash}
                                              className={`icon-trash${(canDelete) ? "" : " disabled"}`}
                                              onClick={(e) => {
@@ -183,7 +211,7 @@ function PersonTableWithSearch(props) {
 
     const reactTableLoadingIndicator = <ReactTableLoadingIndicator loadingText={t('loading_indicator.loading_text')}/>;
     const onRowClick = (row) => {
-        props.history.push('../profile/' + row.original.id)
+        props.history.push('/profile/' + row.original.id)
     }
 
     return <div>

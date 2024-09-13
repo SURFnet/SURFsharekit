@@ -2,7 +2,7 @@
 @import "../sass/theme/mixins";
 
 .public-page {
-    height: 100%;
+    min-height: 100%;
     background-color: white;
     display: flex;
 
@@ -26,6 +26,13 @@
 
                 .value-row-subtitle {
                     font-style: italic;
+                }
+
+                a {
+                    color: blue !important;
+                    &:visited {
+                        color: purple !important;
+                    }
                 }
             }
         }

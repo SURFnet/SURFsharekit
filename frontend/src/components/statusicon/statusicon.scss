@@ -35,6 +35,10 @@
         &.red {
             background-color: $flame;
         }
+
+        &.gray {
+            background-color: $grayStatus;
+        }
     }
 
     .text {

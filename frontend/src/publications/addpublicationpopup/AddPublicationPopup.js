@@ -6,7 +6,7 @@ import {AddPublicationPopupContent} from "./AddPublicationPopupContent";
 const SwalAddPublicationPopup = withReactContent(Swal)
 
 class AddPublicationPopup {
-    static show(institutes, instituteAndTypeSelected, repoItemToCopyCallback, onCancel) {
+    static show(institutes, instituteAndTypeSelected, repoItemToCopyCallback, onCancel, isProject) {
         SwalAddPublicationPopup.fire({
             html: (
                 <AddPublicationPopupContent
@@ -22,6 +22,7 @@ class AddPublicationPopup {
                     onCancel={() => {
                         SwalAddPublicationPopup.clickCancel();
                     }}
+                    isProject={isProject}
                 />
             ),
             heightAuto: false,

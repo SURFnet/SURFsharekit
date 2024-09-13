@@ -17,24 +17,24 @@ export function RadioGroup(props) {
     }
 
     let radioOptions = props.options.map((option, index) => {
-            return <div key={index} className="option">
+        return <div key={index} className="option">
                 <input
                     defaultChecked={props.defaultValue === option.value}
                     type="radio"
-                    id={option.value}
+                    id={option.id ?? option.value}
                     disabled={props.readonly}
                     value={option.value}
                     name={props.name}
                     onChange={() => newSelection(option)}/>
 
-                <label htmlFor={option.value}>
+                <label htmlFor={option.id ?? option.value}>
                     {(option.label) ? option.label : t('language.current_code') === 'nl' ? option.labelNL : option.labelEN}
                 </label>
             </div>
         }
     );
 
-    return <fieldset className={"field-input radio " + classAddition}>
+    return <fieldset id={props.id} className={"field-input radio " + classAddition}>
         {radioOptions}
     </fieldset>
 }

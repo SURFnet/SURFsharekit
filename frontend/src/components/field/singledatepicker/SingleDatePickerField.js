@@ -8,11 +8,16 @@ import {faCalendar, faChevronLeft, faChevronRight} from "@fortawesome/free-solid
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import * as moment from "moment";
 import {useTranslation} from "react-i18next";
+import {Tooltip, WarningMessage, WarningMessageContent} from "../FormField";
+import {faInfoCircle} from "@fortawesome/free-solid-svg-icons/faInfoCircle";
+import i18n from "i18next";
+import styled from "styled-components";
 
 function SingleDatePickerField(props) {
     const date = props.defaultValue ? new Date(props.defaultValue) : null;
     const [isCalendarFocused, setIsCalendarFocused] = useState(false);
     const [calendarDate, setCalendarDate] = useState(date ? moment(date) : null);
+    const [message, setMessage] = useState();
     const {t} = useTranslation();
     const hadError = useRef(false);
     const isFirstLoad = useRef(true);
@@ -42,6 +47,16 @@ function SingleDatePickerField(props) {
         }
     }, [calendarDate]);
 
+    useEffect(() => {
+        if (props.formState) {
+            if (props.attributeKey === 'EmbargoDate') {
+                setMessage({
+                    'nl': 'Wanneer het embargo verloopt, geldt het eerder gekozen toegangsrecht.',
+                    'en': 'When the embargo date expires, the access right previously chosen will apply.'
+                })
+            }
+        }
+    }, [props.formState])
 
     if (calendarDate) {
         calendarDate.locale(t('language.current_code'));
@@ -84,7 +99,7 @@ function SingleDatePickerField(props) {
         readonlyValue = moment(props.defaultValue).format(singleDatePickerDisplayFormat)
     }
     return (
-        <div className={"field-input-wrapper"}>
+        <DatePickerContainer>
             {props.readonly && <div className={"field-input readonly"}>{readonlyValue}</div>}
             <div className={"single-date-picker-wrapper" + ((props.readonly) ? " readonly-hidden" : "")}>
                 <SingleDatePicker
@@ -102,7 +117,8 @@ function SingleDatePickerField(props) {
                     onDateChange={datePickerDate => onDateChanged({datePickerDate})}
                 />
             </div>
-        </div>
+            { message && <Tooltip position={'right'} width={'196px'} element={<FontAwesomeIcon style={{alignSelf: "center", marginLeft: "6px"}} icon={faInfoCircle} />} text={message[i18n.language]} />}
+        </DatePickerContainer>
     )
 }
 
@@ -120,5 +136,10 @@ SingleDatePickerField.defaultProps = {
         firstDayOfWeek: 1
     }
 }
+
+const DatePickerContainer = styled.div`
+  display: flex;
+  flex-direction: row;
+`
 
 export default SingleDatePickerField;

@@ -1,0 +1,5 @@
+.space-y-1 > :not([hidden]) ~ :not([hidden]) {
+  --space-y-reverse: 0;
+  margin-bottom: calc(0.25rem * var(--space-y-reverse));
+  --space-y-reverse: 1;
+}

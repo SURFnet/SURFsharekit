@@ -1,11 +1,13 @@
 import React from "react";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faCheck, faExclamationTriangle} from "@fortawesome/free-solid-svg-icons";
+import {faExclamationTriangle, faInfoCircle} from "@fortawesome/free-solid-svg-icons";
 import {toast} from "react-toastify";
 import i18n from '../../i18n'
+import {faTimesCircle} from "@fortawesome/free-solid-svg-icons/faTimesCircle";
+import {faTimes} from "@fortawesome/free-solid-svg-icons/faTimes";
+import {faCheckCircle} from "@fortawesome/free-solid-svg-icons/faCheckCircle";
 
 class Toaster {
-
     /**
      * @param toasterProps
      * Type: error or success. Defaults to success.
@@ -16,7 +18,7 @@ class Toaster {
         const toasterContent =
             <div className={'custom-toaster-content'}>
                 <div className={"icon-wrapper"}>
-                    <FontAwesomeIcon icon={toasterProps.type === 'error' ? faExclamationTriangle : faCheck}/>
+                    <FontAwesomeIcon icon={getIcon(toasterProps.type)}/>
                 </div>
                 <div className={"custom-toaster-text"}>
                     {toasterProps.message}
@@ -26,10 +28,32 @@ class Toaster {
                 </div>}
             </div>
 
+        const closeButton =
+            <div className={'custom-toaster-close-button'}>
+                <FontAwesomeIcon icon={faTimes}/>
+            </div>
+
         if (toasterProps.type === 'error') {
-            toast.error(toasterContent);
+            toast.error(toasterContent, {closeButton});
+        } else if (toasterProps.type === 'info') {
+            toast.info(toasterContent, {closeButton});
+        } else if (toasterProps.type === 'warning') {
+            toast.warning(toasterContent, {closeButton});
         } else {
-            toast.success(toasterContent);
+            toast.success(toasterContent, {closeButton});
+        }
+
+        function getIcon(toasterType) {
+            switch (toasterType) {
+                case "error":
+                    return faTimesCircle;
+                case "warning":
+                    return faExclamationTriangle;
+                case "success":
+                    return faCheckCircle;
+                case "info":
+                    return faInfoCircle;
+            }
         }
     }
 
@@ -42,19 +66,17 @@ class Toaster {
     }
 
     static showServerError(error) {
+
         if(error.response && error.response.status === 403){
             return;
         }
         if (error.response && error.response.data && error.response.data.errors) {
             const code = error.response.data.errors[0].code;
-            const title = error.response.data.errors[0].title;
-            const details = error.response.data.errors[0].detail;
 
-            let errorText = '';
+            let errorText = i18n.t("toast.server_error");
             if (code) {
-                errorText += "(" + code + ") ";
+                errorText += " " + code;
             }
-            errorText += details ?? title;
             this.showDefaultRequestError(errorText);
         } else {
             this.showDefaultRequestError();

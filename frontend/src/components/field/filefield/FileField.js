@@ -10,7 +10,7 @@ import Toaster from "../../../util/toaster/Toaster";
 export function FileField(props) {
     const {t} = useTranslation();
     const hiddenInputFileRef = useRef();
-    const [file, setFile] = useState((props.file && props.file[0]) ? props.file[0] : null);
+    const [file, setFile] = useState(props.file ?? null);
     const [serverFile, setServerFile] = useState((props.defaultValue && props.defaultValue[0]) ? props.defaultValue[0] : null)
 
     function getFileTitle() {
@@ -43,8 +43,8 @@ export function FileField(props) {
     const fileChanged = (event) => {
         if (event && event.target && event.target.files && event.target.files.length > 0) {
             const changedFile = event.target.files[0];
-            const sizeInMB = changedFile.size / 1000000;
-            if (sizeInMB > 500) {
+            const sizeInMB = changedFile.size / 1048576; //1024*1024
+            if (sizeInMB > 10240) {
                 Toaster.showDefaultRequestError(t('error_message.file_too_large'));
                 return;
             }
@@ -67,11 +67,13 @@ export function FileField(props) {
                     {hasFile ? getFileTitle() : t("attachment_popup.no_file")}
                 </div>
             </div>
-            <div className={"trash-icon-wrapper"} onClick={handleDeleteFileClick}>
-                <FontAwesomeIcon icon={faTrash}/>
-            </div>
+            { serverFile === null && (
+                <div className={"trash-icon-wrapper"} onClick={handleDeleteFileClick}>
+                    <FontAwesomeIcon icon={faTrash}/>
+                </div>
+            )}
             <div className={"new-file-upload-button"}>
-                <ButtonText text={"Nieuwe upload"} className={"upload-file-button"} onClick={handleNewFileUploadClick}/>
+                <ButtonText text={serverFile !== null ? t("attachment_popup.change") : t("attachment_popup.new_upload")} className={"upload-file-button"} onClick={handleNewFileUploadClick}/>
             </div>
             <input type="file"
                    ref={hiddenInputFileRef}

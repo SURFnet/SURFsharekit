@@ -1,0 +1,71 @@
+@import "../sass/theme/constants";
+@import "../sass/theme/fonts";
+@import "../sass/theme/mixins";
+@import "../sass/utils/mixins";
+
+.swal2-container.remediate-container {
+
+    .swal2-popup.remediate-popup {
+        padding: 25px 35px;
+        width: 45em;
+        min-height: 300px;
+
+        .remediate-content {
+            text-align: left;
+
+            .close-button-container {
+                position: absolute;
+                right: 13px;
+                top: 4px;
+                padding: 7px;
+                cursor: pointer;
+            }
+
+            #remediate-form {
+                padding-top: 40px;
+            }
+        }
+
+        #form-remediate {
+            margin-top: 20px;
+
+            .radio-group-container {
+                flex-direction: column;
+
+                .field-label-radio-group {
+                    @include form-field-label-style
+                }
+
+                .remediate-radio-group {
+                    display: flex;
+                    align-items: center;
+                    padding-top: 5px;
+                    padding-bottom: 10px;
+
+                    .option {
+                        margin-top: 0;
+                        margin-right: 15px;
+                    }
+                }
+            }
+
+            .save-button-wrapper {
+                margin-top: 20px;
+            }
+        }
+
+        .form-field {
+            &:nth-child(2) {
+                padding-left: 20px;
+            }
+        }
+
+        .form-column {
+
+
+            &.hidden {
+                display: none;
+            }
+        }
+    }
+}

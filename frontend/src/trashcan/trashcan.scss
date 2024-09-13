@@ -36,6 +36,14 @@
             margin-right: 0;
         }
 
+        .trashcan-disclaimer {
+            background: $flame-light;
+            max-width: 550px;
+            padding: 20px 20px;
+            border-radius: 2px $default-radius $default-radius;
+            margin-top: 20px;
+        }
+
         .trashcan-results-list {
             @include rounded-background-pointy-upper-left();
             margin-top: 25px;

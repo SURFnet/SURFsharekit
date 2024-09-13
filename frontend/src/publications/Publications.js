@@ -9,9 +9,12 @@ import IconButtonText from "../components/buttons/iconbuttontext/IconButtonText"
 import Api from "../util/api/Api";
 import ValidationError from "../util/ValidationError";
 import Toaster from "../util/toaster/Toaster";
-import ReactPublicationTable, {copyRepoItem} from "../components/reacttable/tables/ReactPublicationTable";
+import ReactPublicationTable, {copyRepoItem} from "../components/reacttable/tables/publication/ReactPublicationTable";
 import AddPublicationPopup from "./addpublicationpopup/AddPublicationPopup";
 import {UserPermissions} from "../util/UserPermissions";
+import ButtonText from "../components/buttons/buttontext/ButtonText";
+import RemediatePopup from "../remediate/RemediatePopup";
+import useDocumentTitle from "../util/useDocumentTitle";
 
 function Publications(props) {
     const {t} = useTranslation();
@@ -19,8 +22,10 @@ function Publications(props) {
     const [userPermissions] = useAppStorageState(StorageKey.USER_PERMISSIONS);
     const [searchCount, setSearchCount] = useState(0);
 
+    useDocumentTitle('Publications')
+
     if (user === null) {
-        return <Redirect to={'unauthorized?redirect=publications'}/>
+        return <Redirect to={'login?redirect=publications'}/>
     }
 
     function onClickEditPublication(itemProps) {
@@ -37,6 +42,16 @@ function Publications(props) {
             <div className={"search-count"}>{searchCount}</div>
         </div>
         <div className={"actions-row"}>
+            {
+                UserPermissions.canRemediate(userPermissions) &&
+                <div className={"remediate-button-wrapper"}>
+                    <ButtonText text={t('action.remediate')}
+                                buttonType={"primary"}
+                                onClick={() => {
+                                    RemediatePopup.show();
+                                }}/>
+                </div>
+            }
             {
                 UserPermissions.canCreateRepoItem(userPermissions) &&
                 <IconButtonText faIcon={faPlus}
@@ -80,7 +95,7 @@ function Publications(props) {
 
 export function createAndNavigateToRepoItem(props, successCallback = () => {
 }, errorCallback = () => {
-}) {
+}, isProject = false) {
     const user = AppStorage.get(StorageKey.USER);
 
     function onLocalFailure(error) {
@@ -110,7 +125,7 @@ export function createAndNavigateToRepoItem(props, successCallback = () => {
             params: {
                 'include': "groups.partOf",
                 'filter[isRemoved]': "false",
-                'fields[groups]': 'partOf,title,amountOfPersons,codeMatrix,userPermissions,permissions',
+                'fields[groups]': 'partOf,title,amountOfPersons,codeMatrix,userPermissions,permissions,labelNL,labelEN',
                 'fields[institutes]': 'title,permissions,isRemoved,level,abbreviation,summary,type,childrenInstitutesCount'
             }
         };
@@ -173,22 +188,29 @@ export function createAndNavigateToRepoItem(props, successCallback = () => {
             if (institutes.length > 0) {
                 const firstInstitute = institutes[0]
                 const createRepoItemPermissions = instituteCreateRepoItemPermissions(firstInstitute)
-                if (institutes.length === 1 && createRepoItemPermissions.length === 1) {
+                if (institutes.length === 1 && isProject) {
+                    //If there is only 1 institute when creating a new project, skip the popup
+                    const createProjectPermission = createRepoItemPermissions.find(permission => permission === "canCreateProject")
+                    if (createProjectPermission) {
+                        createRepoItem(firstInstitute, instituteCreateRepoItemPermissionToRealType(createProjectPermission))
+                    }
+                } else if (institutes.length === 1 && createRepoItemPermissions.length === 1) {
                     //If there is only 1 institute with only 1 publication type option, skip the popup
                     createRepoItem(firstInstitute, instituteCreateRepoItemPermissionToRealType(createRepoItemPermissions[0]))
                 } else {
                     AddPublicationPopup.show(institutes, (instituteAndType) => {
+                        GlobalPageMethods.setFullScreenLoading(true)
                         createRepoItem(instituteAndType.institute, instituteAndType.selectedPublicationType)
                     }, (repoItemToCopy) => {
                         GlobalPageMethods.setFullScreenLoading(true)
-                        copyRepoItem(repoItemToCopy.id, props.history,(response) => {
+                        copyRepoItem(repoItemToCopy.id, props.history, (response) => {
                             GlobalPageMethods.setFullScreenLoading(false)
                             props.history.push(`../publications/${response.data.id}`)
                             successCallback()
                         })
                     }, () => {
                         successCallback()
-                    })
+                    }, isProject)
                 }
             } else {
                 throw new ValidationError("No publication types possible in all groups")
@@ -202,20 +224,25 @@ export function createAndNavigateToRepoItem(props, successCallback = () => {
         function validator(response) {
             const repoItemData = response.data ? response.data.data : null;
             if (!(repoItemData && repoItemData.id && repoItemData.attributes)) {
+                GlobalPageMethods.setFullScreenLoading(false)
                 errorCallback()
                 throw new ValidationError("The received repo item data is invalid")
             }
         }
 
         function onSuccess(response) {
+            GlobalPageMethods.setFullScreenLoading(false)
             const repoItemData = response.data.data
-            props.history.push(`../publications/${repoItemData.id}`)
+            isProject ? props.history.push(`../projects/${repoItemData.id}`, {isProject: true}) : props.history.push(`../publications/${repoItemData.id}`)
             successCallback()
         }
 
         const config = {
             headers: {
                 "Content-Type": "application/vnd.api+json",
+            },
+            params: {
+                'fields[repoItems]': ''
             }
         }
 
@@ -248,7 +275,8 @@ export function instituteCanCreateRepoItem(institute) {
     }
     return (institute.permissions.canCreateLearningObject === true
         || institute.permissions.canCreatePublicationRecord === true
-        || institute.permissions.canCreateResearchObject === true)
+        || institute.permissions.canCreateResearchObject === true
+        || institute.permissions.canCreateDataset === true)
 }
 
 export function instituteCreateRepoItemPermissions(institute) {
@@ -262,6 +290,12 @@ export function instituteCreateRepoItemPermissions(institute) {
     if (institute.permissions.canCreateResearchObject === true) {
         permissions.push("canCreateResearchObject")
     }
+    if (institute.permissions.canCreateDataset === true) {
+        permissions.push("canCreateDataset")
+    }
+    if (institute.permissions.canCreateDataset === true) {
+        permissions.push("canCreateProject")
+    }
     return permissions
 }
 
@@ -269,7 +303,9 @@ export function instituteCreateRepoItemPermissionToRealType(permission) {
     const permissionsMapped = {
         "canCreateLearningObject": "LearningObject",
         "canCreatePublicationRecord": "PublicationRecord",
-        "canCreateResearchObject": "ResearchObject"
+        "canCreateResearchObject": "ResearchObject",
+        "canCreateDataset": "Dataset",
+        "canCreateProject": "Project"
     }
     return permissionsMapped[permission]
 }
@@ -278,7 +314,9 @@ export function instituteCreateRepoItemPermissionToString(permission, translatio
     const permissionsMapped = {
         "canCreateLearningObject": translation("publication.type.learning_object"),
         "canCreatePublicationRecord": translation("publication.type.publication_record"),
-        "canCreateResearchObject": translation("publication.type.research_object")
+        "canCreateResearchObject": translation("publication.type.research_object"),
+        "canCreateDataset": translation("publication.type.dataset"),
+        "canCreateProject": "Project",
     }
     return permissionsMapped[permission]
 }

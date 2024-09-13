@@ -130,3 +130,13 @@ $activeMonthColor: #F8F8F8;
 .SingleDatePickerInput__withBorder {
     border: 1px solid orange;
 }
+
+.single-date-picker-wrapper {
+    max-height: 52px;
+    min-width: 196px;
+
+    .SingleDatePickerInput {
+        max-height: 52px;
+        min-width: 196px;
+    }
+}

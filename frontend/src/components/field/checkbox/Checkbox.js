@@ -29,11 +29,13 @@ export function CheckBoxField(props) {
     }
 
     let radioOptions = props.options.map((option, index) => {
-            return <div key={index} className="option">
+        const unique = Math.random().toString(36).slice(2, 12);
+
+        return <div key={index} className="option">
                 <input
                     defaultChecked={hasDefaultValue(option)}
                     type="checkbox"
-                    id={option.value}
+                    id={`${unique}-${option.value}`}
                     onChange={() => toggleSelection(option)}
                     disabled={props.readonly}
                     value={option.value}
@@ -42,7 +44,7 @@ export function CheckBoxField(props) {
                     })}
                     name={props.name}/>
 
-                <label htmlFor={option.value}>
+                <label htmlFor={`${unique}-${option.value}`}>
                     {t('language.current_code') === 'nl' ? option.labelNL : option.labelEN}
                 </label>
             </div>

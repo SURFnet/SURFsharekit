@@ -8,10 +8,12 @@ import Toaster from "../../util/toaster/Toaster";
 import ButtonText from "../buttons/buttontext/ButtonText";
 import {ReactTable, ReactTableLoadingIndicator} from "../reacttable/reacttable/ReactTable";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faSearch} from "@fortawesome/free-solid-svg-icons";
+import {faFileInvoice, faPaperclip, faSearch} from "@fortawesome/free-solid-svg-icons";
 import {HelperFunctions} from "../../util/HelperFunctions";
 import {ProfileBanner} from "../profilebanner/ProfileBanner";
 import {useHistory} from "react-router-dom";
+import axios from "axios";
+import {SwalRepoItemPopup} from "../field/relatedrepoitempopup/RelatedRepoItemPopup";
 
 function SearchRepoItemTable(props) {
     const [user] = useAppStorageState(StorageKey.USER);
@@ -20,41 +22,70 @@ function SearchRepoItemTable(props) {
     const {t} = useTranslation();
     const [query, setQuery] = useState('');
     const tableRows = repoItems;
-    const [selectedRepoItem, setSelectedRepoItem] = useState(null);
     const history = useHistory()
     const cancelToken = useRef();
 
-    useEffect(() => {
-        if (props.hideNextButton) {
-            props.setSelectedRepoItem(selectedRepoItem)
-        }
-    }, [selectedRepoItem])
+    const selectedRepoItemsNotEmptyOrNull = props.selectedRepoItems && props.selectedRepoItems.length > 0;
 
     const columns = React.useMemo(
         () => [
             {
-                accessor: 'imageURL',
+                accessor: 'isSelected',
                 className: 'repoitem-row-image',
+                disableLink: true,
                 Cell: (tableInfo) => {
-                    return <ProfileBanner imageUrl={undefined}/>
+                    if(props.multiSelect) {
+                        return <div className={"checkbox"}>
+                            <input
+                                id={tableInfo.row.original.id + 'is-selected'}
+                                defaultChecked={selectedRepoItemsNotEmptyOrNull && props.selectedRepoItems.find(selectedRepoItem => tableInfo.row.original.id === selectedRepoItem.id)}
+                                onChange={(e) => {
+                                    props.onRepoItemSelect(tableInfo.row.original)
+                                }}
+                                type="checkbox"/>
+                            <label htmlFor={tableInfo.row.original.id + 'is-selected'}>{"\u00a0"}</label>
+                        </div>
+                    } else {
+                        return (
+                            <div className={"field-input radio"}>
+                                <div className="option">
+                                    <input
+                                        id={tableInfo.row.original.id + 'is-selected'}
+                                        disabled={props.readonly}
+                                        defaultChecked={selectedRepoItemsNotEmptyOrNull && props.selectedRepoItems.find(selectedRepoItem => tableInfo.row.original.id === selectedRepoItem.id)}
+                                        onChange={(e) => {
+                                            props.onRepoItemSelect(tableInfo.row.original)
+                                        }}
+                                        type="radio"/>
+                                    <label htmlFor={tableInfo.row.original.id + 'is-selected'}>{"\u00a0"}</label>
+                                </div>
+                            </div>
+                        )
+                    }
                 }
             },
             {
-                accessor: 'isSelected',
+                accessor: 'imageURL',
                 className: 'repoitem-row-image',
+                disableLink: true,
                 Cell: (tableInfo) => {
-                    return <div className={"checkbox"}>
-                        <input
-                            id={tableInfo.row.original.id + 'is-selected'}
-                            defaultChecked={selectedRepoItem !== null && tableInfo.row.original.id === selectedRepoItem.id}
-                            type="checkbox"/>
-                        <label htmlFor={tableInfo.row.original.id + 'is-selected'}>{"\u00a0"}</label>
-                    </div>
+                    switch (props.repoType) {
+                        case "RepoItemResearchObject":
+                            return <ProfileBanner icon={faFileInvoice}/>
+                            break;
+                        case "RepoItemLearningObject":
+                            return <ProfileBanner icon={faFileInvoice}/>
+                            break;
+                        default:
+                            return <ProfileBanner imageUrl={undefined}/>
+                            break;
+                    }
                 }
             },
             {
                 accessor: 'title',
                 className: 'repoitem-row-title',
+                disableLink: true,
                 style: {
                     width: "50%"
                 }
@@ -62,6 +93,7 @@ function SearchRepoItemTable(props) {
             {
                 accessor: 'authorName',
                 className: 'repoitem-row-author',
+                disableLink: true,
                 Cell: (tableInfo) => {
                     return <div>{tableInfo.cell.value}</div>
                 },
@@ -70,7 +102,7 @@ function SearchRepoItemTable(props) {
                 }
             }
         ],
-        [selectedRepoItem, repoItems]
+        [props.selectedRepoItems, repoItems]
     )
 
     const handleSort = useCallback(sortBy => {
@@ -79,11 +111,7 @@ function SearchRepoItemTable(props) {
 
     const reactTableLoadingIndicator = <ReactTableLoadingIndicator loadingText={t('loading_indicator.loading_text')}/>;
     const onRowClick = (row) => {
-        if (selectedRepoItem && row.original.id === selectedRepoItem.id) {
-            setSelectedRepoItem(null)
-        } else {
-            setSelectedRepoItem(row.original)
-        }
+        props.onRepoItemSelect(row.original)
     }
 
     useEffect(() => {
@@ -125,14 +153,61 @@ function SearchRepoItemTable(props) {
             {!props.hideNextButton && <div className={"save-button-wrapper"}>
                 <ButtonText text={props.buttonText ?? t('repoitem.popup.next')}
                             buttonType={"callToAction"}
-                            disabled={!selectedRepoItem}
+                            disabled={!selectedRepoItemsNotEmptyOrNull}
                             onClick={() => {
-                                props.setSelectedRepoItem(selectedRepoItem)
+                                if(props.multiSelect && props.selectedRepoItems.length > 1) {
+                                    props.selectNextStep()
+                                    createExtraRepoItems()
+                                } else {
+                                    props.selectNextStep()
+                                }
                             }}/>
             </div>}
         </div>
 
     )
+
+
+    function createExtraRepoItems() {
+        // create extra RepoItemPerson objects, there was already 1 created when opening the relatedRepoItemPopup
+        // so create (props.selectedPersons.length - 1) repoItems
+
+        const config = {
+            headers: {
+                "Content-Type": "application/vnd.api+json",
+            }
+        }
+
+        const postData = {
+            "data": {
+                "type": "repoItem",
+                "attributes": {
+                    "repoType": props.repoType
+                },
+                "relationships": {
+                    "relatedTo": {
+                        "data": {
+                            "type": "institute",
+                            "id": props.repoItemId
+                        }
+                    }
+                }
+            }
+        };
+        const requestList = []
+        for(let i = 0; i < (props.selectedRepoItems.length - 1); i++) {
+            requestList.push(axios.post("repoItems", postData, Api.getRequestConfig(config)))
+        }
+        Promise.all(requestList).then(axios.spread((...responses) => {
+            const repoItemList = responses.map((response) => {
+                return Api.dataFormatter.deserialize(response.data);
+            })
+            props.setAdditionalRepoItems(repoItemList)
+        })).catch(errors => {
+            SwalRepoItemPopup.close()
+            Toaster.showDefaultRequestError()
+        })
+    }
 
     function getRepoItems() {
         setRepoItems([])

@@ -1,0 +1,87 @@
+@import "../sass/theme/constants";
+@import "../sass/theme/fonts";
+@import "../sass/theme/mixins";
+@import "../sass/utils/mixins";
+
+.warning-icon {
+  color: $text-color;
+  background-color: $background-color;
+  display: flex;
+  align-content: center;
+  justify-content: center;
+  font-size: 8px;
+  border-radius: 14px;
+  margin-top: auto;
+  margin-bottom: auto;
+  width: 14px;
+  height: 14px;
+  min-width: 14px;;
+  min-height: 14px;
+  position: relative;
+  margin-left: 4px;
+
+  .info-icon-wrapper {
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+  }
+
+  img {
+    pointer-events: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-50%);
+  }
+
+  .left {
+    right: 120px;
+  }
+
+  .right {
+    left: 120px;
+  }
+
+  .tooltip-link {
+    color: blue !important;
+    &:visited {
+      color: purple !important;
+    }
+  }
+
+  .tooltip-popup {
+    @include open-sans;
+    min-width: 200px;
+    top: -20px;
+    font-size: 12px;
+    color: transparent;
+    position: relative;
+
+    .tooltip-content {
+      position: absolute;
+      z-index: 5;
+      color: black;
+      padding: 10px;
+      background-color: $background-color;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .fa-caret-left {
+      z-index: 5;
+      position: absolute;
+      top: 18px;
+      left: -7px;
+      font-size: 19px;
+      color: white;
+    }
+
+    .fa-caret-right {
+      z-index: 5;
+      position: absolute;
+      top: 18px;
+      right: -7px;
+      font-size: 19px;
+      color: white;
+    }
+  }
+}

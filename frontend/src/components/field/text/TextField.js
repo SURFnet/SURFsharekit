@@ -33,7 +33,7 @@ export function TextField(props) {
     }
 
     return (
-        <div className={"field-input-wrapper"}>
+        <div className={"field-input-wrapper text-field"}>
             {props.readonly && <div className={"field-input text readonly"}>{readonlyValue}</div>}
             <input type="text"
                    disabled={props.readonly}

@@ -1,7 +1,7 @@
 import React, {useCallback, useState} from "react"
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
-import {faChevronDown, faChevronRight, faEdit, faPlus, faTrash} from '@fortawesome/free-solid-svg-icons'
-import {ReactComponent as IconOrganisation} from "../resources/icons/icon-organisation.svg";
+import {faChevronDown, faChevronRight, faEdit, faPlus, faToggleOff, faToggleOn} from '@fortawesome/free-solid-svg-icons'
+import {ReactComponent as IconOrganisation} from "../resources/icons/ic-organisation.svg";
 import LoadingIndicator from "../components/loadingindicator/LoadingIndicator";
 import {useTranslation} from "react-i18next";
 import Toaster from "../util/toaster/Toaster";
@@ -10,6 +10,7 @@ import {OrganisationStatusLabel} from "./OrganisationStatusLabel";
 import {GlobalPageMethods} from "../components/page/Page";
 import AddOrganisationLayerPopup from "./addorganisationlayerpopup/AddOrganisationLayerPopup";
 import {useHistory} from "react-router-dom";
+import VerificationPopup from "../verification/VerificationPopup";
 
 export function ExpandableRow(props) {
     const {t} = useTranslation()
@@ -44,7 +45,7 @@ export function ExpandableRow(props) {
         }
         if (!isExpanded) {
             setIsLoadingChildInstitutes(true)
-            getInstituteChildren(institute.id, partOfConsortium, history, (data) => {
+            getInstituteChildren(institute.id, partOfConsortium, props.showInactive, history, (data) => {
                 setIsLoadingChildInstitutes(false)
                 //Nullify childInstitutes first to force the changes :-(
                 setChildInstitutes(null)
@@ -59,14 +60,20 @@ export function ExpandableRow(props) {
     function onClickDeleteInstitute(event) {
         event.stopPropagation()
         if (institute.permissions.canDelete) {
-            GlobalPageMethods.setFullScreenLoading(true)
-            deleteInstitute(institute.id, history,() => {
-                setIsRemoved(true)
-                GlobalPageMethods.setFullScreenLoading(false)
-            }, () => {
-                GlobalPageMethods.setFullScreenLoading(false)
+            VerificationPopup.show(t("organisation.delete_confirmation.title"), t("organisation.delete_confirmation.subtitle"), () => {
+                doDeleteInstitute()
             })
         }
+    }
+
+    function doDeleteInstitute() {
+        GlobalPageMethods.setFullScreenLoading(true)
+        deleteInstitute(institute.id, history, () => {
+            setIsRemoved(true)
+            GlobalPageMethods.setFullScreenLoading(false)
+        }, () => {
+            GlobalPageMethods.setFullScreenLoading(false)
+        })
     }
 
     function onClickEditInstitute(event) {
@@ -84,15 +91,14 @@ export function ExpandableRow(props) {
     }
 
     function createOrEditInstitute(isEditing = false) {
-
         const onSaveOrganisation = (savedInstitute, callbackIsEditing) => {
             if (callbackIsEditing) {
-                //Edited institute
+                // Edited institute
                 setInstitute(savedInstitute)
                 forceUpdate();
             } else {
-                //Created new institute
-                getInstituteChildren(institute.id, partOfConsortium, history, (data) => {
+                // Created new institute
+                getInstituteChildren(institute.id, partOfConsortium, props.showInactive, history, (data) => {
                     setIsLoadingChildInstitutes(false)
                     //Nullify childInstitutes first to force the changes :-(
                     setChildInstitutes(null)
@@ -120,7 +126,8 @@ export function ExpandableRow(props) {
             <div className={"expandable-row " + (partOfConsortium && 'consortium')}
                  onClick={onClickExpand}
                  style={rowStyle}>
-                <div className={"child-relationship-line"} style={{"display": props.isRootInstitute ? "none" : "block"}}>
+                <div className={"child-relationship-line"}
+                     style={{"display": props.isRootInstitute ? "none" : "block"}}>
                     <div className={"line-node"}/>
                 </div>
                 <div className={`status-color-indicator${getInactiveClassName()}`}/>
@@ -140,9 +147,9 @@ export function ExpandableRow(props) {
                 <div className={"right-row-section"}>
                     <OrganisationStatusLabel level={institute.level} partOfConsortium={partOfConsortium}/>
                     <div className={"row-actions " + (partOfConsortium && 'hidden')}>
-                        <FontAwesomeIcon icon={faTrash}
-                                         className={`${institute.permissions.canDelete ? "" : " disabled"}`}
-                                         onClick={onClickDeleteInstitute}/>
+                        <FontAwesomeIcon icon={isRemoved ? faToggleOff : faToggleOn}
+                                         className={`${institute.permissions.canDelete && !isRemoved ? "" : " disabled"}`}
+                                         onClick={isRemoved ? {} : onClickDeleteInstitute}/>
                         <FontAwesomeIcon icon={faEdit} className={`${institute.permissions.canEdit ? "" : " disabled"}`}
                                          onClick={onClickEditInstitute}/>
                         <FontAwesomeIcon icon={faPlus}
@@ -161,6 +168,7 @@ export function ExpandableRow(props) {
                                 partOfConsortium={partOfConsortium}
                                 key={childInstitute.id}
                                 data={childInstitute}
+                                showInactive={props.showInactive}
                                 onClickExpand={props.onClickExpand}
                             />
                         })
@@ -183,8 +191,8 @@ export function ExpandableRowLoadingIndicator() {
     )
 }
 
-export function getInstituteChildren(instituteParentId, useConsortiumFilter, history, successCallback, errorCallback = () => {}) {
-
+export function getInstituteChildren(instituteParentId, useConsortiumFilter, showInactive, history, successCallback, errorCallback = () => {
+}) {
     function onValidate(response) {
     }
 
@@ -219,13 +227,19 @@ export function getInstituteChildren(instituteParentId, useConsortiumFilter, his
         config.params['filter[parent]'] = instituteParentId
     }
 
+    if (!showInactive) {
+        config.params['filter[inactive]'] = '0';
+    }
+
     //MB limit fields to improve performance
-    config.params['fields[institutes]']= 'title,permissions,isRemoved,level,abbreviation,summary,type,childrenInstitutesCount';
+    config.params['fields[institutes]'] = 'title,permissions,isRemoved,level,abbreviation,summary,type,childrenInstitutesCount';
+    config.params['sort'] = 'title';
 
     Api.jsonApiGet('institutes', onValidate, onSuccess, onLocalFailure, onServerFailure, config);
 }
 
-export function deleteInstitute(instituteId, history, successCallback, errorCallback = () => {}) {
+export function deleteInstitute(instituteId, history, successCallback, errorCallback = () => {
+}) {
 
     function onValidate(response) {
     }

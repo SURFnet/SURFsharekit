@@ -1,13 +1,13 @@
 //Show desktop layout
 @mixin media-query-desktop() {
-    @include media-query-min(1024px) {
+    @include media-query-min(1150px) {
         @content;
     }
 }
 
 //Show mobile & tablet layout
 @mixin media-query-mobile-tablet() {
-    @include media-query-max(1023px) {
+    @include media-query-max(1149px) {
         @content;
     }
 }

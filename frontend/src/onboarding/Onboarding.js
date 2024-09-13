@@ -1,5 +1,5 @@
 import EmptyPage, {GlobalEmptyPageMethods} from "../components/emptypage/EmptyPage";
-import Background from "../resources/images/surf-background.jpeg";
+import Background from "../resources/images/surf-background.png";
 import React, {useEffect, useRef, useState} from "react";
 import {useTranslation} from "react-i18next";
 import './onboarding.scss'
@@ -20,6 +20,7 @@ import LoadingIndicator from "../components/loadingindicator/LoadingIndicator";
 import ButtonText from "../components/buttons/buttontext/ButtonText";
 import AppStorage, {StorageKey} from "../util/AppStorage";
 import {Jsona} from "jsona";
+import {useGlobalState} from "../util/GlobalState";
 
 export default function Onboarding(props) {
 
@@ -29,9 +30,14 @@ export default function Onboarding(props) {
     const [memberData, setMemberData] = useState(props.location?.state?.memberData)
     const [selectedInstitute, setSelectedInstitute] = useState(null)
     const [currentProfileFormData, setCurrentProfileFormData] = useState(null)
+    const [isTopMenuVisible, setTopMenuVisible] = useGlobalState('isTopMenuVisible', true);
+
+    useEffect(() => {
+        setTopMenuVisible(false)
+    },[])
 
     if (!memberData) {
-        return <Redirect to={'unauthorized?redirect=login'}/>
+        return <Redirect to={'login?redirect=login'}/>
     }
 
     const isMemberStudent = memberData.position === "student";

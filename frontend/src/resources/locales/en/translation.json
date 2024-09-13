@@ -1,7 +1,7 @@
 {
   "language": {
     "current_code": "en",
-    "dutch": "'Nederlands",
+    "dutch": "Nederlands",
     "english": "English"
   },
   "action": {
@@ -11,20 +11,29 @@
     "search": "Search",
     "delete": "Delete",
     "add": "Add",
-    "rate": "Approve or decline",
+    "close": "Close",
+    "open": "Open",
+    "remediate": "Remediate",
+    "review": "Review",
     "approve": "Approve",
     "decline": "Decline",
     "cancel": "Cancel",
     "confirm": "Confirm",
     "ok": "OK",
-    "create_new_doi": "Create a DOI"
+    "create_new_doi": "Create a DOI",
+    "stop": "Stop",
+    "extend_all": "Extend all",
+    "collapse_all": "Collapse all",
+    "continue": "Continue"
   },
   "onboarding": {
     "login": {
       "welcome": "Welcome to SURFsharekit",
-      "subtitle": "SURFsharekit is a repository for materials that are developed within higher education, such as graduation products, research publications and educational materials. By using Sharekit, students, researchers and teachers are able to share these materials with a specific group or with the whole wide world. The latter can be done on various portals such as the HBO Knowledge Base, Narcis and the Search Portal for digital educational materials.\n\nSURFsharekit is a facility from SURF, the collaborative organisation for ICT in Dutch education and research.",
+      "subtitle": "SURFsharekit is a repository for materials that are developed within higher education, such as graduation products, research publications and educational materials. By using Sharekit, students, researchers and teachers are able to share these materials with a specific group or with the whole wide world. The latter can be done on various portals such as the HBO Knowledge Base and edusources.\n\nSURFsharekit is a facility from SURF, the collaborative organisation for ICT in Dutch education and research.",
       "login": "Login",
-      "help": "Help"
+      "help": "How does it work?",
+      "login_sram": "Login with SRAM",
+      "login_conext": "Login with SURFconext"
     },
     "institute_step": {
       "title": "Education"
@@ -46,7 +55,18 @@
     }
   },
   "dashboard": {
+    "student": {
+      "block_1_title": "New publication",
+      "block_2_title": "My profile"
+    },
     "title": "Dashboard",
+    "subtitle": "Directly to",
+    "button": {
+      "new_publication": "New publication",
+      "manage_groups": "Manage Groups",
+      "my_publications": "My publications",
+      "draft": "Drafts"
+    },
     "block_1_title": "Share your material with SURFsharekit",
     "block_1_button": "New publication",
     "block_2_title": "What possibilities offers SURFsharekit",
@@ -56,6 +76,12 @@
     "block_3_bullet_1": "Access to educational and research results.",
     "block_3_bullet_2": "Support reuse.",
     "block_3_bullet_3": "Exchange of knowledge.",
+    "continue": "Continue with",
+    "tab_everything": "All",
+    "tab_submitted": "Submitted",
+    "tab_published": "Published",
+    "hide_tasks_title": "Hide completed tasks ",
+    "show_tasks_title": "Show completed tasks ",
     "my_publications": {
       "open_title": "Outstanding publications",
       "title": "Publications",
@@ -72,7 +98,78 @@
         "subtitle": "Publications that require your attention will become visible here.",
         "add": "New publication"
       }
-    }
+    },
+    "tasks": {
+      "table": {
+        "title": "Tasks",
+        "loading": "Loading unfinished tasks...",
+        "empty": {
+          "title": "You currently have no unfinished tasks"
+        },
+        "filters": {
+          "material": "Material",
+          "type": "Type",
+          "organization": "Organisation",
+          "includesFile": "Includes file",
+          "includesUrl": "Includes url",
+          "remove_filters": "Remove all filters"
+        }
+      },
+      "header": {
+        "title": "Title",
+        "material": "Material",
+        "type": "Type",
+        "organization": "Organization",
+        "date": "Date",
+        "action": "Action"
+      },
+      "type": {
+        "claim": "Claim request",
+        "review": "Review",
+        "fill": "Enrich request",
+        "recover": "Deletion request"
+      },
+      "empty": {
+        "title": "You have no completed tasks"
+      },
+      "task_title": {
+        "claim": "{{institute}} wants to add {{personName}} to the Member group {{institute}}",
+        "review": "{{personName}} submitted '{{objectTitle}}' to be reviewed",
+        "fill": "'{{objectTitle}}' is ready to be reviewed.",
+        "recover": "'{{objectTitle}}' has been moved to the trash. Please restore or approve this action."
+      },
+      "actions": {
+        "approve": "Approve",
+        "accept": "Accept",
+        "decline": "Decline",
+        "reject": "Reject",
+        "delete": "Delete",
+        "finish": "Finish",
+        "recover": "Recover"
+      },
+      "tooltips": {
+        "accept_claim": "This person will be added to the organisation of the applicant",
+        "completed_by": "This task was completed by:"
+      },
+      "dropdown_titles": {
+        "add_person": "Add person",
+        "approve_publication": "Approve publication",
+        "finish_publication": "Enrich publication",
+        "delete_publication": "Delete publication",
+        "recover_publication": "Recover publication"
+      },
+      "decline_modal": {
+        "title": "Reason of decline",
+        "send_button": "Send"
+      },
+      "not_found": "This task has already been completed or is no longer relevant"
+    },
+    "message_morning": "Good morning",
+    "message_afternoon": "Good afternoon",
+    "message_evening": "Good evening"
+  },
+  "object_type": {
+    "publication": "publication"
   },
   "export": {
     "publication_type": "Publication type",
@@ -81,17 +178,35 @@
     "date_until": "Until",
     "date_format_tooltip": "dd-mm-yyyy, mm-yyyy or yyyy"
   },
+  "remediate": {
+    "depublishing": "depublished",
+    "archiving": "archived",
+    "deleting": "deleted",
+    "remediate_type": "Remediate option",
+    "finished": "Remediation process completed",
+    "remediating": "{{count}} {{repoType}} are being {{action}}. You'll receive a message when this process has finished. You can close this message.",
+    "start": "Start remediation",
+    "publication_type": "Publication type",
+    "institute_level": "Organisation level",
+    "date_start": "From",
+    "date_until": "Until",
+    "status": "Publication status",
+    "date_format_tooltip": "dd-mm-yyyy, mm-yyyy or yyyy"
+  },
   "report": {
     "explanation": "Here you can create an overview of the metadata that are stored in Sharekit, and export it to an Excel file. Choose an organisational unit and / or a publication within a specified period. If you choose to leave all fields empty, all metadata will be exported.\n\nPublic downloads are downloads originating from a external portal. Private downloads are downloads originating from an active user on Sharekit.",
     "download": "Download report",
     "title": "Reports",
     "export": "Export",
+    "remediate": "Remediate",
     "dashboard_title": "Report",
     "report_empty": "No report available.",
     "report_publications": "Publications",
     "learning_objects": "Learning materials",
     "publication_records": "Theses",
     "research_objects": "Research",
+    "datasets": "Datasets",
+    "projects": "Projects",
     "export_type": "Export type"
   },
   "search": {
@@ -103,12 +218,32 @@
     "view": "View",
     "publicationrecord": "Thesis or internship report",
     "learningobject": "Learning material",
-    "researchobject": "Research publication"
+    "researchobject": "Research publication",
+    "dataset": "Dataset",
+    "project": "Project"
   },
   "profiles": {
     "title": "Persons",
     "add_profile": "Add person",
     "profile_empty": "No persons found"
+  },
+  "projects": {
+    "title": "Projects",
+    "add_project": "Add project",
+    "new_project": "New project",
+    "project_empty": "No projects found",
+    "loading": "Loading all projects...",
+    "delete_popup": {
+      "title": "Delete project?",
+      "subtitle": "Are you sure you want to move this item to the Recycle Bin?"
+    },
+    "table": {
+      "title": "Project title",
+      "organisation": "Organisation",
+      "participants": "Participants",
+      "status": "Status",
+      "last_edited": "Last edited"
+    }
   },
   "my_publications": {
     "title": "Publications",
@@ -120,8 +255,24 @@
       "organisation_level": "Organisation level",
       "type": "Type",
       "status": "Status",
-      "last_edited": "Last Edited"
+      "last_edited": "Last Edited",
+      "creator": "Creator"
     }
+  },
+  "publication_flow": {
+    "cancel": "Cancel",
+    "publish": "Publish",
+    "previous_step": "Previous step",
+    "next_step": "Next step",
+    "submit": "Submit",
+    "options": "Options",
+    "header": {
+      "save": "Save",
+      "stop": "Stop",
+      "delete": "Delete",
+      "check_details": "Check details"
+    },
+    "details": "Details"
   },
   "organisation": {
     "title": "Organisation",
@@ -151,6 +302,7 @@
       "consortium": "Consortium"
     },
     "tab_organizational_chart": "Organisational chart",
+    "tab_organizational_inactive": "Show inactive organisations",
     "tab_roles_rights": "Groups",
     "tab_users": "Users",
     "roles_rights": {
@@ -160,6 +312,10 @@
       "group_organisation_type": "Organisation type",
       "group_users": "Users",
       "groups_empty_title": "No groups found."
+    },
+    "delete_confirmation": {
+      "title": "Confirmation",
+      "subtitle": "Are you sure you want to disable this organisation? This cannot be undone."
     }
   },
   "templates": {
@@ -185,23 +341,54 @@
   "repoitem": {
     "thesis": "Thesis",
     "attachment": "Attachment",
-    "teachingmaterials": "Teaching Materials",
+    "teachingmaterials": "Learning material",
+    "dataset": "Dataset",
+    "project": "Project",
     "researchobject": "Research publication",
     "popup": {
       "selectperson": "Person",
       "selectlearningobject": "Learning material",
+      "selectresearchobject": "Research",
       "details": "Details",
       "save": "Save",
       "next": "Next",
       "search": "Search",
       "searchoutsidescope": "Include other organisations",
-      "manual": "Manually"
+      "manual": "Manually",
+      "more_information": "More information"
     },
-    "personinvolvedadd": "Add person involved",
     "addedlinks": "ADDED",
-    "addlink": "Add link",
     "addedlearningobjects": "ADDED",
-    "addlearningobject": "Add learning material"
+    "type": {
+      "publicationrecord": "Thesis",
+      "learningobject": "Learning material",
+      "researchobject": "Research publication",
+      "dataset": "Dataset"
+    },
+    "personinvolved_field": {
+      "add": "Add involved person",
+      "empty": "No authors or contributors have been added",
+      "select_person": "Select person",
+      "create_person": "Create person",
+      "external": "External"
+    },
+    "researchobject_field": {
+      "add": "Add a research",
+      "empty": "No research objects were added"
+    },
+    "learningobject_field": {
+      "add": "Add learning material",
+      "empty": "No learning materials were added"
+    },
+    "access_right": {
+      "title": "Access rights",
+      "options": {
+        "openaccess": "Open access",
+        "restrictedaccess": "Restricted access",
+        "closedaccess": "Closed access"
+      }
+    },
+    "visible_on": "Visible on"
   },
   "add_publication": {
     "button_save": "Save",
@@ -209,7 +396,10 @@
     "button_publish": "Publish",
     "button_depublish": "Depublish",
     "button_submit": "Submit",
+    "button_undelete": "Restore",
     "button_save_publish": "Save and publish",
+    "button_review": "Review",
+    "button_review_active": "Reviewing",
     "button_save_republish": "Republish",
     "popup": {
       "title": "New publication",
@@ -237,23 +427,48 @@
     "profiles": "Persons",
     "my_publications": "Publications",
     "organisation": "Organisation",
+    "projects": "Projects",
     "templates": "Templates",
     "reports": "Reports",
-    "trash_can": "Recycle bin",
+    "trash_can": "Recycle Bin",
     "logout": "Log out",
-    "help": "Help"
+    "help": "Help",
+    "need_help": "Need help?",
+    "privacy": "Privacy statement",
+    "cookies": "Cookie statement"
+  },
+  "top_menu": {
+    "profile_dropdown": {
+      "my_profile": "My profile",
+      "help": "Need help?",
+      "sign_out": "Sign out"
+    },
+    "search": {
+      "placeholder": "Search within SURFsharekit"
+    }
   },
   "navigation_bar": {
     "back": "Back",
     "search": "Search",
     "publicationrecord": "Thesis or internship report",
     "learningobject": "Learning material",
-    "researchobject": "Research publication"
+    "researchobject": "Research publication",
+    "dataset": "Dataset",
+    "project": "Project"
   },
   "publication": {
+    "sections": {
+      "collapse_all": "Collapse all",
+      "extend_all": "Extend all",
+      "empty": "There are no required fields within this step"
+    },
     "required_error": {
       "title": "Validation",
       "subtitle": "Please fill in all the required fields"
+    },
+    "validation_error": {
+      "title": "Validation",
+      "subtitle": "Please fill in the validated fields correctly"
     },
     "copy_confirmation": {
       "title": "Confirmation",
@@ -263,16 +478,27 @@
       "published": "PUBLISHED",
       "draft": "DRAFT",
       "submitted": "SUBMITTED",
+      "revising": "IN REVIEW",
       "approved": "APPROVED",
       "embargo": "EMBARGO",
       "declined": "DECLINED",
-      "archived": "ARCHIVED"
+      "archived": "ARCHIVED",
+      "deleted": "IN RECYCLE BIN"
     },
     "type": {
       "publication_record": "Thesis or internship report",
       "learning_object": "Learning material",
-      "research_object": "Research publication"
+      "research_object": "Research publication",
+      "dataset": "Dataset",
+      "project": "Project"
     },
+    "completion": {
+      "title": "Succes!",
+      "body1": "Your material",
+      "body2": "has been sent to ",
+      "to_dashboard": "To dashboard"
+    },
+    "warning_tooltip": "Warning: not yet published!",
     "request_save_publication_success": "The publication was saved successfully!",
     "created": "CREATED ON",
     "lastEdited": "LAST EDITED",
@@ -290,7 +516,11 @@
     },
     "delete_popup": {
       "title": "Delete publication?",
-      "subtitle": "Are you sure you want to delete this publication?"
+      "subtitle": "Are you sure you want to move this item to the Recycle Bin?"
+    },
+    "generate_doi_confirmation": {
+      "title": "Confirmation",
+      "subtitle": "You're about to request a DOI. This can't be undone. Are you sure?"
     }
   },
   "vocabulary_field": {
@@ -300,15 +530,18 @@
       "step_1_content_title": "Make a choice",
       "step_2_title": "Main concept",
       "step_3_title": "Sub concept",
-      "step_4_title": "Sub concept(2)"
+      "step_4_title": "Sub concept(2)",
+      "empty": "There are no options to choose from."
     }
   },
   "switch_field": {
     "on": "on",
-    "off": "off"
+    "off": "off",
+    "only_required_fields": "Only required fields"
   },
   "dropdown_field": {
-    "placeholder": "Select..."
+    "placeholder": "Select...",
+    "other": "Other"
   },
   "multi_select_dropdown_field": {
     "placeholder": "Search or select..."
@@ -322,9 +555,12 @@
     "duplicate_email": "Email address already in use",
     "request_error": "This action is not valid. Please contact your sitemanager.",
     "field_required": "This field is required",
+    "field_invalidURL": "Enter a valid URL that starts with http:// or https://",
     "field_invalid": "Invalid input",
     "empty_search": "No results for current query",
-    "file_too_large": "File too large, max 500mb"
+    "file_too_large": "File {{fileName}} is too large, max 10 GB",
+    "UFAC_2": "Filetype is not being supported",
+    "failed_upload": "Something went wrong. Try again later."
   },
   "success_message": {
     "patch_request_success": "Saved successfully!"
@@ -342,12 +578,51 @@
     "forbidden": "Forbidden",
     "forbidden_subtitle": "You are not allowed to view this page",
     "forbidden_text": "It appears you're trying to access information unavailable to your account, contact your Site Manager to gain permission",
+    "forbidden_file_title": {
+      "401": "Access restricted",
+      "default": "File unavailable"
+    },
+    "forbidden_file_subtitle": "You are not able to open this file",
+    "forbidden_file_text": {
+      "401": "Log in to see if you're allowed to download the file",
+      "403_E": "This file is embargoed for a fixed period of time.",
+      "403_R": "This file is only available for certain groups or institutions.",
+      "403_C": "This file is marked closed access.",
+      "default": "You do not have permission to download this file."
+    },
     "to_dashboard": "To Dashboard",
     "help": "Help",
     "login": "Login"
   },
+  "trash": {
+    "disclaimer": "Items in recycle bin are automatically removed after 30 days"
+  },
   "personinvolved_field": {
-    "add": "Add involved person"
+    "add": "Add involved person",
+    "empty": "No involved persons were added"
+  },
+  "repoitemresearchobject_field": {
+    "add": "Add a research",
+    "empty": "No research objects were added"
+  },
+  "attachment_field": {
+    "empty": "No attachments were uploaded",
+    "important": "Important"
+  },
+  "learningobject_field": {
+    "add": "Add learning material",
+    "empty": "No learning materials were added"
+  },
+  "link_field": {
+    "add": "Add link",
+    "empty": "No links were added",
+    "important": "Important"
+  },
+  "repoitem_field": {
+    "empty": "No objects were linked"
+  },
+  "treemultiselect_field": {
+    "empty": "No vocabularies were added"
   },
   "file_drop": {
     "open": "Drag your file(s) here to upload them",
@@ -356,7 +631,15 @@
   },
   "attachment_popup": {
     "file": "File",
-    "no_file": "No file selected."
+    "no_file": "No file selected.",
+    "uploading": "Uploading...",
+    "new_upload": "New upload",
+    "change": "Change",
+    "replace_file": "Replace file",
+    "failed_uploads": "Failed uploads"
+  },
+  "link_popup": {
+    "title": "Links"
   },
   "loading_indicator": {
     "loading_text": "Loading..."
@@ -377,14 +660,46 @@
     "identifiers": "Identifiers",
     "organisationlevel": "Organisation level",
     "status": "Status",
-    "skipEmailLabel": "I don't know this persons email address"
+    "skipEmailLabel": "I don't know this persons email address",
+    "instituteKnownLabel": "Known in SURFsharekit",
+    "instituteUnknownLabel": "Not known in SURFsharekit"
   },
   "new_profile": {
     "title": "New person"
   },
+  "merge_footer": {
+    "stop": "Stop",
+    "continue": "Continue",
+    "selection_singular": "profile selected for merge",
+    "selection_plural": "profiles selected for merge"
+  },
   "profile": {
+    "personal_data": "Personal data",
+    "social_media": "Social media",
     "tab_profile": "Profile",
-    "tab_notifications": "Notifications",
+    "details": "View details",
+    "profile_merge": "Merge profile",
+    "profile_merge_already_added_message": "Profile has already been added",
+    "profile_merge_tooltip": "Select te current profile to merge it with other profiles",
+    "details_popup": {
+      "created": "CREATED ON",
+      "lastEdited": "LAST EDITED"
+    },
+    "merge_popup": {
+      "title": "Merge profiles",
+      "subtitle": "Merge multiple profiles into one.",
+      "form_title": "Select the correct data"
+    },
+    "claim_popup": {
+      "title": "Claim person",
+      "subtitle": "Who does this profile belong to?",
+      "cant_merge": "Unfortunately, it is not possible to claim this person for an institute.",
+      "success": "Your request has been submitted",
+      "tooltip": "With a claim request you can claim persons for your own institute. The siteadmin of the institute the person is linked to will have to approve this."
+    },
+    "claim_popup_tooltip": "With a claim request you can claim people for your own organization. The site manager of the organization to which the person is associated must agree to this.",
+    "tab_notifications": "Notification settings",
+    "notification_type": "Notification type",
     "tab_owned_publications": "Owner of",
     "tab_mentioned_publications": "Author of",
     "tab_roles_rights": "Groups",
@@ -395,7 +710,7 @@
     "profile_city": "CITY",
     "profile_email": "EMAIL",
     "profile_email_alt": "ALTERNATIVE EMAIL",
-    "profile_phone": "PHONENUMBER",
+    "profile_phone": "PHONE NUMBER",
     "profile_titulatuur": "TITLE",
     "profile_academic_title": "ACADEMIC TITLE",
     "profile_initials": "INITIALS",
@@ -403,6 +718,7 @@
     "profile_orcid": "ORCID",
     "profile_isni": "ISNI",
     "profile_hogeschool_id": "INSTITUTE ID",
+    "profile_root_institutes": "ORGANISATIONS",
     "profile_function": "FUNCTION",
     "profile_function_options": {
       "role_lecturer": "Lecturer",
@@ -422,7 +738,10 @@
       "isni": "An ISNI consists of 16 numeric digits, e.g. 0000000115033938",
       "hogeschool_id": "A unique institute identification number",
       "dai": "A DAI consists of 9 numeric digits, e.g. 123456785",
-      "orcid": "An ORCID consists of 16 numeric digits, divided into 4 blocks separated by a dash, e.g. 0000-0003-0588-8435"
+      "orcid": "An ORCID consists of 16 numeric digits, divided into 4 blocks separated by a dash, e.g. 0000-0003-0588-8435",
+      "email": {
+        "no_permission": "No permission has been given to share the email address"
+      }
     }
   },
   "group": {
@@ -434,6 +753,7 @@
     "remove_person_success_message": "Member removed from group successfully",
     "members": "Members",
     "permissions": "Permissions",
+    "permission_explanation": "Here you can see what permissions group members have. It is not possible to change the rights. If you want to delete or change the name of organisation(s) please contact info@surfsharekit.nl",
     "templates": "Templates",
     "add_person_popup": {
       "title": "Add users"
@@ -475,10 +795,12 @@
       "repoitem_researchobject": "Research publications",
       "repoitem_repoitemrepoitemfile": "Add files to a publication",
       "repoitem_repoitemlearningobject": "Compile learning material",
-      "repoitem_learningobject": "Learning materials",
+      "repoitem_learningobject": "Learning material",
       "repoitem_repoitemlink": "Add URLs to a publication",
       "repoitem_repoitemperson": "Add authors to a publication",
       "repoitem_publicationrecord": "Thesis or internship reports",
+      "repoitem_dataset": "Dataset",
+      "repoitem_project": "Project",
       "repoitem_author": "Own publications",
       "template_template": "Manage templates",
       "repoitem_archived": "Archived publications"
@@ -493,6 +815,17 @@
     }
   },
   "verification": {
+    "remediate": {
+      "title": "Are you sure?",
+      "message": "You will {{action}} {{count}} materials of the type {{repoType}} with status {{status}} from {{institutes}}"
+    },
+    "restored": {
+      "title": "Item restored",
+      "message": "Do you want to open this item?"
+    },
+    "restore": {
+      "title": "Are you sure you want to restore this item from the Recycle Bin?"
+    },
     "profile": {
       "delete": {
         "title": "Are you sure you want to delete this profile?",
@@ -501,8 +834,7 @@
     },
     "author": {
       "delete": {
-        "title": "Are you sure you want to delete this author?",
-        "subtitle": "This author will be removed from this publication"
+        "title": "Are you sure you want to unlink this author?"
       }
     },
     "download": {
@@ -511,6 +843,43 @@
     "unsaved_changes": {
       "title": "Unsaved changes",
       "subtitle": "The form contains unsaved changes, are you sure you want to leave?"
+    },
+    "repoItem": {
+      "delete_from_trash": {
+        "title": "Beware!",
+        "subtitle": "Are you sure you want to permanently delete this item? This cannot be undone."
+      },
+      "delete_repoitemrepoitemfile": {
+        "title": "Are you sure you want to delete this file?"
+      },
+      "delete_repoitemlearningobject": {
+        "title": "Are you sure you want to unlink this item?"
+      },
+      "delete_repoitemlink": {
+        "title": "Are you sure you want to delete this link?"
+      },
+      "delete_repoitemresearchobject": {
+        "title": "Are you sure you want to unlink this research publication?"
+      },
+      "delete_request": {
+        "title": "You are about to send a removal request.",
+        "subtitle": "Your request will be processed, this may take a few days."
+      }
     }
+  },
+  "review_footer": {
+    "title": "Review",
+    "subtitle": "The author will be automatically notified after reviewing."
+  },
+  "toast": {
+    "server_error": "Something went wrong. Please contact the servicedesk and report the following error code:",
+    "repo_item": {
+      "delete_request": "The removal request has been submitted to the site manager."
+    }
+  },
+  "email_field": {
+    "unknown": "Unknown",
+    "known": "Known",
+    "no_permission": "No permission"
   }
 }

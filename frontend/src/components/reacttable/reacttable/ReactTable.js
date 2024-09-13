@@ -1,14 +1,15 @@
 import React, {useEffect} from "react";
 import {usePagination, useSortBy, useTable} from "react-table";
 import LoadingIndicator from "../../loadingindicator/LoadingIndicator";
-import IconButtonText from "../../buttons/iconbuttontext/IconButtonText";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faAngleDown, faAngleUp, faArrowLeft, faArrowRight} from "@fortawesome/free-solid-svg-icons";
 import "./reacttable.scss"
 import "./reacttablefilterrow.scss"
+import {Link, useLocation} from "react-router-dom";
 
 export function ReactTable({
                                tableName = '',
+                               cellsAreLinks,
                                columns,
                                tableRows,
                                footer = undefined,
@@ -18,9 +19,12 @@ export function ReactTable({
                                loadingIndicator,
                                isLoading,
                                emptyState = null,
-                               onRowClick
+                               onRowClick,
+                               separatedRows,
+                               isDone
                            }) {
 
+    const cellLinksEnabled = cellsAreLinks ?? true
     const data = tableRows ?? []
     const tableConfig = {
         columns,
@@ -40,6 +44,19 @@ export function ReactTable({
         hooks.push(usePagination);
     }
 
+    const getPathName = (type) => {
+        switch (type) {
+            case "personSummary":
+                return "profile"
+            case "repoItemSummary":
+                return "publications"
+            case "group":
+                return "groups"
+            default:
+                return
+        }
+    }
+
     const table = useTable(tableConfig, ...hooks)
     const sortBy = table.state.sortBy
     const pageIndex = table.state.pageIndex
@@ -52,7 +69,7 @@ export function ReactTable({
     return (
         <div className={"table-wrapper " + tableName}>
             <div className={"table-container"}>
-                <table className={"react-table " + (!footer && 'without-footer')} {...table.getTableProps()}>
+                <table className={"react-table " + (!footer && 'without-footer ') + (separatedRows ? " react-table-seperated-row " : "") + (isDone ? "react-table-done-row " : "")} {...table.getTableProps()}>
                     <thead>
                     {table.headerGroups.map((headerGroup, i) => (
                         <tr key={i}>
@@ -94,10 +111,16 @@ export function ReactTable({
                                     return (
                                         <td {...cell.getCellProps({
                                             className: cell.column.className,
-                                            style: cell.column.style
+                                            style: cell.column.style,
                                         })}
                                         >
-                                            {cell.render('Cell')}
+                                            {cellLinksEnabled && !cell.column.disableLink ?
+                                                <Link to={`/${getPathName(row.original.type)}/${row.original.id}`}>
+                                                    {cell.render('Cell')}
+                                                </Link>
+                                                :
+                                                cell.render('Cell')
+                                            }
                                         </td>
                                     )
                                 })}
@@ -144,19 +167,24 @@ export function Pagination(props) {
         let paginationButtonOffset = 1
         const paginationNumbers = []
 
-        paginationNumbers.push(props.pageIndex)
+        var pageIndex = props.pageIndex
+        if (props.pageIndex + 1 > props.pageCount) {
+            pageIndex = props.pageCount - 1
+        }
+
+        paginationNumbers.push(pageIndex)
         //Add numbers around current index
         let morePagesAvailableBefore = true
         let morePagesAvailableAfter = true
         while (paginationNumbers.length < 7 && (morePagesAvailableBefore || morePagesAvailableAfter)) {
-            if (props.pageIndex - paginationButtonOffset >= 0) {
-                paginationNumbers.unshift(props.pageIndex - paginationButtonOffset)
+            if (pageIndex - paginationButtonOffset >= 0) {
+                paginationNumbers.unshift(pageIndex - paginationButtonOffset)
                 morePagesAvailableBefore = true
             } else {
                 morePagesAvailableBefore = false
             }
-            if (props.pageIndex + paginationButtonOffset <= (props.pageCount - 1)) {
-                paginationNumbers.push(props.pageIndex + paginationButtonOffset)
+            if (pageIndex + paginationButtonOffset <= (props.pageCount - 1)) {
+                paginationNumbers.push(pageIndex + paginationButtonOffset)
                 morePagesAvailableAfter = true
             } else {
                 morePagesAvailableAfter = false
@@ -179,7 +207,7 @@ export function Pagination(props) {
         const paginationContent = []
         for (let i = 0; i < paginationNumbers.length; i++) {
             let pageNumber = paginationNumbers[i]
-            if (props.pageIndex === pageNumber) {
+            if (pageIndex === pageNumber) {
                 paginationContent.push(<div className={"pagination-number current"}>{pageNumber + 1}</div>)
             } else if (pageNumber == null) {
                 paginationContent.push(<div className={"pagination-number"}>...</div>)

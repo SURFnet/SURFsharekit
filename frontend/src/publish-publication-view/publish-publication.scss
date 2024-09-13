@@ -1,0 +1,130 @@
+@import "../sass/theme/constants";
+@import "../sass/theme/fonts";
+@import "../sass/theme/mixins";
+@import "../sass/utils/mixins";
+@import "../sass/mediaquery/mediaquery";
+
+form {
+    flex: 1 0;
+}
+
+#publish-button {
+    background: none;
+}
+
+
+#add-publication {
+    background: $page-background-gradient;
+
+    .title-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-bottom: 25px;
+
+        .actions-container {
+            display: flex;
+            justify-content: flex-end;
+
+            .save-button {
+                margin-left: 11px;
+            }
+        }
+    }
+
+    .rejected {
+        background: $flame-light !important;
+    }
+
+    .form-elements-container {
+        display: flex;
+        gap: 40px;
+
+        @include media-query-mobile-tablet {
+            gap: unset;
+        }
+
+        .left-pane-container {
+            margin-top: 36px;
+            position: fixed;
+            width: 242px;
+
+            @include media-query-mobile-tablet {
+                margin-right: 0;
+            }
+
+            .repo-item-details {
+                @include rounded-background-pointy-upper-left();
+                padding: 25px 35px;
+                margin-bottom: 20px;
+                top: 63px;
+                width: 242px;
+                max-width: 100%;
+
+                @include media-query-mobile-tablet {
+                    width: 202px;
+                    display: none;
+                }
+
+                .section {
+                    &:not(:first-child) {
+                        margin-top: 17px;
+
+                        @include media-query-mobile-tablet {
+                            margin-top: 0;
+                        }
+                    }
+
+                    .section-title {
+                        @include open-sans-bold;
+                        font-size: 12px;
+                    }
+
+                    .date {
+                        @include open-sans;
+                        font-size: 14px;
+                        max-width: 200px;
+                    }
+
+                    .decline-reason-text {
+                        @include open-sans;
+                        font-size: 14px;
+                        max-width: 200px;
+                        margin-top: 8px;
+                        text-decoration: underline;
+                        font-style: italic;
+                        color: $majorelle;
+                        cursor: pointer;
+                    }
+
+                    .person {
+                        @include open-sans-italic;
+                        font-size: 14px;
+
+                        a {
+                            text-decoration: underline;
+                            color: $majorelle;
+                        }
+                    }
+
+                    .status {
+                        margin-top: 5px;
+                    }
+                }
+            }
+
+            .save-button {
+                margin-top: 20px;
+                flex-direction: row;
+            }
+
+            #save-publish-button {
+                padding: 0;
+            }
+        }
+    }
+
+    .status {
+        display: flex;
+    }
+}

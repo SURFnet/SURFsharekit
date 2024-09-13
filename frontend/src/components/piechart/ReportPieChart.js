@@ -14,11 +14,13 @@ export function ReportPieChart(props) {
         let learningObjects = 0;
         let researchObjects = 0;
         let publicationRecords = 0;
+        let datasets = 0;
         props.reportData.forEach(v => {
             total += v.repoItems.total
             learningObjects += v.repoItems.learningObjects
             researchObjects += v.repoItems.researchObjects
             publicationRecords += v.repoItems.publicationRecords
+            datasets += v.repoItems.datasets
         })
 
         report = {}
@@ -26,6 +28,7 @@ export function ReportPieChart(props) {
             {title: t("report.publication_records"), value: publicationRecords, color: '#E35F3C'},
             {title: t("report.learning_objects"), value: learningObjects, color: '#5AC4ED'},
             {title: t("report.research_objects"), value: researchObjects, color: '#FACD34'},
+            {title: t("report.datasets"), value: datasets, color: '#7444ee'},
         ]
         report.totalItems = total;
     }

@@ -77,9 +77,9 @@
             }
 
             .button-container {
-                display: block;
+                display: flex;
+                justify-content: space-between;
                 margin-top: 50px;
-                @include clear-after();
 
                 .previous-button {
                     float: left;

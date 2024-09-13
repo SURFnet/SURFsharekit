@@ -9,6 +9,7 @@ import {useTranslation} from "react-i18next";
 
 function MultiSelectDropdown(props) {
     const {t} = useTranslation();
+    const inputRef = useRef();
     const [selectedOptionValues, setSelectedOptionValues] = useState(getInitialValues)
 
     let classAddition = '';
@@ -70,12 +71,77 @@ function MultiSelectDropdown(props) {
         );
     };
 
-    const promiseOptions = inputValue =>
-        new Promise(resolve => {
-            props.getOptions(inputValue, (resultingOptions) => {
+    const mockOption = (inputValue) => {
+        return {
+            label: inputValue,
+            labelNL: inputValue,
+            labelEN: inputValue,
+            value: inputValue,
+        }
+    }
+
+    const selectMultiple = (values) => {
+        values.filter((value, index, self) => self.indexOf(value) === index).forEach((v, i) => {
+            setTimeout(() => {
+                selectOption(v)
+            }, 1 * i)
+        })
+
+        resetInputValue();
+    }
+
+    const selectOption = (value) => {
+        if (selectedOptionValues && selectedOptionValues.map(o => o.value).includes(value.value)) {
+            return;
+        }
+
+        return inputRef.current?.select?.select?.selectOption(value)
+    }
+
+    const resetInputValue = () => {
+        if (inputRef.current?.select?.select?.inputRef) {
+            setTimeout(() => {
+                inputRef.current.select.select.onInputChange('', { action: 'set-value' });
+            }, 100)
+        }
+    }
+
+    const handleInputChange = (inputValue) => {
+        if (props.delimiters != null && Array.isArray(props.delimiters)) {
+            handleDelimiterInput(inputValue)
+        }
+    }
+
+    const handleDelimiterInput = (inputValue) => {
+        if (inputValue && inputValue.length && props.delimiters.some(s => inputValue.includes(s))) {
+            const inputValues = inputValue.split(/,|;/)
+
+            const values = inputValues.map(v => v.trim()).filter(v => v.length > 0).map(v => mockOption(v))
+            selectMultiple(values)
+        }
+    }
+
+    const promiseOptions = (inputValue) => {
+        return new Promise(resolve => {
+            props.getOptions(inputValue, resultingOptions => {
+                const customOptionInList = resultingOptions.find(o => {
+                    return (o.label === inputValue || o.labelNL === inputValue || o.labelNL === inputValue)
+                })
+                if (props.allowCustomOption && customOptionInList === undefined) {
+                    resultingOptions = [mockOption(inputValue), ...resultingOptions]
+                    resultingOptions = resultingOptions.filter(option => option.value.length > 0)
+                } else {
+                    //prepend custom option if exists
+                    const index = resultingOptions.indexOf(customOptionInList);
+                    if (index > -1) {
+                        resultingOptions.splice(index, 1);
+                        resultingOptions = [customOptionInList, ...resultingOptions];
+                    }
+                }
                 resolve(resultingOptions)
             })
         });
+    }
 
     function defaultValueToOptions(optionValues) {
         return optionValues !== null && optionValues.map(optionValue => {
@@ -85,6 +151,7 @@ function MultiSelectDropdown(props) {
                 "labelEN": optionValue.labelEN,
                 "coalescedLabelNL": optionValue.coalescedLabelNL,
                 "coalescedLabelEN": optionValue.coalescedLabelEN,
+                "metafieldOptionCategory": optionValue.metafieldOptionCategory,
                 "value": optionValue.value
             }
         })
@@ -95,6 +162,7 @@ function MultiSelectDropdown(props) {
     return (
         <div className={"multi-select-dropdown-container" + classAddition}>
             <AsyncSelect
+                ref={inputRef}
                 key={props.name + t('language.current_code')}
                 isDisabled={props.readonly}
                 className="surf-multi-select-dropdown"
@@ -111,9 +179,10 @@ function MultiSelectDropdown(props) {
                 isMulti={true}
                 placeholder={placeholder}
                 styles={style}
+                onInputChange={handleInputChange}
                 onChange={
                     (selection) => {
-                        if(selection && selection.length > 0) {
+                        if (selection && selection.length > 0) {
                             setSelectedOptionValues(selection);
                         } else {
                             setSelectedOptionValues(null);
@@ -124,7 +193,6 @@ function MultiSelectDropdown(props) {
         </div>
     );
 }
-
 
 
 export default MultiSelectDropdown;

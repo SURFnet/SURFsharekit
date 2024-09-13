@@ -14,10 +14,14 @@ import ButtonText from "../../components/buttons/buttontext/ButtonText";
 import {FormStep} from "../../components/field/relatedrepoitempopup/RelatedRepoItemContent";
 import SearchRepoItemTable from "../../components/searchrepoitemtable/SearchRepoItemTable";
 import {StorageKey, useAppStorageState} from "../../util/AppStorage";
+import styled from "styled-components";
+import SURFButton from "../../styled-components/buttons/SURFButton";
+import {majorelle, spaceCadet} from "../../Mixins";
 
 export function AddPublicationPopupContent(popupProps) {
     const institutes = popupProps.institutes
     const skipStep1 = institutes.length === 1
+    const isProject = popupProps.isProject === true
 
     const {t} = useTranslation()
     const [currentStepIndex, setCurrentStepIndex] = useState((skipStep1) ? 1 : 0);
@@ -42,19 +46,22 @@ export function AddPublicationPopupContent(popupProps) {
         let indexOffset = skipStep1 ? -1 : 0;
 
         return <div>
-            <h3 className={"popup-title"}>{t('add_publication.popup.title')}</h3>
+            <h3 className={"popup-title"}>{ isProject ? t('projects.new_project') : t('add_publication.popup.title')}</h3>
             <div className='flex-row form-step-list'>
                 {!skipStep1 && <FormStep
                     active={currentStepIndex === 0}
                     number={1 + indexOffset}
-                    title={t('add_publication.popup.step1_title')}/>}
-                {!skipStep1 && <div className='form-step-divider'/>}
-                <FormStep
-                    active={currentStepIndex === 1}
-                    number={2 + indexOffset}
-                    title={t('add_publication.popup.step2_title')}/>
-                {userHasExtendedAccess && <div className='form-step-divider'/>}
-                {userHasExtendedAccess && <FormStep
+                    title={t('add_publication.popup.step1_title')}
+                />}
+                {!skipStep1 && !isProject && <div className='form-step-divider'/>}
+                {!isProject && <FormStep
+                                    active={currentStepIndex === 1}
+                                    number={2 + indexOffset}
+                                    title={t('add_publication.popup.step2_title')}
+                                />
+                }
+                {userHasExtendedAccess && !isProject && <div className='form-step-divider'/>}
+                {userHasExtendedAccess && !isProject && <FormStep
                     active={currentStepIndex === 2}
                     number={3 + indexOffset}
                     title={t('add_publication.popup.step3_title')}/>}
@@ -67,8 +74,15 @@ export function AddPublicationPopupContent(popupProps) {
 
         function Step1Content(props) {
             function instituteRowClicked(institute) {
-                selectedInstitute.current = institute
-                setCurrentStepIndex(1)
+                if(isProject) {
+                    popupProps.instituteAndTypeSelected({
+                        institute: institute,
+                        selectedPublicationType: "Project"
+                    })
+                } else {
+                    selectedInstitute.current = institute
+                    setCurrentStepIndex(1)
+                }
             }
 
             let institutesHtml = []
@@ -95,7 +109,7 @@ export function AddPublicationPopupContent(popupProps) {
         }
 
         function Step2Content(props) {
-            const repoItemTypesToCreate = instituteCreateRepoItemPermissions(selectedInstitute.current).map((p) => {
+            const repoItemTypesToCreate = instituteCreateRepoItemPermissions(selectedInstitute.current).filter(p => p !== "canCreateProject").map((p) => {
                 return {
                     "value": p,
                     "label": instituteCreateRepoItemPermissionToString(p, t)
@@ -115,32 +129,46 @@ export function AddPublicationPopupContent(popupProps) {
                     }}
                 />
 
-                <div className={"button-container"}>
-                    {!skipStep1 && <ButtonText text={props.buttonText ?? t('action.previous')}
-                                               className={"previous-button"}
-                                               onClick={() => {
-                                                   setCurrentStepIndex(0)
-                                               }}/>}
+                <Footer>
+                    {!skipStep1 &&
+                        <SURFButton
+                            text={props.buttonText ?? t('action.previous')}
+                            backgroundColor={spaceCadet}
+                            width={'90px'}
+                            onClick={() => {
+                                setCurrentStepIndex(0)
+                            }}
+                        />
+                    }
 
-                    {userHasExtendedAccess && <ButtonText text={props.buttonText ?? t('add_publication.popup.use_template')}
-                                buttonType={"primary"}
-                                disabled={!selectedPublicationType}
-                                className={"save-button"}
-                                onClick={() => {
-                                    setCurrentStepIndex(2)
-                                }}/>}
+                    <ButtonWrapper>
+                        {userHasExtendedAccess &&
+                        <SURFButton
+                            disabled={!selectedPublicationType}
+                            text={props.buttonText ?? t('add_publication.popup.use_template')}
+                            backgroundColor={spaceCadet}
+                            width={'190px'}
+                            padding={"0 10px"}
+                            onClick={() => {
+                                setCurrentStepIndex(2)
+                            }}
+                        />
+                        }
 
-                    <ButtonText text={props.buttonText ?? t('add_publication.popup.confirm')}
-                                buttonType={"callToAction"}
-                                disabled={!selectedPublicationType}
-                                className={"save-button"}
-                                onClick={() => {
-                                    popupProps.instituteAndTypeSelected({
-                                        institute: selectedInstitute.current,
-                                        selectedPublicationType: instituteCreateRepoItemPermissionToRealType(selectedPublicationType)
-                                    })
-                                }}/>
-                </div>
+                        <SURFButton
+                            disabled={!selectedPublicationType}
+                            text={props.buttonText ?? t('add_publication.popup.confirm')}
+                            backgroundColor={majorelle}
+                            width={'90px'}
+                            onClick={() => {
+                                popupProps.instituteAndTypeSelected({
+                                    institute: selectedInstitute.current,
+                                    selectedPublicationType: instituteCreateRepoItemPermissionToRealType(selectedPublicationType)
+                                })
+                            }}
+                        />
+                    </ButtonWrapper>
+                </Footer>
             </div>
         }
 
@@ -150,43 +178,72 @@ export function AddPublicationPopupContent(popupProps) {
             return <div>
                 <h4 className={"type-title"}>{t('add_publication.popup.template_title')}</h4>
 
-                <SearchRepoItemTable setSelectedRepoItem={setRepoItemToCopy}
+                <SearchRepoItemTable onRepoItemSelect={(repoItem) => {setRepoItemToCopy(repoItem)}}
+                                     selectedRepoItems={repoItemToCopy && [repoItemToCopy]}
                                      hideNextButton={true}
+                                     multiSelect={false}
+                                     repoType={selectedPublicationType}
                                      filters={
                                          {
                                              'filter[permissions.canCopy]': true,
                                              'filter[scope]': selectedInstitute.current.id,
+                                             'filter[isRemoved]': 0,
                                              'filter[repoType]': instituteCreateRepoItemPermissionToRealType(selectedPublicationType)
                                          }
                                      }
                 />
 
-                <div className={"button-container"}>
-                    <ButtonText text={props.buttonText ?? t('action.previous')}
-                                className={"previous-button"}
-                                onClick={() => {
-                                    setCurrentStepIndex(1)
-                                }}/>
+                <Footer>
+                    <SURFButton
+                        text={props.buttonText ?? t('action.previous')}
+                        backgroundColor={spaceCadet}
+                        width={'90px'}
+                        onClick={() => {
+                            setCurrentStepIndex(1)
+                        }}
+                    />
 
-                    <ButtonText text={props.buttonText ?? t('add_publication.popup.no_template')}
-                                buttonType={"primary"}
-                                className={"save-button"}
-                                onClick={() => {
-                                    popupProps.instituteAndTypeSelected({
-                                        institute: selectedInstitute.current,
-                                        selectedPublicationType: instituteCreateRepoItemPermissionToRealType(selectedPublicationType)
-                                    })
-                                }}/>
+                    <ButtonWrapper>
+                        <SURFButton
+                            text={props.buttonText ?? t('add_publication.popup.no_template')}
+                            backgroundColor={spaceCadet}
+                            width={'210px'}
+                            padding={"0 10px"}
+                            onClick={() => {
+                                popupProps.instituteAndTypeSelected({
+                                    institute: selectedInstitute.current,
+                                    selectedPublicationType: instituteCreateRepoItemPermissionToRealType(selectedPublicationType)
+                                })
+                            }}
+                        />
 
-                    <ButtonText text={props.buttonText ?? t('add_publication.popup.confirm')}
-                                buttonType={"callToAction"}
-                                disabled={repoItemToCopy == null}
-                                className={"save-button"}
-                                onClick={() => {
-                                    popupProps.repoItemToCopySelected(repoItemToCopy)
-                                }}/>
-                </div>
+                        <SURFButton
+                            disabled={repoItemToCopy == null}
+                            text={props.buttonText ?? t('add_publication.popup.confirm')}
+                            backgroundColor={majorelle}
+                            width={'90px'}
+                            onClick={() => {
+                                popupProps.repoItemToCopySelected(repoItemToCopy)
+                            }}
+                        />
+                    </ButtonWrapper>
+                </Footer>
             </div>
         }
     }
 }
+
+const Footer = styled.div`
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 50px;
+`;
+
+const ButtonWrapper = styled.div`
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 10px;
+`;

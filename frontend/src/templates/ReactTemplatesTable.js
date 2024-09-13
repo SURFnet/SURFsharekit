@@ -30,7 +30,7 @@ export function ReactTemplatesTable(props) {
         () => [
             {
                 Header: () => {
-                    return [t('templates.templates_table.title'), ' ', <ReactTableSortIcon sortOrder={currentSortBy} name={'title'}/>]
+                    return [<span className={"border"}>{t('templates.templates_table.title')}</span>, ' ', <ReactTableSortIcon sortOrder={currentSortBy} name={'title'}/>]
                 },
                 accessor: 'title',
                 className: 'bold-text',
@@ -40,7 +40,7 @@ export function ReactTemplatesTable(props) {
             },
             {
                 Header: () => {
-                    return [t('templates.templates_table.organisation'), ' ', <ReactTableSortIcon sortOrder={currentSortBy} name={'instituteTitle'}/>]
+                    return [<span className={"border"}>{t('templates.templates_table.organisation')}</span>, ' ', <ReactTableSortIcon sortOrder={currentSortBy} name={'instituteTitle'}/>]
                 },
                 accessor: 'instituteTitle',
                 className: 'templates-row-organisation',
@@ -50,7 +50,7 @@ export function ReactTemplatesTable(props) {
             },
             {
                 Header: () => {
-                    return [t('templates.templates_table.last_edited'), ' ', <ReactTableSortIcon sortOrder={currentSortBy} name={'lastEdited'}/>]
+                    return [<span className={"border"}>{t('templates.templates_table.last_edited')}</span>, ' ', <ReactTableSortIcon sortOrder={currentSortBy} name={'lastEdited'}/>]
                 },
                 accessor: 'lastEdited',
                 style: {
@@ -72,7 +72,6 @@ export function ReactTemplatesTable(props) {
     };
 
     const navigateToEditTemplatePage = (row) => {
-
         props.props.history.push('../templates/' + row.original.id)
     }
 

@@ -5,12 +5,17 @@ export const StorageKey = {
     USER_PERMISSIONS: 'userPermissions',
     USER_ROLES: 'userRoles',
     USER_CAN_VIEW_ORGANISATION: 'userCanViewOrganisation',
+    USER_CAN_VIEW_REPORTS: 'userCanViewReports',
     USER_CAN_VIEW_TEMPLATES: 'userCanViewTemplates',
-    USER_CAN_VIEW_PERSONS: 'userCanViewPersons',
+    USER_CAN_VIEW_BIN: 'userCanViewBin',
+    USER_CAN_VIEW_PROFILES: 'userCanViewProfiles',
+    USER_CAN_VIEW_PROJECTS: 'userCanViewProjects',
+    USER_CAN_VIEW_PUBLICATIONS: 'userCanViewPublications',
     USER_INSTITUTE: 'userInstitute',
     LANGUAGE_LOCALE: 'languageLocale',
     STATE_REDIRECT: 'stateRedirect',
-    STATE_NEEDS_ACCESSTOKEN: 'stateAccessToken'
+    STATE_NEEDS_ACCESSTOKEN: 'stateAccessToken',
+    PERSONS_TO_MERGE: 'profilesToMerge'
 };
 
 class AppStorage {
@@ -28,6 +33,7 @@ class AppStorage {
             if (this.subscribers[storageKey]) {
                 this.subscribers[storageKey].forEach(method => method(this.get(storageKey)))
             }
+            window.dispatchEvent(new Event(storageKey))
         } else {
             this.remove(storageKey);
         }
@@ -36,6 +42,7 @@ class AppStorage {
     static remove(storageKey) {
         if (this.isAvailable(storageKey)) {
             localStorage.removeItem(storageKey);
+            window.dispatchEvent(new Event(storageKey))
         }
 
         if (this.subscribers[storageKey]) {

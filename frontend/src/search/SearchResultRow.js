@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useEffect} from "react";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faArrowRight, faFileInvoice, faUsers} from "@fortawesome/free-solid-svg-icons";
 import './searchresultsrow.scss'
@@ -9,6 +9,20 @@ import {ProfileBanner} from "../components/profilebanner/ProfileBanner";
 export function SearchResultRow(props) {
 
     const {t} = useTranslation();
+
+    function getHrefLink(){
+        switch (props.type.toLowerCase()) {
+            case 'repoitem':
+                return `../publications/${props.id}`
+            case 'group':
+                return `../groups/${props.id}`
+            case 'person':
+                return `../profile/${props.id}`
+            default:
+                return null;
+        }
+    }
+
 
     function navigateToSearchResultDetailPage() {
         switch (props.type.toLowerCase()) {
@@ -52,7 +66,7 @@ export function SearchResultRow(props) {
     }
 
     return (
-        <div className={"search-result-row"}>
+        <a className={"search-result-row"} href={getHrefLink()}>
             <div className={"row-content"}>
                 <SearchResultIcon/>
                 <div className={"row-information"}>
@@ -68,6 +82,6 @@ export function SearchResultRow(props) {
                                 faIcon={faArrowRight}
                                 onClick={navigateToSearchResultDetailPage}/>
             </div>
-        </div>
+        </a>
     )
 }

@@ -7,6 +7,7 @@ import {faDownload} from "@fortawesome/free-solid-svg-icons";
 import ExportPopup from "./ExportPopup";
 import {StorageKey, useAppStorageState} from "../util/AppStorage";
 import {Redirect} from "react-router-dom";
+import useDocumentTitle from "../util/useDocumentTitle";
 
 export default function Reports(props) {
 
@@ -14,6 +15,8 @@ export default function Reports(props) {
     const [userRoles, setUserRoles] = useAppStorageState(StorageKey.USER_ROLES);
     const userHasExtendedAccess = userRoles ? userRoles.find(c => c !== 'Student' && c !== 'Default Member') : false;
     const canViewReports = userRoles ? userRoles.find(c => c !== 'Student' && c !== 'Default Member' && c !== 'Staff') : false;
+
+    useDocumentTitle("Reports")
 
     const content = (
         <div className={"reports-content"}>

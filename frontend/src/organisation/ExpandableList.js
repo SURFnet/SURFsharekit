@@ -4,7 +4,6 @@ import {ExpandableRow} from "./ExpandableRow";
 import {ExpandableListLoadingIndicator} from "./ExpandableListLoadingIndicator";
 
 export function ExpandableList(props) {
-
     if (props.isLoading || props.data === null) {
         return (
             <div className={"expandable-list"}>
@@ -20,6 +19,7 @@ export function ExpandableList(props) {
                     <ExpandableRow key={institute.id}
                                    data={institute}
                                    isRootInstitute={true}
+                                   showInactive={props.showInactive}
                                    onClickExpand={props.onClickExpand}/>
                 )
             }

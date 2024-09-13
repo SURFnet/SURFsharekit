@@ -2,17 +2,24 @@ import React, {useEffect, useState} from "react";
 import './treeMultiSelectField.scss'
 import {useTranslation} from "react-i18next";
 import {SortableContainer, SortableElement} from "react-sortable-hoc";
-import {faPlus} from "@fortawesome/free-solid-svg-icons";
+import {faChevronDown, faCross, faPlus, faTimes, faWindowClose} from "@fortawesome/free-solid-svg-icons";
 import IconButtonText from "../../buttons/iconbuttontext/IconButtonText";
 import VocabularyPopup from "../vocabularypopup/VocabularyPopup";
+import {ThemedH6} from "../../../Elements";
+import styled from "styled-components";
+import {cultured, greyLight, majorelle, openSans, roundedBackgroundPointyUpperLeft, white} from "../../../Mixins";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 
 export function TreeMultiSelectField(props) {
+
+    const {t} = useTranslation()
+
     let classAddition = '';
     classAddition += (props.readonly ? ' disabled' : '');
     classAddition += (props.isValid ? ' valid' : '');
     classAddition += (props.hasError ? ' invalid' : '');
     const items = props.formReducerState[props.name] ?? [];
-    const [options, setOptions] = useState(props.options ?? [])
+    const [options, setOptions] = useState(props.options ? props.options : [])
     let stringifiedDefaultValue = null
     if (!(props.defaultValue === undefined || props.defaultValue === null || props.defaultValue.length === 0)) {
         stringifiedDefaultValue = JSON.stringify(props.defaultValue);
@@ -33,46 +40,48 @@ export function TreeMultiSelectField(props) {
         props.setValue(props.name, stringifiedDefaultValue)
     }, [props.register]);
 
-
-    let clickToAddElement;
-    if (props.readonly) {
-        clickToAddElement = <></>
-    } else {
-        clickToAddElement =
-            <div key={'add-vocabulary-button'} onClick={() => openVocabularyPopup()}>
-                <IconButtonText className={"plus-button with-top-margin"}
-                                faIcon={faPlus}
-                                buttonText={props.addText}/>
-            </div>
-    }
-
-    const rowsHeaderElement = <div className='field-label'
-                                   key={'rows-header-element'}>{props.getRowHeader && props.getRowHeader()}</div>
-    const sortableRows = <SortableComponent items={options.filter((o) => items.find((i) => o.value === i))}
-                                            onItemAction={onItemAction}
-                                            readonly={props.readonly}
-                                            itemToComponent={props.itemToComponent}
-                                            key={options.filter((o) => items.find((i) => o.value === i))}/>
-
     return (
-        <div className={'tree-multiselect ' + classAddition}>
-            {props.readonly && !(items && items.length > 0) && <div className={"field-input readonly"}>{"-"}</div>}
-            {[rowsHeaderElement, sortableRows, clickToAddElement]}
 
-        </div>
+        <TreeMultiSelectFieldRoot>
+                {props.readonly && !(items && items.length > 0) &&
+                    <>
+                        {props.showEmptyState
+                            ?   <EmptyPlaceholder>
+                                <ThemedH6>{props.emptyText}</ThemedH6>
+                            </EmptyPlaceholder>
+                            :   <div className={"field-input readonly"}>{"-"}</div>
+                        }
+                    </>
+                }
+
+                <TagContainer isEmpty={getSelectedItemsFromOptions().length === 0 || getSelectedItemsFromOptions().length === null}>
+                   {getSelectedItemsFromOptions().map((option) => {
+                        return (
+                            <Tag>
+                                <Value>{t('language.current_code') === 'nl' ? option.coalescedLabelNL : option.coalescedLabelEN}</Value>
+                                {!props.readonly &&
+                                    <DeleteButton icon={faTimes} onClick={() => deleteValue(option.value)}/>
+                                }
+                            </Tag>
+                        )
+                    })}
+                </TagContainer>
+
+
+                {!props.readonly &&
+                <AddButton key={'add-vocabulary-button'} onClick={() => openVocabularyPopup()}>
+                    <IconButtonText
+                        className={"plus-button with-top-margin"}
+                        faIcon={faPlus}
+                        buttonText={items && items.length === 0 ? props.addText : ""}
+                    />
+                </AddButton>
+                }
+        </TreeMultiSelectFieldRoot>
     );
 
-    function onItemAction(event) {
-        switch (event.type) {
-            case "delete":
-                deleteValue(event.value);
-                break;
-            case "create":
-                createValue(event.value)
-                break;
-            default:
-                break;
-        }
+    function getSelectedItemsFromOptions() {
+        return options.filter((o) => items.find((i) => o.value === i));
     }
 
     function deleteValue(value) {
@@ -93,46 +102,69 @@ export function TreeMultiSelectField(props) {
 
     function openVocabularyPopup() {
         VocabularyPopup.show(props.name, (vocabularyArr) => {
-            const ids = vocabularyArr.value.map(o=>o.id);
-            const newOptions = vocabularyArr.value.map(o => {
-                o.value = o.id
-                return o
+            const ids = vocabularyArr.value.map(o => o.id);
+            const newOptions = vocabularyArr.value.map(o =>  {
+                o.value = o.id;
+                return o;
             })
-            setOptions([...options, ...newOptions])
-            createValue(ids)
-        }, () => {
-        })
+            setOptions(options.concat(newOptions));
+            createValue(ids);
+        }, () => {}, props.retainOrder);
     }
 }
 
+const EmptyPlaceholder = styled.div`
+    width: 100%;
+    background: ${cultured};
+    margin: 20px 0;
+    text-align: center;
+`;
 
-function SortableComponent(props) {
-    return <SortableList items={props.items}
-                         itemToComponent={props.itemToComponent}
-                         onItemAction={props.onItemAction}
-                         useDragHandle={true}
-                         readonly={props.readonly}
-                         key={'sortable list'}/>;
-}
+const TreeMultiSelectFieldRoot = styled.div`
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    background: ${cultured};
+`;
 
-const SortableList = SortableContainer(({items, onItemAction, itemToComponent, readonly}) => {
+const Tag = styled.div`
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    ${roundedBackgroundPointyUpperLeft(majorelle, '8px')};
+    padding: 12px 13px;
+    flex-shrink: 0;
+    flex-basis: fit-content;
+`;
 
-    return <div className='sortable-container'>
-        {(items ?? []).map((item, index) => (
-            <SortableItem key={`item-${item.value}`}
-                          index={index}
-                          value={item}
-                          onItemAction={onItemAction}
-                          readonly={readonly}
-                          itemToComponent={itemToComponent}/>
-        ))}
-    </div>
-});
+const Value = styled.div`
+    ${openSans()};
+    font-size: 12px;
+    color: ${white};
+`;
 
-const SortableItem = SortableElement(({value: valuePart, onItemAction, itemToComponent, readonly}) => {
-        const {t} = useTranslation();
-        return itemToComponent(valuePart, onItemAction, readonly, t)
-    }
-);
+const DeleteButton = styled(FontAwesomeIcon)`
+    font-size: 14px;
+    color: ${white};
+    cursor: pointer;
+`;
+
+const TagContainer = styled.div`
+    background: ${cultured};
+    display: flex;
+    flex: 1; 
+    flex-direction: row;
+    row-gap: 15px;
+    column-gap: 6px;
+    flex-wrap: wrap;
+    margin-top: ${props => props.isEmpty ? "0" : "15px"};
+`;
+
+const AddButton = styled.div`
+    margin-top: 20px;
+`;
+
+
 
 

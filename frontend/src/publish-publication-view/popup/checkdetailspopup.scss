@@ -1,0 +1,152 @@
+@import "../../sass/theme/constants";
+@import "../../sass/theme/fonts";
+@import "../../sass/theme/mixins";
+@import "../../sass/utils/mixins";
+@import "../../sass/mediaquery/mediaquery";
+
+.repo-item-details, .profile-details {
+  @include rounded-background-pointy-upper-left();
+  margin-bottom: 20px;
+  top: 63px;
+  width: auto;
+
+  .section {
+    &:not(:first-child) {
+      margin-top: 17px;
+
+      @include media-query-mobile-tablet {
+        margin-top: 0;
+      }
+    }
+
+    .section-title {
+      @include open-sans-bold;
+      font-size: 12px;
+      margin-top: 10px;
+    }
+
+    .date {
+      @include open-sans;
+      font-size: 14px;
+      max-width: 200px;
+    }
+
+    .decline-reason-text {
+      @include open-sans;
+      font-size: 14px;
+      max-width: 200px;
+      margin-top: 8px;
+      text-decoration: underline;
+      font-style: italic;
+      color: $majorelle;
+      cursor: pointer;
+    }
+
+    .person {
+      @include open-sans-italic;
+      font-size: 14px;
+
+      a {
+        text-decoration: underline;
+        color: $majorelle;
+      }
+    }
+
+    .status {
+      margin-top: 5px;
+    }
+  }
+}
+
+.swal2-content {
+  padding: 0 !important;
+}
+
+.swal2-popup {
+  border-radius: 2px 12px 12px 12px
+}
+
+.swal2-container.check-details-container {
+
+  .swal2-popup.check-details-popup {
+    max-width: 222px;
+    min-width: 222px;
+    min-height: 200px;
+
+    .check-details-content {
+      text-align: left;
+
+      .header-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+      }
+
+      .popup-title {
+        margin-bottom: 20px;
+      }
+
+      .form-step-list {
+        margin-bottom: 30px;
+      }
+
+      .type-title {
+        margin-bottom: 30px;
+      }
+
+      .institute-options {
+        .institute-option {
+          display: flex;
+          align-items: center;
+          justify-content: flex-start;
+          position: relative;
+          border: 1px solid $cultured;
+          border-radius: 5px;
+          background-color: white;
+          min-height: 52px;
+          padding: 13px 50px 13px 30px;
+          margin-bottom: 9px;
+          cursor: pointer;
+
+          .status-color-indicator {
+            position: absolute;
+            background-color: $majorelle;
+            width: 7px;
+            height: 100%;
+            left: 0;
+            border-top-left-radius: 5px;
+            border-bottom-left-radius: 5px;
+
+            &.inactive {
+              background-color: $grayDark
+            }
+          }
+
+          .icon-container {
+            background-color: $cultured;
+            padding: 10px;
+            border-radius: 4px;
+            color: $majorelle;
+          }
+
+          .title {
+            @include open-sans;
+            font-size: 14px;
+            margin-left: 12px;
+          }
+        }
+      }
+
+      .close-button-container {
+        display: flex;
+        justify-content: space-between;
+        cursor: pointer !important;
+
+        svg {
+          cursor: pointer !important;
+        }
+      }
+    }
+  }
+}

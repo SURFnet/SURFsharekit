@@ -233,7 +233,7 @@ export function ExportPopupContent(props) {
     }
 }
 
-const institutesCall = function (searchQuery = '', callback = () => {
+export const institutesCall = function (searchQuery = '', callback = () => {
 
 }) {
     const mapper = (resultOption) => {

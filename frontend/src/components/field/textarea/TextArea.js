@@ -21,13 +21,12 @@ export function TextAreaField(props) {
     if(props.readonly) {
         readonlyValue = (props.defaultValue && props.defaultValue.length > 0) ? props.defaultValue : "-"
     }
-
     return <div className={"field-input-wrapper"}>
         {props.readonly && <div className={"field-input text readonly"}>{readonlyValue}</div>}
         <textarea
             disabled={props.readonly}
             className={"field-input text-area" + classAddition}
-            defaultValue={props.defaultValue}
+            defaultValue={props.defaultValue ?? ''}
             placeholder={props.placeholder}
             onInput={(e) => {
                 if ((!oldValue || oldValue.length === 0) && e.target.value.length > 0) {

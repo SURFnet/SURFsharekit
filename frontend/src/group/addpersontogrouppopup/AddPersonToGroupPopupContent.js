@@ -1,6 +1,6 @@
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faTimes} from "@fortawesome/free-solid-svg-icons";
-import React from "react";
+import React, {useState} from "react";
 import "./addpersontogrouppopup.scss"
 import '../../components/field/formfield.scss'
 import {useTranslation} from "react-i18next";
@@ -8,13 +8,22 @@ import SearchAndSelectPersonTable from "../../components/searchandselectpersonta
 
 export function AddPersonToGroupPopupContent(props) {
     const {t} = useTranslation()
+    const [selectedPerson, setSelectedPerson] = useState(null);
+
     let popupContent = ([
         <div key={"add-person-title"} className={"add-person-layer-title"}>
             <h3>{t('group.add_person_popup.title')}</h3>
-            <SearchAndSelectPersonTable setSelectedPerson={(person) => {props.onPersonSelected(person)}}
-                               buttonText={t('action.add')}
-                               defaultParams={{'filter[group][NEQ]': props.groupToAddTo.id}}
-                               allowOutsideScope={false}/>
+            <SearchAndSelectPersonTable
+                onPersonSelect={(person) => setSelectedPerson(person)}
+                selectedPersons={selectedPerson ? [selectedPerson] : []}
+                onAddButtonClick={() => {
+                    props.onAddButtonClick(selectedPerson)
+                }}
+                buttonText={t('action.add')}
+                defaultParams={{'filter[group][NEQ]': props.groupToAddTo.id}}
+                allowOutsideScope={false}
+                multiSelect={false}
+            />
         </div>
     ])
 

@@ -47,9 +47,7 @@ function PublicPage(props) {
                 <div className={"footer-text-container"}>
                     <h4>SURFsharekit</h4>
                     <div className={"footer-text"}>
-                        Dienst van HBO Kennisinfrastructuur (HKI)<br/>
-                        Repositorydienst voor hogescholen<br/>
-                        Gebaseerd op open standaarden volgens Edustandaard<br/>
+                        SURFsharekit is een repositorydienst van SURF, de ICT-coöperatie van onderwijs en onderzoek.
                     </div>
                 </div>
             </div>
@@ -126,10 +124,10 @@ export function PublicPageRow(props) {
         )
     }
 
-    function urlRow(label, value, url) {
+    function urlRow(label, title, url) {
         return (
-            <div id={`${label}-${value}`} className={"value-row value-row-url"}>
-                <a href={`${url}`}>{value}</a>
+            <div id={`${label}-${title}`} className={"value-row value-row-url"}>
+                <a href={`${url}`} target="_blank">{title ? title : url}</a>
             </div>
         )
     }
@@ -143,7 +141,7 @@ export function PublicPageRow(props) {
             })
         } else if (value instanceof Object) {
             valueColumn = []
-            if(value.url && value.title){
+            if(value.url){
                 // add href with title to url
                 valueColumn.push(urlRow(label, value.title, value.url))
             }
@@ -154,7 +152,11 @@ export function PublicPageRow(props) {
                 valueColumn.push(subtitleRow(label, value.subtitle))
             }
         } else {
-            valueColumn = valueRow(label, value)
+            if(ValidationHelper.isURL(value)){
+                valueColumn = urlRow(label, value, value)
+            } else {
+                valueColumn = valueRow(label, value)
+            }
         }
 
         return valueColumn

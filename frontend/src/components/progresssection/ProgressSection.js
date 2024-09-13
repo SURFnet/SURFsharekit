@@ -1,3 +1,4 @@
+/*
 import React, {useState} from "react"
 import "./progresssection.scss"
 import ProgressBar from "../progressbar/ProgressBar";
@@ -43,9 +44,13 @@ const ProgressSectionList = (props) => {
         }
     }
 
+    function goToSection(id) {
+        document.getElementById(id).scrollIntoView();
+    }
+
     return (
         props.sections.map((section) => {
-            return <div key={section.id} className={"progress-section"}>
+            return <div key={section.id} className={"progress-section"} onClick={() => goToSection(section.id)}>
                 <div className={"active-indicator " + getActiveClass(section)}/>
                 <div className={"progress-section-title"}>
                     <h5 className={getActiveClass(section)}>{section.title}</h5>
@@ -56,4 +61,4 @@ const ProgressSectionList = (props) => {
     )
 }
 
-export default ProgressSection
+export default ProgressSection*/

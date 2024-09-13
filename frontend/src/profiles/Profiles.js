@@ -7,13 +7,16 @@ import {useTranslation} from "react-i18next";
 import {faPlus} from "@fortawesome/free-solid-svg-icons";
 import IconButtonText from "../components/buttons/iconbuttontext/IconButtonText";
 import {UserPermissions} from "../util/UserPermissions";
-import PersonTable from "../components/reacttable/tables/PersonTable";
+import PersonTable from "../components/reacttable/tables/person/PersonTable";
+import useDocumentTitle from "../util/useDocumentTitle";
 
 function Profiles(props) {
     const {t} = useTranslation();
     const [user] = useAppStorageState(StorageKey.USER);
     const [userPermissions] = useAppStorageState(StorageKey.USER_PERMISSIONS);
     const [searchCount, setSearchCount] = useState(0);
+
+    useDocumentTitle('Persons')
 
     if (user === null) {
         return <Redirect to={'unauthorized?redirect=profiles'}/>
@@ -38,7 +41,13 @@ function Profiles(props) {
                                 }}/>
             }
         </div>
-        <PersonTable props={props} history={props.history} onTableFiltered={onTableFiltered} hideDelete={true}/>
+        <PersonTable
+            props={props}
+            history={props.history}
+            onTableFiltered={onTableFiltered}
+            hideDelete={true}
+            claimIconEnabled={true}
+        />
     </div>;
 
     return <Page id="profiles"

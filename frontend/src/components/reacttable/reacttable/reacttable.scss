@@ -4,6 +4,95 @@
 @import "../../../sass/utils/mixins";
 @import "../../../sass/mediaquery/mediaquery";
 
+.react-table-done-row {
+    tbody {
+        & td:first-child {
+            & div {
+               margin-top: 5px;
+            }
+        }
+
+        & td:nth-child(-n+3) {
+            text-decoration: line-through $grayStatus !important;
+            text-decoration-color: $grayStatus;
+            color: $grayStatus;
+
+            & div:hover {
+                text-decoration: line-through $grayStatus !important;
+                text-decoration-color: $grayStatus;
+                color: $grayStatus;
+            }
+        }
+
+
+        & td:first-child::before {
+            float: left;
+            margin-right: 15px;
+            margin-top: 4px;
+            content: url("../../../resources/icons/majorelle_checkmark.svg");
+        }
+
+        & td:nth-child(4) {
+            div {
+                color: $grayStatus;
+            }
+        }
+    }
+}
+
+.react-table-seperated-row {
+    border-spacing: 0 10px !important;
+
+    tbody {
+        & td {
+            border-bottom: none;
+            padding-top: 11px !important;
+            padding-bottom: 11px !important;
+        }
+
+        & td:first-child {
+            padding-left: 20px !important;
+            border-top-left-radius: 2px;
+            border-bottom-left-radius: 15px;
+        }
+
+        & td:last-child {
+            border-top-right-radius: 15px;
+            border-bottom-right-radius: 15px;
+        }
+
+        & tr {
+            height: 60px;
+            cursor: default !important;
+        }
+    }
+
+    thead {
+        & th {
+            padding-bottom: 0 !important;
+            padding-top: 0 !important;
+        }
+        & th:first-child {
+            padding-left: 20px !important;
+        }
+        & th:last-child {
+            padding-left: 35px !important;
+        }
+    }
+
+    tr[role=row] {
+        .fa,
+        .fas,
+        .svg-inline--fa {
+            font-size: unset !important;
+        }
+    }
+
+    .info-icon-wrapper {
+        font-size: 10px !important;
+    }
+}
+
 .react-table {
     width: 100%;
     border-spacing: 0;
@@ -30,6 +119,16 @@
         padding-bottom: 12px;
         text-transform: uppercase;
         font-size: 12px;
+
+        .border {
+            position: relative;
+            border-left: 1px solid #D2D2D2;
+            padding-left: 16px;
+        }
+
+        .border-no-translation {
+            border-left: 1px solid #D2D2D2;
+        }
     }
 
     tbody {
@@ -41,7 +140,8 @@
         padding-top: 20px;
         padding-bottom: 20px;
         padding-right: 12px;
-        border-bottom: 1px solid $input-border-color;
+        padding-left: 16px;
+        border-bottom: 1px solid $grayLight;
     }
 
     tbody tr:last-child td {
@@ -50,7 +150,7 @@
 
     /* Padding left */
     tbody tr td:first-child {
-        padding-left: 11px;
+        padding-left: 20px;
     }
 
     /* Padding right */
@@ -83,7 +183,7 @@
         td {
             border-bottom-right-radius: 15px;
             border-bottom-left-radius: 15px;
-            border-top: 1px solid $input-border-color;
+            border-top: 1px solid $grayLight;
             border-bottom: 0;
             height: 60px;
 
@@ -112,7 +212,7 @@
         .document-icon-cell,
         .group-icon-cell {
             background-color: $cultured;
-            color: $majorelle;
+            color: $majorelle !important;
             padding: 8px;
             border-radius: 4px;
         }

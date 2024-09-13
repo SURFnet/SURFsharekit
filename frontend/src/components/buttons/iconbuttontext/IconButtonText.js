@@ -6,10 +6,14 @@ function IconButtonText(props) {
     return (
         <div className={`surf-icon-button-text ${props.className ?? ""}`} onClick={props.onClick} style={props.style}>
             <div className="icon-button">
-                <FontAwesomeIcon icon={props.faIcon}/>
+                { props.faIcon ?
+                    <FontAwesomeIcon icon={props.faIcon}/>
+                    :
+                    <img src={props.icon} alt="icon"/>
+                }
             </div>
             {
-                <span className={"button-text"}><h5>{props.buttonText}</h5></span>
+               props.buttonText && <span className={"button-text"}><h5>{props.buttonText}</h5></span>
             }
         </div>
     );

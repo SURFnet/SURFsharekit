@@ -1,39 +1,54 @@
 import React, {useEffect, useState} from "react";
-import './sidemenu.scss'
 import {StorageKey, useAppStorageState} from "../util/AppStorage";
 import ApiRequests from "../util/api/ApiRequests";
 import {useTranslation} from "react-i18next";
-import Constants from "../sass/theme/_constants.scss";
-import {ProfileBanner} from "../components/profilebanner/ProfileBanner";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {
     faBuilding,
     faChartPie,
     faFileInvoice,
-    faHome,
-    faInfoCircle,
-    faPowerOff,
+    faHome, faProjectDiagram,
     faTools,
-    faTrash, faUsers
+    faTrash,
+    faUsers
 } from "@fortawesome/free-solid-svg-icons";
+import collapseLeft from "../resources/icons/collapse-left.svg";
+import collapseRight from "../resources/icons/collapse-right.svg";
 import Toaster from "../util/toaster/Toaster";
-import {version} from "../appversion.json"
 import {HelperFunctions} from "../util/HelperFunctions";
-import {useHistory} from "react-router-dom";
+import {Link, NavLink, useHistory, useLocation} from "react-router-dom";
+import IconButtonText from "../components/buttons/iconbuttontext/IconButtonText";
+import styled from "styled-components";
+import {useGlobalState} from "../util/GlobalState";
+import {
+    cultured,
+    desktopSideMenuWidth, desktopTopMenuHeight, majorelle, majorelleLight,
+    mobileTabletMaxWidth, openSans, openSansBold, spaceCadet,
+    SURFShapeLeft,
+    white
+} from "../Mixins";
+
 
 function SideMenu(props) {
     const [user, setUser] = useAppStorageState(StorageKey.USER);
     const [userPermissions, setUserPermissions] = useAppStorageState(StorageKey.USER_PERMISSIONS);
-    const [canViewOrganisation, setCanViewOrganisation] = useAppStorageState(StorageKey.USER_CAN_VIEW_ORGANISATION);
+    const [canViewPublications, setCanViewPublications] = useAppStorageState(StorageKey.USER_CAN_VIEW_PUBLICATIONS);
+    const [canViewProfiles, setCanViewProfiles] = useAppStorageState(StorageKey.USER_CAN_VIEW_PROFILES);
+    const [canViewProjects, setCanViewProjects] = useAppStorageState(StorageKey.USER_CAN_VIEW_PROJECTS);
+    const [canViewReports, setCanViewReports] = useAppStorageState(StorageKey.USER_CAN_VIEW_REPORTS);
+    const [canViewOrganisations, setCanViewOrganisations] = useAppStorageState(StorageKey.USER_CAN_VIEW_ORGANISATION);
     const [canViewTemplates, setCanViewTemplates] = useAppStorageState(StorageKey.USER_CAN_VIEW_TEMPLATES);
+    const [canViewBin, setCanViewBin] = useAppStorageState(StorageKey.USER_CAN_VIEW_BIN);
+    const [isSideMenuCollapsed, setIsSideMenuCollapsed] = useGlobalState('isSideMenuCollapsed', false);
     const [userRoles, setUserRoles] = useAppStorageState(StorageKey.USER_ROLES);
     const [userInstitute, setUserInstitute] = useAppStorageState(StorageKey.USER_INSTITUTE);
-    const canViewPersons = true
     const history = useHistory()
-    const [defaultInstituteImageUrl, setDefaultInstituteImageUrl] = useState((userInstitute?.image?.url) ?? require('../resources/images/surf-sharekit-logo.png'))
-    const userHasExtendedAccess = userRoles ? userRoles.find(c => c !== 'Student' && c !== 'Default Member') : false;
-    const canViewReports = userRoles ? userRoles.find(c => c !== 'Student' && c !== 'Default Member' && c !== 'Staff') : false;
+    const [defaultInstituteImageUrl, setDefaultInstituteImageUrl] = useState((userInstitute?.image?.url) ?? require('../resources/images/surf-sharekit-logo-new.svg'))
+
+    const [isEnvironmentBannerVisible, setIsEnvironmentBannerVisible] = useGlobalState("isEnvironmentBannerVisible", false);
     const {t} = useTranslation();
+    const location = useLocation();
+
 
     useEffect(() => {
         if (user) {
@@ -54,11 +69,23 @@ function SideMenu(props) {
         }
     }, [user]);
 
+    useEffect(() => {
+        window.addEventListener('resize', handleWindowResizeEvent)
+        return () => window.removeEventListener('resize', handleWindowResizeEvent);
+    }, [])
+
     if (!user) {
         return null;
     }
 
-    const navigationItems = [
+    function handleWindowResizeEvent() {
+        let newWidth = window.innerWidth;
+        if (newWidth <= mobileTabletMaxWidth && !isSideMenuCollapsed) {
+            setIsSideMenuCollapsed(true)
+        }
+    }
+
+    let navigationItems = [
         {
             id: "dashboard",
             title: t('side_menu.dashboard'),
@@ -71,163 +98,293 @@ function SideMenu(props) {
             title: t('side_menu.my_publications'),
             link: '/publications',
             icon: faFileInvoice,
-            canView: true
-        },
-        {
-            id: "organisation",
-            title: t('side_menu.organisation'),
-            link: '/organisation',
-            icon: faBuilding,
-            canView: canViewOrganisation && userHasExtendedAccess
+            canView: canViewPublications
         },
         {
             id: "profiles",
             title: t('side_menu.profiles'),
             link: '/profiles',
             icon: faUsers,
-            canView: canViewPersons && userHasExtendedAccess
+            canView: canViewProfiles
+        },
+        {
+            id: "organisation",
+            title: t('side_menu.organisation'),
+            link: '/organisation',
+            icon: faBuilding,
+            canView: canViewOrganisations
         },
         {
             id: "templates",
             title: t('side_menu.templates'),
             link: '/templates',
             icon: faTools,
-            canView: canViewTemplates && userHasExtendedAccess
+            canView: canViewTemplates
+        },
+        {
+            id: "projects",
+            title: t('side_menu.projects'),
+            link: '/projects',
+            icon: faProjectDiagram,
+            canView: canViewProjects
         },
         {
             id: "reports",
             title: t('side_menu.reports'),
             link: '/reports',
             icon: faChartPie,
-            canView: canViewReports && userHasExtendedAccess
-        }
-    ];
-
-    const secondaryNavigationItems = [
-        {
-            id: "trashcan",
-            title: t('side_menu.trash_can'),
-            link: '/trashcan',
-            icon: faTrash,
-            canView: true
+            canView: canViewReports
         }
     ];
 
     function MenuItem(menuItemProps) {
-        return <div className={'menu-item ' + (menuItemProps.isActive && 'active')} onClick={menuItemProps.onClick}>
-            <div className={"bar " + (!menuItemProps.isActive && 'hidden')}/>
-            {menuItemProps.icon && <FontAwesomeIcon icon={menuItemProps.icon}/>}
-            <div className="title">{menuItemProps.title}</div>
-        </div>
+        return (
+            <MenuItemRoot
+                to={menuItemProps.link}
+                isActive={menuItemProps.isActive}
+                disableIndicator={menuItemProps.disableIndicator}
+            >
+                {!menuItemProps.disableIndicator &&
+                    <SelectionIndicator isVisible={menuItemProps.isActive || props.disableIndicator}/>}
+                {menuItemProps.icon && <MenuItemIcon icon={menuItemProps.icon}/>}
+                <MenuItemTitle>{menuItemProps.title}</MenuItemTitle>
+            </MenuItemRoot>
+        )
+    }
+
+    function TextPageItem(menuItemProps) {
+        return (
+            <MenuItemRoot
+                to={menuItemProps.link}
+                isActive={menuItemProps.isActive}
+            >
+                {menuItemProps.icon && <MenuItemIcon icon={menuItemProps.icon}/>}
+                <MenuItemTitle>{menuItemProps.title}</MenuItemTitle>
+            </MenuItemRoot>
+        )
     }
 
     return (
-        <>
-            <div id="side-menu-overlay" className={props.showOnMobile ? "" : "hidden"} onClick={props.toggleMenu}/>
-            <div id="side-menu" className={!props.showOnMobile ? "hidden-on-mobile-tablet" : ""}>
-                <img alt="Surf" id="logo" src={defaultInstituteImageUrl} onClick={()=>{navigateTo("/dashboard")}}/>
-                <div className="menu-section navigation">
-                    {
-                        navigationItems.map((menuItem) =>
-                            menuItem.canView &&
-                            <MenuItem key={menuItem.id}
-                                      title={menuItem.title}
-                                      icon={menuItem.icon}
-                                      isActive={props.activeMenuItem === menuItem.id}
-                                      onClick={() => navigateTo(menuItem.link)}/>
-                        )
-                    }
-                </div>
-                <div className="menu-section single-item">
-                    {
-                        secondaryNavigationItems.map((menuItem) =>
-                            menuItem.canView &&
-                            <MenuItem key={menuItem.id}
-                                      title={menuItem.title}
-                                      icon={menuItem.icon}
-                                      isActive={props.activeMenuItem === menuItem.id}
-                                      onClick={() => navigateTo(menuItem.link)}/>
-                        )
-                    }
-                </div>
-                <div className="flex-grow"/>
+        <SideMenuRoot isEnvironmentBannerVisible={isEnvironmentBannerVisible} id="side-menu"
+                      isCollapsed={isSideMenuCollapsed}>
 
-                <div className="menu-section single-item profile">
-                    <div className={'menu-item ' + (props.isActive && 'active')} onClick={() => navigateTo('/profile')}>
-                        <ProfileBanner id={1}
-                                       imageUrl={undefined}
-                                       name={user.name}/>
-                    </div>
-                </div>
+            <CollapseMenuButton isSideMenuCollapsed={isSideMenuCollapsed}>
+                <IconButtonText
+                    icon={isSideMenuCollapsed ? collapseRight : collapseLeft}
+                    onClick={() => {
+                        setIsSideMenuCollapsed(!isSideMenuCollapsed)
+                    }}
+                />
+            </CollapseMenuButton>
+            <MenuContentWrapper>
+                <MenuNavigation>
+                    <a href={"/dashboard"}>
+                        <SSKLogo
+                            alt="Surf"
+                            src={defaultInstituteImageUrl}
+                        />
+                    </a>
 
-                <div className="menu-section single-item logout">
-                    <MenuItem isActive={false}
-                              title={t('side_menu.logout')}
-                              icon={faPowerOff}
-                              onClick={() => logout()}/>
-                </div>
+                    <MenuSection>
+                        {
+                            navigationItems.map((menuItem) =>
+                                menuItem.canView &&
+                                <MenuItem key={menuItem.id}
+                                          title={menuItem.title}
+                                          icon={menuItem.icon}
+                                          isActive={props.activeMenuItem === menuItem.id}
+                                          link={menuItem.link}
+                                />
+                            )
+                        }
+                    </MenuSection>
 
-                <div className="menu-section single-item help">
-                    <MenuItem isActive={false}
-                              title={t('side_menu.help')}
-                              icon={faInfoCircle}
-                              onClick={() => window.open('https://wiki.surfnet.nl/display/SSK/SURFsharekit', '__blank')}/>
-                </div>
-                <div className={'app-version'}>{version}</div>
-            </div>
-            <i className="fas fa-bars menu-button hidden-on-desktop"
-               style={{color: props.showOnMobile ? Constants.majorelle : props.menuButtonColor}}
-               onClick={props.toggleMenu}/>
-        </>
+                    <MenuSectionSingle className="menu-section single-item">
+                        <MenuItem
+                            link={"/trashcan"}
+                            isActive={location.pathname === '/trashcan'}
+                            title={t('side_menu.trash_can')}
+                            icon={faTrash}
+                        />
+                    </MenuSectionSingle>
+                </MenuNavigation>
+
+                <MenuTextPages>
+                    <MenuItem
+                        link={"/privacy"}
+                        title={t('side_menu.privacy')}
+                        isActive={location.pathname === '/privacy'}
+                        disableIndicator={true}
+                    />
+                    {/*<MenuItem*/}
+                    {/*    link={"/cookies"}*/}
+                    {/*    title={t('side_menu.cookies')}*/}
+                    {/*    isActive={location.pathname === '/cookies'}*/}
+                    {/*    disableIndicator={true}*/}
+                    {/*/>*/}
+                </MenuTextPages>
+            </MenuContentWrapper>
+        </SideMenuRoot>
     );
-
-    function navigateTo(link) {
-        if (link) {
-            props.history.push(link);
-        }
-    }
-
-    function logout() {
-        setUser(null);
-        setUserInstitute(null);
-        setUserRoles(null);
-        setUserPermissions(null);
-        setCanViewTemplates(null);
-        setCanViewOrganisation(null);
-        history.replace('/login')
-    }
 
     function setSideMenuPermissions(permissions) {
         let canViewOrganisationTemp = false;
+        let canViewPublicationsTemp = false;
+        let canViewProfilesTemp = false;
+        let canViewProjectsTemp = false;
+        let canViewReportsTemp = false;
         let canViewTemplatesTemp = false;
+        let canViewBinTemp = false;
         if (permissions && permissions.length > 0) {
             permissions.forEach((codeMatrix) => {
-                const canViewInstituteSameLevel = codeMatrix.INSTITUTE_SAMELEVEL.VIEW.isSet
-                const canViewInstituteLowerLevel = codeMatrix.INSTITUTE_LOWERLEVEL.VIEW.isSet
-                if (!canViewOrganisationTemp && (canViewInstituteSameLevel || canViewInstituteLowerLevel)) {
+                if (codeMatrix.FRONTEND_PUBLICATIONS.VIEW.isSet) {
+                    canViewPublicationsTemp = true
+                }
+                if (codeMatrix.FRONTEND_INSTITUTES.VIEW.isSet) {
                     canViewOrganisationTemp = true
                 }
-                const canViewTemplates = codeMatrix.TEMPLATE_TEMPLATE.VIEW.isSet
-                if (canViewTemplates) {
+                if (codeMatrix.FRONTEND_PROFILES.VIEW.isSet) {
+                    canViewProfilesTemp = true
+                }
+                if (codeMatrix.FRONTEND_PROJECTS.VIEW.isSet) {
+                    canViewProjectsTemp = true
+                }
+                if (codeMatrix.FRONTEND_REPORTS.VIEW.isSet) {
+                    canViewReportsTemp = true
+                }
+                if (codeMatrix.FRONTEND_TEMPLATES.VIEW.isSet) {
                     canViewTemplatesTemp = true
+                }
+                if (codeMatrix.FRONTEND_BIN.VIEW.isSet) {
+                    canViewBinTemp = true
                 }
             })
         }
-        setCanViewOrganisation(canViewOrganisationTemp)
+        setCanViewPublications(canViewPublicationsTemp)
+        setCanViewOrganisations(canViewOrganisationTemp)
+        setCanViewProfiles(canViewProfilesTemp)
+        setCanViewProjects(canViewProjectsTemp)
+        setCanViewReports(canViewReportsTemp)
         setCanViewTemplates(canViewTemplatesTemp)
+        setCanViewBin(canViewBinTemp)
     }
 
     function setSideMenuLogoAndUserInstitute(personInformationData) {
         const defaultInstitute = HelperFunctions.getMemberDefaultInstitute(personInformationData)
-        if(defaultInstitute) {
+        if (defaultInstitute) {
             setUserInstitute(defaultInstitute)
             const newDefaultInstituteImageUrl = defaultInstitute.image?.url
-            if(newDefaultInstituteImageUrl) {
+            if (newDefaultInstituteImageUrl) {
                 setDefaultInstituteImageUrl(newDefaultInstituteImageUrl)
             }
         }
     }
 }
+
+const SideMenuRoot = styled.div`
+    ${SURFShapeLeft};
+    position: fixed;
+    top: ${props => props.isEnvironmentBannerVisible ? "50px" : "0"};
+    background: ${white};
+    z-index: 100;
+    height: 100%;
+    max-width: ${props => props.isCollapsed ? 0 : desktopSideMenuWidth};
+    width: ${props => props.isCollapsed ? '0' : '100%'};
+    padding: ${props => props.isCollapsed ? '50px 0 30px 0' : '50px 30px 30px 40px'};
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: ${props => props.isCollapsed ? '0' : '100%'};
+    transition: all 0.2s ease;
+    transition-property: width, max-width, padding;
+`;
+
+const SSKLogo = styled.img`
+    max-width: 180px;
+    max-height: 85px;
+    margin-left: auto;
+    margin-right: auto;
+    cursor: pointer;
+`;
+
+const MenuSection = styled.div`
+    background: ${cultured};
+    ${SURFShapeLeft};
+    flex: 0 0 auto;
+    padding: 10px 0 10px 0;
+    margin-top: 65px;
+`;
+
+const MenuItemTitle = styled.div``;
+
+const SelectionIndicator = styled.div`
+    background: ${majorelle};
+    width: 6px;
+    height: 45px;
+    border-radius: 10px;
+    margin-right: 19px;
+    visibility: ${props => props.isVisible ? "visible" : "hidden"};
+`;
+
+const MenuItemRoot = styled(Link)`
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    cursor: pointer;
+    color: ${props => props.isActive ? majorelle : (props.disableIndicator ? 'gray' : 'spaceCadet')} !important;
+    ${props => props.isActive ? openSansBold : openSans};
+    font-size: ${props => props.disableIndicator === true ? "12px" : "14px"};
+
+    &:hover {
+        color: ${majorelleLight} !important;
+    }
+`;
+
+const MenuSectionSingle = styled.div`
+    background: ${cultured};
+    ${SURFShapeLeft};
+    padding: 10px 0 10px 0;
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex: 1 0 60px;
+    max-height: 70px;
+`;
+
+const MenuItemIcon = styled(FontAwesomeIcon)`
+    min-width: 20px;
+    margin-right: 15px;
+`;
+
+const CollapseMenuButton = styled.div`
+    position: absolute;
+    left: ${props => props.isSideMenuCollapsed ? '20px' : `calc(${desktopSideMenuWidth} - 20px)`};
+    top: 12.75px;
+    z-index: 105;
+`;
+
+const MenuContentWrapper = styled.div`
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+`;
+
+const MenuTextPages = styled.div`
+    height: 100px;
+    width: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 50px;
+    margin-bottom: 50px;
+`;
+
+const MenuNavigation = styled.div`
+`;
 
 
 export default SideMenu;

@@ -16,18 +16,19 @@ export function OrganisationExpandableList(props) {
 
     useEffect(() => {
         setIsLoading(true)
-        getMember(user.id, history,(member) => {
+        getMember(user.id, history, props.showInactive, (member) => {
             setIsLoading(false)
             setInstitutes(HelperFunctions.getMemberRootInstitutes(member))
         }, () => {
             setIsLoading(false)
         })
-    }, [user.id]);
+    }, [user.id, props.showInactive]);
 
     return (
         <ExpandableList data={institutes}
                         loadingText={t("organisation.loading")}
                         isLoading={isLoading}
+                        showInactive={props.showInactive}
                         onClickExpand={(instituteParentId) => {
                             console.log(instituteParentId);
                         }}
@@ -35,8 +36,7 @@ export function OrganisationExpandableList(props) {
     )
 }
 
-export function getMember(userId, history, successCallback, errorCallback = null) {
-
+export function getMember(userId, history, showInactive, successCallback, errorCallback = null) {
     function onValidate(response) {
     }
 
@@ -59,11 +59,18 @@ export function getMember(userId, history, successCallback, errorCallback = null
         }
         errorCallback()
     }
+
     const config = {
         params: {
-            'fields[institutes]': 'title,permissions,isRemoved,level,abbreviation,summary,type,childrenInstitutesCount,isBaseScopeForUser',
-            'fields[groups]': 'partOf'
+            'fields[institutes]': 'title,permissions,isRemoved,isHidden,level,abbreviation,summary,type,childrenInstitutesCount,isBaseScopeForUser',
+            'fields[groups]': 'partOf',
+            'filter[isHidden]': '0'
         }
     };
+
+    if (!showInactive) {
+        config.params['filter[inactive]'] = '0';
+    }
+
     Api.jsonApiGet(`persons/${userId}?include=groups.partOf`, onValidate, onSuccess, onLocalFailure, onServerFailure, config);
 }

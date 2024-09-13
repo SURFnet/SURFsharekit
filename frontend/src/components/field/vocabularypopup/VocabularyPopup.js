@@ -6,11 +6,12 @@ import VocabularyPopupContent from './VocabularyPopupContent';
 const SwalAddPublicationPopup = withReactContent(Swal)
 
 class VocabularyPopup {
-    static show(metaFieldName, selectedVocabulary, onCancel) {
+    static show(metaFieldName, selectedVocabulary, onCancel, retainOrder = false) {
         SwalAddPublicationPopup.fire({
             html: (
                 <VocabularyPopupContent
                     name={metaFieldName}
+                    retainOrder={retainOrder}
                     onCancel={() => {
                         SwalAddPublicationPopup.clickCancel();
                     }}

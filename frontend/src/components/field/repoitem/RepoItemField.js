@@ -7,8 +7,13 @@ import {SortableContainer, SortableElement, SortableHandle} from "react-sortable
 import {faPlus} from "@fortawesome/free-solid-svg-icons";
 import IconButtonText from "../../buttons/iconbuttontext/IconButtonText";
 import Toaster from "../../../util/toaster/Toaster";
+import {cultured, spaceCadet, white} from "../../../Mixins";
+import {ThemedH6} from "../../../Elements";
+import styled from "styled-components";
+import EllipsisIcon from "../../../resources/icons/ic-ellipsis.svg"
 
 export function RepoItemField(props) {
+
     let classAddition = '';
     classAddition += (props.readonly ? ' disabled' : '');
     classAddition += (props.isValid ? ' valid' : '');
@@ -16,17 +21,27 @@ export function RepoItemField(props) {
     const {t} = useTranslation();
 
     const onDrop = useCallback(acceptedFiles => {
-        const fileSizeInMB = acceptedFiles[0].size / 1000000;
-        if (fileSizeInMB > 500) {
-            Toaster.showDefaultRequestError(t('error_message.file_too_large'));
+        const maxSizeInMB = 10240; // 10GB limit
+
+        const oversizedFiles = acceptedFiles.filter(file => file.size / 1048576 > maxSizeInMB);
+        const nonOversizedFiles = acceptedFiles.filter(file => file.size / 1048576 <= maxSizeInMB);
+
+        if (oversizedFiles.length > 0) {
+            oversizedFiles.forEach(fileName => {
+                Toaster.showDefaultRequestError(t('error_message.file_too_large', { fileName: fileName.name }));
+            })
+
             return;
         }
+
         const action = {
             type: 'create',
-            value: acceptedFiles
+            value: nonOversizedFiles
         };
+
         props.onChange(action);
     }, []);
+
     const {getRootProps, getInputProps, isDragActive} = useDropzone({onDrop});
     const items = props.formReducerState[props.name];
 
@@ -57,7 +72,7 @@ export function RepoItemField(props) {
             clickToAddElement = <div {...getRootProps()} className='dropzone'>
                 <input {...getInputProps()} />
                 {isDragActive ? t('file_drop.hover') : t('file_drop.open')}
-                <IconButtonText className={"plus-button"}
+                <IconButtonText className={"plus-button-centered"}
                                 faIcon={faPlus}
                                 buttonText={t("file_drop.select")}/>
             </div>
@@ -80,7 +95,16 @@ export function RepoItemField(props) {
 
     return (
         <div className={'repoitem ' + classAddition}>
-            {props.readonly && !(items && items.length > 0) && <div className={"field-input readonly"}>{"-"}</div>}
+            {props.readonly && !(items && items.length > 0) &&
+            <>
+                {props.showEmptyState
+                    ?   <EmptyPlaceholder>
+                        <ThemedH6>{props.emptyText}</ThemedH6>
+                    </EmptyPlaceholder>
+                    :   <div className={"field-input readonly"}>{"-"}</div>
+                }
+            </>
+            }
             {props.hasFileDrop ? [clickToAddElement, rowsHeaderElement, sortableRows] : [rowsHeaderElement, sortableRows, clickToAddElement]}
         </div>
     );
@@ -110,8 +134,31 @@ export function RepoItemField(props) {
     }
 }
 
+const EmptyPlaceholder = styled.div`
+    width: 100%;
+    background: ${cultured};
+    margin-top: 12px;
+    padding: 20px 0px;
+    text-align: center;
+    border: 1px solid #F3F3F3;
+    border-radius: 5px;
+`;
 
-export const DragHandle = SortableHandle(() => <i className="fas fa-arrows-alt order-icon"/>);
+
+export const DragHandle = SortableHandle(({  }) =>
+    (
+        <DragHandleIconContainer>
+            <DragHandleDot />
+            <DragHandleDot />
+            <DragHandleDot />
+            <DragHandleDot />
+            <DragHandleDot />
+            <DragHandleDot />
+            {/*<DragHandleIcon src={EllipsisIcon}/>*/}
+            {/*<DragHandleIcon src={EllipsisIcon}/>*/}
+        </DragHandleIconContainer>
+    )
+);
 
 function SortableComponent(props) {
     const [items, setItems] = useState(props.items);
@@ -131,12 +178,18 @@ function SortableComponent(props) {
         setItems(newlyOrderedItems);
     };
 
-    return <SortableList items={props.items}
-                         itemToComponent={props.itemToComponent}
-                         onItemAction={props.onItemAction}
-                         onSortEnd={onSortEnd}
-                         useDragHandle={true}
-                         readonly={props.readonly}/>;
+    return (
+        <SortableList
+            items={props.items}
+            itemToComponent={props.itemToComponent}
+            onItemAction={props.onItemAction}
+            onSortEnd={onSortEnd}
+            useDragHandle={true}
+            axis={"y"}
+            lockAxis={"y"}
+            lockToContainerEdges={true}
+            readonly={props.readonly}/>
+    )
 }
 
 const SortableList = SortableContainer(({items, onItemAction, itemToComponent, readonly}) => {
@@ -158,5 +211,21 @@ const SortableItem = SortableElement(({value: valuePart, onItemAction, itemToCom
         return itemToComponent(valuePart, onItemAction, readonly, t)
     }
 );
+
+const DragHandleIconContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  height: 12px;
+  cursor: grab;
+  max-width: 10px;
+`
+
+const DragHandleDot = styled.div`
+  width: 3px;
+  height: 3px;
+  border-radius: 100%;
+  background: ${spaceCadet};
+  margin: 1px 1px;
+`
 
 

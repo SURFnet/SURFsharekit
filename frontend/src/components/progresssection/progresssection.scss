@@ -7,6 +7,9 @@
 .progress-section-wrapper {
     top: 20px + $desktop-navigation-bar-height;
     position: sticky;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 
     @include media-query-mobile-tablet {
         display: none;
@@ -17,6 +20,7 @@
         padding: 25px 0;
 
         .progress-section {
+            cursor: pointer;
             min-width: 205px;
             max-width: 205px;
             margin-bottom: 13px;
