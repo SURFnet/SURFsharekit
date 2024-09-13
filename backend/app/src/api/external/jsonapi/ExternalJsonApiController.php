@@ -9,6 +9,7 @@ use SilverStripe\Control\HTTPRequest;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Security\Member;
 use SurfSharekit\Models\RepoItem;
+use Zooma\SilverStripe\Models\SwaggerDocsHelper;
 
 /**
  * Class ExternalJsonApiController
@@ -31,7 +32,7 @@ class ExternalJsonApiController extends JsonApiController {
      * returns a map of DataObjects to their Respective @see DataObjectJsonApiDescription
      */
     protected function getClassToDescriptionMap() {
-        return [RepoItem::class => new ExternalRepoItemJsonApiDescription()];
+        return [RepoItem::class => new ExternalRepoItemJsonApiDescription($this->channel)];
     }
 
     /**
@@ -65,6 +66,7 @@ class ExternalJsonApiController extends JsonApiController {
      */
     protected function getDataObject($objectToDescribe) {
         $dataObjectJsonApiDescriptor = $this->getDataObjectJsonApiEncoder();
+        $dataObjectJsonApiDescriptor->setPurge($this->purge);
         try {
             $response = DataObjectJsonApiBodyEncoder::dataObjectToSingleObjectJsonApiBodyArray($objectToDescribe, $dataObjectJsonApiDescriptor, (BASE_URL . $this->getApiURLSuffix()));
             return $this->createJsonApiBodyResponseFrom($response, 200);

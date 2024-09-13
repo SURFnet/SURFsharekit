@@ -68,7 +68,7 @@ class RepoItemMetaField extends DataObject {
             $repoItemMetaFieldValuesGridFieldConfig->removeComponentsByType(new GridFieldAddExistingAutocompleter());
         }
 
-        return $fields;
+        return MetaField::ensureDropdownField($this, $fields);
     }
 
     /**

@@ -2,17 +2,33 @@
 
 namespace SurfSharekit\Models;
 
+use Exception;
+use SilverStripe\Control\Controller;
+use SilverStripe\Control\HTTPRequest;
+use SilverStripe\Control\HTTPResponse_Exception;
+use SilverStripe\Forms\CompositeField;
 use SilverStripe\Forms\DropdownField;
+use SilverStripe\Forms\FieldList;
+use SilverStripe\Forms\Form;
+use SilverStripe\Forms\FormAction;
 use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\Forms\GridField\GridFieldAddExistingAutocompleter;
+use SilverStripe\Forms\GridField\GridFieldConfig_RelationEditor;
 use SilverStripe\Forms\GridField\GridFieldDeleteAction;
+use SilverStripe\Forms\LiteralField;
 use SilverStripe\Forms\RequiredFields;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\HasManyList;
+use SilverStripe\ORM\ValidationException;
 use SilverStripe\Security\Member;
 use SilverStripe\Security\Permission;
 use SilverStripe\Security\Security;
 use SilverStripe\Versioned\Versioned;
+use SurfSharekit\Action\CustomAction;
+use SurfSharekit\Models\Helper\Constants;
+use SurfSharekit\Models\Helper\Logger;
+use SurfSharekit\Tasks\GetMetafieldOptionsFromJsonTask;
+use Symbiote\GridFieldExtensions\GridFieldOrderableRows;
 
 /**
  * Class MetaField
@@ -25,43 +41,64 @@ use SilverStripe\Versioned\Versioned;
 class MetaField extends DataObject {
 
     private static $extensions = [
-        Versioned::class . '.versioned',
+        Versioned::class . '.versioned'
     ];
 
     private static $table_name = 'SurfSharekit_MetaField';
 
     private static $db = [
         'Title' => 'Varchar(255)',
-        'Label_EN' => 'Varchar(255)',
-        'Label_NL' => 'Varchar(255)',
+        'Label_EN' => 'Varchar(1024)',
+        'Label_NL' => 'Varchar(1024)',
         'IsCopyable' => 'Int(0)',
         'Description_EN' => 'Text',
         'Description_NL' => 'Text',
-        'InfoText_EN' => 'Varchar(255)',
-        'InfoText_NL' => 'Varchar(255)',
+        'InfoText_EN' => 'Varchar(1024)',
+        'InfoText_NL' => 'Varchar(1024)',
+        'JsonUrl' => 'Varchar(1024)',
+        'JsonKey' => 'Varchar(255)',
         'DefaultKey' => "Enum('CurrentDate,AuthorInstitute,AuthorDiscipline,TemplateRootInstitute',null)",
-        'AttributeKey' => "Enum('Title,Subtitle,PublicationDate,EmbargoDate,InstituteID,Language,Alias,SubType',null)",
+        'AttributeKey' => "Enum('Title,Subtitle,PublicationDate,EmbargoDate,InstituteID,Language,Alias,SubType,AccessRight,External,Important,AllowedForInstitute',null)",
         'SummaryKey' => "Varchar(255)",
         'MakesRepoItemFindable' => "Boolean(0)",
-        'SystemKey' => "Enum('PublishedNotificationEmail,PrivateChannel,PublicChannel,Archive,ContainsParents,ContainsChildren,Tags',null)",
+        'RetainOptionOrder' => "Boolean(0)",
+        'SystemKey' => "Enum('PublishedNotificationEmail,PrivateChannel,PublicChannel,Archive,ContainsParents,ContainsChildren,Tags,AccessControl',null)",
+        'ParentRepoType' => "Enum('PublicationRecord,LearningObject,ResearchObject,Dataset,Project',null)",
+        'JsonType' => "Enum('String, StringArray, Object, ObjectArray, Number, NumberArray, Boolean, BooleanArray', null)",
     ];
 
     private static $has_one = [
-        'MetaFieldType' => MetaFieldType::class
+        'MetaFieldType' => MetaFieldType::class,
+        'MetaFieldJsonExample' => MetaFieldJsonExample::class
     ];
 
     private static $has_many = [
         'MetaFieldOptions' => MetaFieldOption::class,
         'TemplateMetaFields' => TemplateMetaField::class,
-        'RepoItemMetaFields' => RepoItemMetaField::class
+        'RepoItemMetaFields' => RepoItemMetaField::class,
+        'MetaFieldOptionCategory' => MetaFieldOptionCategory::class
     ];
 
     private static $summary_fields = [
         'Title' => 'Title',
         'Label_NL' => 'Label_NL',
         'Label_EN' => 'Label_EN',
-        'MetaFieldType.Title' => 'Type'
+        "JsonKey" => "JsonKey",
+        'MetaFieldType.Title' => 'Type',
     ];
+
+    public static function ensureDropdownField(DataObject $object, FieldList $cmsFields, $fieldName = 'MetaFieldID', $title = 'MetaField', $emptyDefault = false, $emptyString = '') {
+        $metaFieldField = $cmsFields->dataFieldByName($fieldName);
+        $readOnly = $metaFieldField->isReadonly();
+        $metaFieldField = new DropdownField($fieldName, $title);
+        $metaFieldField->setValue($object->$fieldName);
+        $metaFieldField->setHasEmptyDefault($emptyDefault);
+        $metaFieldField->setReadonly($readOnly);
+        $metaFieldField->setSource(MetaField::get()->map('ID', 'Title'));
+        $metaFieldField->setEmptyString($emptyString);
+        $cmsFields->replaceField($fieldName, $metaFieldField);
+        return $cmsFields;
+    }
 
     public function getCMSValidator() {
         return new RequiredFields([
@@ -71,6 +108,10 @@ class MetaField extends DataObject {
 
     public function getCMSFields() {
         $fields = parent::getCMSFields();
+
+        if (!$this->isInDB() || !in_array(strtolower($this->MetaFieldType()->Key), ['dropdown', 'multiselectdropdown', 'tree-multiselect'])) {
+            $fields->removeByName('RetainOptionOrder');
+        }
 
         $member = Security::getCurrentUser();
         if (!Permission::checkMember($member, 'ADMIN')) {
@@ -84,8 +125,11 @@ class MetaField extends DataObject {
         $systemKeyField->setHasEmptyDefault(true);
         $systemKeyField->setDescription("Used to trigger system specific events, like sending an email when this field gets published with the system key 'PublishedNotificationEmail'.");
 
-        $fields->dataFieldByName('InfoText_EN')->setDescription('Max. 255 tekens');
-        $fields->dataFieldByName('InfoText_NL')->setDescription('Max. 255 tekens');
+        $parentRepoTypeField = $fields->dataFieldByName('ParentRepoType');
+        $parentRepoTypeField->setHasEmptyDefault(true);
+
+        $fields->dataFieldByName('InfoText_EN')->setDescription('Max. 1024 tekens');
+        $fields->dataFieldByName('InfoText_NL')->setDescription('Max. 1024 tekens');
 
         /** @var DropdownField $metaFieldTypeField */
         $metaFieldTypeField = $fields->dataFieldByName('MetaFieldTypeID');
@@ -98,7 +142,25 @@ class MetaField extends DataObject {
             /** @var GridField $metaFieldOptionsGridField */
             $metaFieldOptionsGridField = $fields->dataFieldByName('MetaFieldOptions');
             $metaFieldOptionsGridFieldConfig = $metaFieldOptionsGridField->getConfig();
+            if ($this->RetainOptionOrder) {
+                $metaFieldOptionsGridFieldConfig->addComponents([new GridFieldOrderableRows('SortOrder')]);
+            }
             $metaFieldOptionsGridFieldConfig->removeComponentsByType([new GridFieldAddExistingAutocompleter(), new GridFieldDeleteAction()]);
+
+            // Only show root options
+            $metaFieldOptionsGridField = $fields->dataFieldByName("MetaFieldOptions");
+            $metaFieldOptionsGridField->setList($this->MetaFieldOptions()->filter(["MetaFieldOptionID" => 0]));
+
+            if ($this->JsonUrl) {
+                $generateMetafieldOptionsButton = new CustomAction('doCustomAction', 'Generate metafield options');
+                $fields->insertBefore('Title', $generateMetafieldOptionsButton);
+            }
+
+            /** @var GridField $metaFieldOptionCategoryGridField */
+            $metaFieldOptionCategoryGridField =  $fields->dataFieldByName('MetaFieldOptionCategory');
+            $metaFieldOptionCategoryGridFieldConfig = $metaFieldOptionCategoryGridField->getConfig();
+            $metaFieldOptionCategoryGridFieldConfig->addComponents([new GridFieldOrderableRows('Sort')]);
+            $metaFieldOptionCategoryGridFieldConfig->removeComponentsByType([new GridFieldAddExistingAutocompleter(), new GridFieldDeleteAction()]);
         }
         /**
          * @var DropdownField $defaultKeyField
@@ -127,7 +189,7 @@ class MetaField extends DataObject {
      * Return a non-stored default option for this Metafield based on the DefaultKey
      * e.g. the name of the author of the Repoitem, their Institute, Email or the current date
      */
-    function getDefaultValuesFor(Member $member, Template $template): array {
+    function getDefaultValuesFor($member, Template $template): array {
         $defaultValuesArray = [];
         switch ($this->DefaultKey) {
             case 'CurrentDate':
@@ -136,14 +198,18 @@ class MetaField extends DataObject {
                 $defaultValuesArray[] = $defaultFromType;
                 break;
             case 'AuthorEmail':
-                $defaultFromType = new DefaultMetaFieldOptionPart();
-                $defaultFromType->Value = $member->Email;
-                $defaultValuesArray[] = $defaultFromType;
+                if($member) {
+                    $defaultFromType = new DefaultMetaFieldOptionPart();
+                    $defaultFromType->Value = $member->Email;
+                    $defaultValuesArray[] = $defaultFromType;
+                }
                 break;
             case 'AuthorName':
-                $defaultFromType = new DefaultMetaFieldOptionPart();
-                $defaultFromType->Value = $member->getName();
-                $defaultValuesArray[] = $defaultFromType;
+                if($member) {
+                    $defaultFromType = new DefaultMetaFieldOptionPart();
+                    $defaultFromType->Value = $member->getName();
+                    $defaultValuesArray[] = $defaultFromType;
+                }
                 break;
             case 'AuthorInstitute':
                 $defaultFromType = new DefaultMetaFieldOptionPart();
@@ -202,13 +268,28 @@ class MetaField extends DataObject {
             if (!$repoItem || !$repoItem->Exists()) {
                 return false;
             }
-            if (in_array(strtolower($metaFieldType->Title), ["PublicationRecord", "LearningObject", "ResearchObject", "RepoItemRepoItemFile", "RepoItemLearningObject", "RepoItemLink", "RepoItemPerson"])) {
+            if (in_array(strtolower($metaFieldType->Title), Constants::ALL_REPOTYPES)) {
                 if (strtolower($repoItem->RepoType) != strtolower($metaFieldType->Title)) {
                     return false;
                 }
             }
         }
         return true;
+    }
+
+    public function onAfterWrite() {
+        parent::onAfterWrite();
+        $this->removeCacheWhereNeeded();
+    }
+
+    public function onBeforeWrite() {
+        parent::onBeforeWrite();
+
+        // Validate JsonKey
+        if (!$this->isValidJsonKey($this->JsonKey)) {
+            throw new ValidationException("Invalid JsonKey. It must be camelCase, contain only alphabetic characters, and start with a lowercase letter.");
+        }
+
     }
 
     public function canCreate($member = null, $context = null) {
@@ -220,6 +301,33 @@ class MetaField extends DataObject {
     }
 
     public function canEdit($member = null) {
+        return true;
+    }
+
+    public function removeCacheWhereNeeded() {
+        SimpleCacheItem::get()
+            ->innerJoin('SurfSharekit_TemplateMetaField', 'SurfSharekit_TemplateMetaField.ID = SurfSharekit_SimpleCacheItem.DataObjectID')
+            ->filter(['Key' => 'Description', 'DataObjectClass' => "SurfSharekit\\Models\\TemplateMetaField"])
+            ->where(['SurfSharekit_TemplateMetaField.MetaFieldID' => $this->ID])->removeAll();
+    }
+
+    private function isValidJsonKey($jsonKey): bool {
+        // Check if the string is empty
+        if (empty($jsonKey)){
+            return false;
+        }
+
+        // Check if the string consists only of a-z and A-Z characters
+        if (!preg_match('/^[a-zA-Z]+$/', $jsonKey)) {
+            return false;
+        }
+
+        // Check if the first character is lowercased
+        if ($jsonKey[0] !== strtolower($jsonKey[0])) {
+            return false;
+        }
+
+        // If all of these conditions have met, it's a correct JsonKey
         return true;
     }
 }

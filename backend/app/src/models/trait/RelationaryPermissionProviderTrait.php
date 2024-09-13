@@ -4,7 +4,6 @@ use SilverStripe\Security\Group;
 use SilverStripe\Security\Permission;
 use SilverStripe\Security\Security;
 use SurfSharekit\Api\InstituteScoper;
-use SurfSharekit\Models\Helper\Logger;
 use SurfSharekit\Models\ScopeCache;
 
 /**
@@ -64,10 +63,13 @@ trait RelationaryPermissionProviderTrait {
         if (is_string($relationName) && method_exists($this->dataObj(), 'is' . ucfirst($relationName))) {
             $memberIsRelationCheckMethod = 'is' . ucfirst($relationName);
             if ($this->dataObj()->$memberIsRelationCheckMethod($member, $context)) {
+                $test = $this->getPermissionCode($objectPermissionName, $relationName, $actionKey);
                 return self::checkPermission($this->getPermissionCode($objectPermissionName, $relationName, $actionKey), 'any', $member, $context);
             }
         } else if (is_string($relationName) && method_exists($this, 'is' . ucfirst($relationName))) {
             $memberIsRelationCheckMethod = 'is' . ucfirst($relationName);
+            $test = $this->getPermissionCode($objectPermissionName, $relationName, $actionKey);
+
             if ($this->$memberIsRelationCheckMethod($member, $context)) {
                 return self::checkPermission($this->getPermissionCode($objectPermissionName, $relationName, $actionKey), 'any', $member, $context);
             }
@@ -153,14 +155,13 @@ trait RelationaryPermissionProviderTrait {
      */
     private function checkPermission($code, $arg = "any", $member = null, $context = []) {
         if (isset($context[Group::class]) && $group = $context[Group::class]) {
-            $instituteOfScope = $this->dataObj()->getRelatedInstitute();
-            $scopeLevel = InstituteScoper::getScopeLevel($instituteOfScope->ID, $group->InstituteID);
-            if ($scopeLevel == InstituteScoper::HIGHER_LEVEL || $scopeLevel == InstituteScoper::SAME_LEVEL) {
-                $permissionsCodesInGroup = ScopeCache::getPermissionsFromCache($group);
-                return in_array($code, $permissionsCodesInGroup);
-            } else {
+            $permissionsCodesInGroup = ScopeCache::getPermissionsFromRequestCache($group);
+            if (!in_array($code, $permissionsCodesInGroup)) {
                 return false;
             }
+            $instituteOfScope = $this->dataObj()->getRelatedInstitute();
+            $scopeLevel = InstituteScoper::getScopeLevel($instituteOfScope->ID, $group->InstituteID);
+            return $scopeLevel == InstituteScoper::HIGHER_LEVEL || $scopeLevel == InstituteScoper::SAME_LEVEL;
         }
         return Permission::check($code, $arg, $member);
     }

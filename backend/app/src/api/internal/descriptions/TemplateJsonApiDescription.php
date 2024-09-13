@@ -15,7 +15,7 @@ class TemplateJsonApiDescription extends DataObjectJsonApiDescription {
         'InstituteLevel' => 'instituteLevel',
         'InstituteTitle' => 'instituteTitle',
         'AllowCustomization' => 'allowCustomization',
-        'SectionsForJsonApi' => 'sections'
+        'StepsForJsonApi' => 'steps'
     ];
 
     public $hasOneToRelationMap = [

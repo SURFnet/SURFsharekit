@@ -10,6 +10,7 @@ use SilverStripe\Control\Middleware\HTTPCacheControlMiddleware;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\DB;
 use SilverStripe\Security\Security;
+use SurfSharekit\Models\RepoItemFile;
 use UuidExtension;
 
 /**
@@ -38,6 +39,10 @@ abstract class JsonApiController extends LoginProtectedApiController {
      */
     var $filters = [];
     /**
+     * @var array that can contain attribute filters like the fitlers above but these filters are used after the given filters above
+     */
+    var $additionalFilters = [];
+    /**
      * @var int value to be used to set the pagination information without doing a ->count()
      */
     var $totalCount = null;
@@ -49,6 +54,13 @@ abstract class JsonApiController extends LoginProtectedApiController {
      * @var int that can be set during a get request to offset the results that are sent to the client
      */
     var $pageNumber = null;
+
+    /**
+     * @var int $purge
+     * Variable used to force cache purge
+     */
+    var $purge = 0;
+
     /**
      * @var array exploded include=comments,author query paramether
      */
@@ -68,6 +80,77 @@ abstract class JsonApiController extends LoginProtectedApiController {
         'deleteJsonApiRequest'
     ];
 
+    protected function handleAction($request, $action) {
+        //https://jsonapi.org/format/#content-negotiation-clients
+        $stringOfIncludedRelationships = $this->request->requestVar("include") ?: "";
+        $this->listOfIncludedRelationships = explode(',', $stringOfIncludedRelationships);
+
+        $requestVars = $request->getVars();
+        if ($requestVars && isset($requestVars['fields'])) {
+            $sparseFieldsPerType = $requestVars['fields'];
+            if (!is_array($sparseFieldsPerType)) {
+                return $this->createJsonApiBodyResponseFrom(static::invalidSparseFieldsJsonApiBodyError(), 400);
+            }
+            $this->sparseFields = $sparseFieldsPerType;
+        }
+
+        if ($requestVars && isset($requestVars['sort'])) {
+            foreach (explode(',', $requestVars['sort']) as $sortString) {
+                if (strpos($sortString, '-') === 0) {
+                    $this->sorts[substr($sortString, 1, strlen($sortString) - 1)] = 'DESC';
+                } else {
+                    $this->sorts[$sortString] = 'ASC';
+                }
+            }
+        }
+
+        if ($requestVars && isset($requestVars['filter'])) {
+            $filtersPerAttribute = $requestVars['filter'];
+            if (!is_array($filtersPerAttribute)) {
+                return $this->createJsonApiBodyResponseFrom(static::invalidFiltersJsonApiBodyError(), 400);
+            }
+            $this->filters = $filtersPerAttribute;
+        }
+
+        if ($requestVars && isset($requestVars['additionalFilter'])) {
+            $additionalFiltersPerAttribute = $requestVars['additionalFilter'];
+            if (!is_array($additionalFiltersPerAttribute)) {
+                return $this->createJsonApiBodyResponseFrom(static::invalidAdditionalFiltersJsonApiBodyError(), 400);
+            }
+            $this->additionalFilters = $additionalFiltersPerAttribute;
+        }
+
+        if ($requestVars && isset($requestVars['purge'])) {
+            $purgeCache = intval($requestVars['purge']);
+            $this->purge = $purgeCache;
+        }
+
+        if ($requestVars && isset($requestVars['page'])) {
+            if (!is_array($requestVars['page'])) {
+                return $this->createJsonApiBodyResponseFrom(static::invalidPaginationJsonApiBodyError(), 400);
+            }
+            $paginationQuery = $requestVars['page'];
+
+            if (isset($paginationQuery['number'])) {
+                $number = intval($paginationQuery['number']);
+                if ($number) {
+                    $this->pageNumber = $number;
+                }
+            }
+            if (isset($paginationQuery['size'])) {
+                $size = intval($paginationQuery['size']);
+                if ($size) {
+                    $this->pageSize = intval($size);
+                }
+            }
+
+            if (!$this->pageNumber || !$this->pageSize) {
+                return $this->createJsonApiBodyResponseFrom(static::invalidPaginationJsonApiBodyError(), 400);
+            }
+        }
+        return parent::handleAction($request, $action);
+    }
+
     public function postJsonApiRequest() {
         return $this->editJsonApiRequest('postToObject');
     }
@@ -77,7 +160,11 @@ abstract class JsonApiController extends LoginProtectedApiController {
     }
 
     public function deleteJsonApiRequest() {
-        return $this->editJsonApiRequest('deleteToObject');
+        try {
+            return $this->editJsonApiRequest('deleteToObject');
+        } catch (Exception $e) {
+            return $this->createJsonApiBodyResponseFrom(static::noPermissionJsonApiBodyError($e->getMessage()), 403);
+        }
     }
 
     /**
@@ -163,11 +250,6 @@ abstract class JsonApiController extends LoginProtectedApiController {
         HTTPCacheControlMiddleware::singleton()->disableCache();
         $request = $this->getRequest();
         $this->classToDescriptionMap = $this->getClassToDescriptionMap();
-        //https://jsonapi.org/format/#content-negotiation-clients
-        $stringOfIncludedRelationships = $this->request->requestVar("include") ?: "";
-        $this->listOfIncludedRelationships = explode(',', $stringOfIncludedRelationships);
-
-        //$dataObjectJsonApiDescriptor = new DataObjectJsonApiEncoder($this->classToDescriptionMap, $listOfIncludedRelationships);
 
         $requestedObjectClass = $request->param("Action");
 
@@ -178,62 +260,11 @@ abstract class JsonApiController extends LoginProtectedApiController {
                 break;
             }
         }
-
-        $requestVars = $request->getVars();
-        if ($requestVars && isset($requestVars['fields'])) {
-            $sparseFieldsPerType = $requestVars['fields'];
-            if (!is_array($sparseFieldsPerType)) {
-                return $this->createJsonApiBodyResponseFrom(static::invalidSparseFieldsJsonApiBodyError(), 400);
-            }
-            $this->sparseFields = $sparseFieldsPerType;
-        }
-
-        if ($requestVars && isset($requestVars['sort'])) {
-            foreach (explode(',', $requestVars['sort']) as $sortString) {
-                if (strpos($sortString, '-') === 0) {
-                    $this->sorts[substr($sortString, 1, strlen($sortString) - 1)] = 'DESC';
-                } else {
-                    $this->sorts[$sortString] = 'ASC';
-                }
-            }
-        }
-
-        if ($requestVars && isset($requestVars['filter'])) {
-            $filtersPerAttribute = $requestVars['filter'];
-            if (!is_array($filtersPerAttribute)) {
-                return $this->createJsonApiBodyResponseFrom(static::invalidFiltersJsonApiBodyError(), 400);
-            }
-            $this->filters = $filtersPerAttribute;
-        }
-
-        if ($requestVars && isset($requestVars['page'])) {
-            if (!is_array($requestVars['page'])) {
-                return $this->createJsonApiBodyResponseFrom(static::invalidPaginationJsonApiBodyError(), 400);
-            }
-            $paginationQuery = $requestVars['page'];
-
-            if (isset($paginationQuery['number'])) {
-                $number = intval($paginationQuery['number']);
-                if ($number) {
-                    $this->pageNumber = $number;
-                }
-            }
-            if (isset($paginationQuery['size'])) {
-                $size = intval($paginationQuery['size']);
-                if ($size){
-                    $this->pageSize = intval($size);
-                }
-            }
-
-            if (!$this->pageNumber || !$this->pageSize) {
-                return $this->createJsonApiBodyResponseFrom(static::invalidPaginationJsonApiBodyError(), 400);
-            }
-        }
-
         if (!$objectClass) {
             //Cannot retrieve dataobjects with type = $objectClass
             return $this->createJsonApiBodyResponseFrom(static::noneExistingObjectTypeJsonApiBodyArray(), 400);
         }
+
         //Retrieving info with object(s) of type = $objectClass
         if ($objectId = $request->param("ID")) {
             //Retrieving a single object
@@ -241,12 +272,17 @@ abstract class JsonApiController extends LoginProtectedApiController {
                 return $this->createJsonApiBodyResponseFrom(static::invalidObjectIDJsonApiBodyArray(), 400);
             }
             $objectToDescribe = self::getObjectOfTypeById($objectClass, $objectId);
+
             if (!$objectToDescribe) {
                 return $this->createJsonApiBodyResponseFrom(static::objectNotFoundJsonApiBodyError(), 404);
             }
 
+            if($objectToDescribe->PendingForDestruction) {
+                return $this->createJsonApiBodyResponseFrom(static::isLockedJsonApiBodyError(null), 423);
+            }
+
             if (!$this->canViewObjectToDescribe($objectToDescribe)) {
-                if ($objectToDescribe->IsRemoved){
+                if ($objectToDescribe->IsRemoved) {
                     return $this->createJsonApiBodyResponseFrom(static::isLockedJsonApiBodyError(null), 423);
                 }
                 return $this->createJsonApiBodyResponseFrom(static::noPermissionJsonApiBodyError(null), 403);
@@ -299,12 +335,25 @@ abstract class JsonApiController extends LoginProtectedApiController {
             } catch (Exception $e2) {
                 return $this->createJsonApiBodyResponseFrom(static::invalidSparseFieldsJsonApiBodyError($e2->getMessage()), 404);
             }
+
+
             // Apply field filters
             foreach ($this->filters as $field => $value) {
                 try {
                     $objectsToDescribe = $objectDescription->applyFilter($objectsToDescribe, $field, $value);
                 } catch (Exception $e) {
                     return $this->createJsonApiBodyResponseFrom(static::invalidFiltersJsonApiBodyError($e->getMessage()), 400);
+                }
+            }
+            
+            $possibleFilters = $objectDescription->getPossibleFilters($objectsToDescribe);
+
+            // Apply field additional filters
+            foreach ($this->additionalFilters as $field => $value) {
+                try {
+                    $objectsToDescribe = $objectDescription->applyFilter($objectsToDescribe, $field, $value);
+                } catch (Exception $e) {
+                    return $this->createJsonApiBodyResponseFrom(static::invalidAdditionalFiltersJsonApiBodyError($e->getMessage()), 400);
                 }
             }
 
@@ -316,6 +365,7 @@ abstract class JsonApiController extends LoginProtectedApiController {
                     return $this->createJsonApiBodyResponseFrom(static::invalidSortJsonApiBodyError($e->getMessage()), 400);
                 }
             }
+
             DB::query("SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED");
             $this->totalCount = $objectsToDescribe->count();
             DB::query("COMMIT");
@@ -324,8 +374,9 @@ abstract class JsonApiController extends LoginProtectedApiController {
             }
 
             $dataObjectJsonApiDescriptor->setTotalCount($this->totalCount);
+            $dataObjectJsonApiDescriptor->setPurge($this->purge);
 
-            $encodedObjects = DataObjectJsonApiBodyEncoder::dataListToMultipleObjectsJsonApiBodyArray($objectsToDescribe, $dataObjectJsonApiDescriptor, (BASE_URL . $this->getApiURLSuffix()));
+            $encodedObjects = DataObjectJsonApiBodyEncoder::dataListToMultipleObjectsJsonApiBodyArray($objectsToDescribe, $dataObjectJsonApiDescriptor, $possibleFilters, (BASE_URL . $this->getApiURLSuffix()));
             return static::createJsonApiBodyResponseFrom($encodedObjects, 200);
         } catch (Exception $e) {
             return $this->createJsonApiBodyResponseFrom(static::noPermissionJsonApiBodyError($e->getMessage()), 403);
@@ -361,7 +412,7 @@ abstract class JsonApiController extends LoginProtectedApiController {
                 $this->getResponse()->setStatusCode($newHttpCode);
             }
         } else if (is_object($response)) {//$decoderInformation is a DataObject which we inserted into the database
-            $encoder = new DataObjectJsonApiEncoder($this->classToDescriptionMap);
+            $encoder = $this->getDataObjectJsonApiEncoder();
             $dataObject = $response;
             $response = ['data' => $encoder->describeDataObjectAsData($dataObject, BASE_URL . $this->getApiURLSuffix())];
             $this->getResponse()->addHeader('Location', $encoder->getContextURLForDataObject($dataObject, BASE_URL . $this->getApiURLSuffix()));
@@ -591,6 +642,18 @@ abstract class JsonApiController extends LoginProtectedApiController {
             JsonApi::TAG_ERRORS => [
                 [
                     JsonApi::TAG_ERROR_TITLE => 'Incorrect filter query params',
+                    JsonApi::TAG_ERROR_DETAIL => $message ? $message : 'Please specify filters as e.g.: ....objectType?filter[attribute]=value',
+                    JsonApi::TAG_ERROR_CODE => 'JAC_014'
+                ]
+            ]
+        ];
+    }
+
+    public static function invalidAdditionalFiltersJsonApiBodyError($message = null) {
+        return [
+            JsonApi::TAG_ERRORS => [
+                [
+                    JsonApi::TAG_ERROR_TITLE => 'Incorrect additional filter query params',
                     JsonApi::TAG_ERROR_DETAIL => $message ? $message : 'Please specify filters as e.g.: ....objectType?filter[attribute]=value',
                     JsonApi::TAG_ERROR_CODE => 'JAC_014'
                 ]

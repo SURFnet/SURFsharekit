@@ -4,13 +4,16 @@ namespace SurfSharekit\Models;
 
 use Exception;
 use RelationaryPermissionProviderTrait;
+use SilverStripe\Forms\CheckboxField;
 use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\Forms\GridField\GridFieldAddExistingAutocompleter;
 use SilverStripe\Forms\GridField\GridFieldDeleteAction;
 use SilverStripe\Forms\HiddenField;
 use SilverStripe\Forms\ReadonlyField;
+use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
+use SilverStripe\ORM\DB;
 use SilverStripe\ORM\HasManyList;
 use SilverStripe\ORM\ValidationException;
 use SilverStripe\Security\Group;
@@ -20,9 +23,11 @@ use SilverStripe\Security\PermissionRole;
 use SilverStripe\Security\Security;
 use SilverStripe\Versioned\Versioned;
 use SurfSharekit\Api\InstituteScoper;
+use SurfSharekit\constants\RoleConstant;
+use SurfSharekit\helper\InstituteGroupManager;
 use SurfSharekit\Models\Helper\Constants;
-use SurfSharekit\Models\Helper\Logger;
 use SurfSharekit\Models\Helper\PermissionRoleHelper;
+use UuidExtension;
 
 /***
  * Class Institute
@@ -46,12 +51,16 @@ class Institute extends DataObject implements PermissionProvider {
 
     private static $db = [
         'Title' => 'Varchar(255)',
+        'LicenseActive' => "Boolean(0)",
         'ConextCode' => 'Varchar(255)',
+        'SRAMCode' => 'Varchar(255)',
         'ConextTeamIdentifier' => 'Varchar(255)',
         'Abbreviation' => 'Varchar(255)',
         'Level' => 'Enum(array("organisation","department","lectorate","discipline","consortium"), null)',
         'Type' => 'Enum(array("education","research"), null)',
-        'IsRemoved' => 'Boolean(0)'
+        'IsRemoved' => 'Boolean(0)',
+        'IsHidden' => 'Boolean(0)',
+        'UpdateInstituteLabels' => 'Boolean(0)'
     ];
 
     private static $has_one = [
@@ -91,16 +100,18 @@ class Institute extends DataObject implements PermissionProvider {
     private static $many_many = [
         'Channels' => Channel::class,
         'ConsortiumChildren' => Institute::class,
-        'AutoAddedGroups' => Group::class //people in these groups will be automatically added when onboarding
+        'AutoAddedGroups' => Group::class, //people in these groups will be automatically added when onboarding
     ];
 
     private static $belongs_many_many = [
-        'ConsortiumParents' => Institute::class
+        'ConsortiumParents' => Institute::class,
+        'Persons' => Person::class
     ];
 
     private static $indexes = [
         'Level' => true,
-        'ConextCode' => true
+        'ConextCode' => true,
+        'SRAMCode' => true
     ];
 
     public static $overwriteCanView = false;
@@ -116,7 +127,7 @@ class Institute extends DataObject implements PermissionProvider {
         }
         $rootInstitutes = Institute::get()->filter(['InstituteID' => 0]);
         foreach ($rootInstitutes as $rootInstitute) {
-            $rootInstitute->ensureGroupsExist();
+            InstituteGroupManager::createDefaultGroups($rootInstitute);
         }
     }
 
@@ -126,6 +137,10 @@ class Institute extends DataObject implements PermissionProvider {
         if ($this->Level != 'consortium') {
             $fields->removeByName('AutoAddedGroups');
         }
+
+        $fields->insertBefore('Title', CheckboxField::create('UpdateInstituteLabels', 'Update labels'));
+        $fields->makeFieldReadonly('UpdateInstituteLabels');
+
         /** @var Institute $parentInstitute */
         $parentInstitute = $this->Institute();
         if ($parentInstitute && $parentInstitute->exists()) {
@@ -148,7 +163,7 @@ class Institute extends DataObject implements PermissionProvider {
 
         $uuidField = ReadonlyField::create('DisplayIdentifier', 'Identifier', $this->Uuid);
         $fields->insertBefore('Title', $uuidField);
-        
+
         /** @var DropdownField $levelField */
         $levelField = $fields->dataFieldByName('Level');
         $levelField->setHasEmptyDefault(true);
@@ -180,6 +195,9 @@ class Institute extends DataObject implements PermissionProvider {
             $repoitemsGridFieldConfig = $repoitemsGridField->getConfig();
             $repoitemsGridFieldConfig->removeComponentsByType([new GridFieldAddExistingAutocompleter(), new GridFieldDeleteAction()]);
         }
+
+        $fields->dataFieldByName('ConextTeamIdentifier')->setDescription("Separate multiple identifiers with a single space");
+
         return $fields;
     }
 
@@ -231,7 +249,7 @@ class Institute extends DataObject implements PermissionProvider {
             return true;
         }
 
-        foreach ($member->Groups() as $group) {
+        foreach ($member->ScopedGroups($this->dataObj()->getRelatedInstitute()->ID) as $group) {
             foreach ($this->ConsortiumParents() as $consortiumParent) {
                 if (InstituteScoper::getScopeLevel($consortiumParent->ID, $group->InstituteID) === InstituteScoper::SAME_LEVEL) {
                     return true;
@@ -260,7 +278,7 @@ class Institute extends DataObject implements PermissionProvider {
             return true;
         }
 
-        foreach ($member->Groups() as $group) {
+        foreach ($member->ScopedGroups($this->dataObj()->getRelatedInstitute()->ID) as $group) {
             if ($this->checkRelationPermission(Institute::SAME_LEVEL, 'DELETE', $member, [Group::class => $group])
                 || $this->checkRelationPermission(Institute::LOWER_LEVEL, 'DELETE', $member, [Group::class => $group])) {
                 return true;
@@ -284,7 +302,7 @@ class Institute extends DataObject implements PermissionProvider {
             return true;
         }
 
-        foreach ($member->Groups() as $group) {
+        foreach ($member->ScopedGroups($this->dataObj()->getRelatedInstitute()->ID) as $group) {
             if ($this->checkRelationPermission(Institute::SAME_LEVEL, 'EDIT', $member, [Group::class => $group])
                 || $this->checkRelationPermission(Institute::LOWER_LEVEL, 'EDIT', $member, [Group::class => $group])) {
                 return true;
@@ -324,10 +342,71 @@ class Institute extends DataObject implements PermissionProvider {
         return false;
     }
 
+    public function isLeaf()
+    {
+        return $this->Institutes()->count() == 0;
+    }
+
+    /** @return null|array */
+    public function getInstituteChain($maxParents = 10) {
+        $maxParents = $maxParents - 1;
+        if($maxParents == 0) return null; // maxParents reached
+        /** @var Institute $parentInstitute */
+        $parentInstitute = $this->Institute();
+        if($parentInstitute && $parentInstitute->exists()){
+            $parentInstituteChain = $parentInstitute->getInstituteChain($maxParents);
+            $addedInstitutes = array_merge([$this->Uuid=>$this], $parentInstituteChain['addedInstitutes']);
+        }else{
+            $parentInstituteChain = null;
+            $addedInstitutes = [$this->Uuid=>$this];
+        }
+
+        return ['institute' => $this, 'parentInstituteChain' => $parentInstituteChain, 'addedInstitutes' => $addedInstitutes];
+    }
+
     protected function onBeforeWrite() {
         if ($this->InstituteID == 0 && !in_array($this->Level, ['organisation', 'consortium'])) {
-            throw new ValidationException('Cannot have a root institute without level organisation or consortium');
+            throw new ValidationException('Cannot have a root institute without level organisation or consortium, ID = ' . $this->ID);
         }
+
+        if($this->owner->isChanged('Label_NL') || $this->owner->isChanged('Label_EN')) {
+            // only execute if $this is certain roles
+
+            // If Label_NL is being edited, then set the Title as the same value of Label_NL
+            $this->Title = $this->Label_NL;
+        }
+
+        // Only execute this code if the title of an existing institute changes
+        if ($this->isChanged('Title') && $this->isInDB()){
+            $this->UpdateInstituteLabels = true;
+
+            $groups = Group::get()->filter(['InstituteID' => $this->ID]);
+
+            foreach ($groups as $group){
+
+                // Take the substring up to the position of 'van' or 'of'
+                $resultTitle = trim(substr($group->Title, 0, strpos($group->Title, 'van ') + 3));
+                $resultLabelNL = trim(substr($group->Label_NL, 0, strpos($group->Label_NL, 'van ') + 3));
+                $resultLabelEN = trim(substr($group->Label_EN, 0, strpos($group->Label_EN, 'of ') + 2));
+
+                // Replace all words in the existing title except the first two with the new title of the Institute
+                $group->Title = $resultTitle . ' ' . $this->Title;
+                $group->Label_NL = $resultLabelNL . ' ' . $this->Title;
+                $group->Label_EN = $resultLabelEN . ' ' . $this->Title;
+                $group->write();
+            }
+
+            $templates = Template::get()->filter(['InstituteID' => $this->ID]);
+            // Update titles of associated templates
+            foreach ($templates as $template) {
+                // Use a regular expression to replace content within parentheses
+                $template->Title = preg_replace('/\([^)]+\)/', '(' . $this->Title . ')', $template->Title);
+                $template->Label_NL = preg_replace('/\([^)]+\)/', '(' . $this->Title . ')', $template->Title);
+                $template->Label_EN = preg_replace('/\([^)]+\)/', '(' . $this->Title . ')', $template->Title);
+                $template->write();
+            }
+        }
+
         parent::onBeforeWrite();
     }
 
@@ -339,7 +418,7 @@ class Institute extends DataObject implements PermissionProvider {
         parent::onAfterWrite();
 
         // Remove all cache after institute changes
-        if($this->isChanged()) {
+        if ($this->isChanged()) {
             ScopeCache::removeAllCachedViewables();
             ScopeCache::removeAllCachedPermissions();
             ScopeCache::removeAllCachedDataLists();
@@ -349,7 +428,8 @@ class Institute extends DataObject implements PermissionProvider {
         if (($image = $this->InstituteImage()) && $image->exists() && !$image->isPublished()) {
             $image->publishSingle();
         }
-        $this->ensureGroupsExist();
+
+        InstituteGroupManager::createDefaultGroups($this);
 
         $this->ensureTemplatesExist();
         if ($this->isChanged('ID')) { //implied onAfterCreate
@@ -360,6 +440,10 @@ class Institute extends DataObject implements PermissionProvider {
                     $parentTemplate->downPropagateTemplateMetaFields($template);
                 }
             }
+        }
+
+        if($this->isChanged('IsHidden') && !$this->isChanged('ID')) {
+            $this->setChildInstitutesIsHiddenAttribute();
         }
 
         $this->updateRelevantRepoItems();
@@ -385,6 +469,7 @@ class Institute extends DataObject implements PermissionProvider {
         return $this->InstituteID == 0;
     }
 
+    /** @return Institute|null */
     function getRootInstitute() {
         /** @var Institute $institute */
         $institute = $this;
@@ -394,6 +479,29 @@ class Institute extends DataObject implements PermissionProvider {
             }
             $institute = $institute->Institute();
         }
+        return null;
+    }
+
+    public static function getAllChildInstitutes(string $instituteUuid, $inclusive = false): DataList {
+        $childIds = self::getAllChildInstituteUuids($instituteUuid, $inclusive) ?: 0;
+        return Institute::get()->filter(["Uuid" => $childIds]);
+    }
+
+    public static function getAllChildInstituteUuids(string $instituteUuid, $inclusive = false): array {
+        $idToExclude = $inclusive ? '' : $instituteUuid;
+        $queryString = "
+            WITH RECURSIVE TreeTraversal (Uuid, InstituteUuid, Level) AS (
+                SELECT Uuid, InstituteUuid, 0 AS Level FROM SurfSharekit_Institute WHERE Uuid = ?
+                UNION ALL
+                SELECT child.Uuid, child.InstituteUuid, child.Level + 1 FROM SurfSharekit_Institute child
+                INNER JOIN TreeTraversal p ON child.InstituteUuid = p.Uuid
+            )
+            SELECT Uuid
+            FROM TreeTraversal
+            WHERE Uuid != ?;
+        ";
+
+        return DB::prepared_query($queryString, [$instituteUuid, $idToExclude])->column();
     }
 
     /** @return Institute|null */
@@ -433,6 +541,8 @@ class Institute extends DataObject implements PermissionProvider {
             'canCreateLearningObject' => $this->canCreateRepoItem('LearningObject'),
             'canCreatePublicationRecord' => $this->canCreateRepoItem('PublicationRecord'),
             'canCreateResearchObject' => $this->canCreateRepoItem('ResearchObject'),
+            'canCreateDataset' => $this->canCreateRepoItem('Dataset'),
+            'canCreateProject' => $this->canCreateRepoItem('Project'),
             'canEdit' => $this->canEdit($loggedInMember),
             'canDelete' => $this->canDelete($loggedInMember),
             'canCreateSubInstitute' => $this->canCreateSubInstitute($loggedInMember)
@@ -456,11 +566,10 @@ class Institute extends DataObject implements PermissionProvider {
             return true;
         }
 
-        foreach ($member->Groups() as $group) {
-            // worksadmin can create as well
+        foreach ($member->ScopedGroups($this->dataObj()->getRelatedInstitute()->ID) as $group) {
             $groupScopeToThis = InstituteScoper::getScopeLevel($this->ID, $group->InstituteID);
             if (in_array($groupScopeToThis, [InstituteScoper::SAME_LEVEL, InstituteScoper::HIGHER_LEVEL])) {
-                $permissions = ScopeCache::getPermissionsFromCache($group);
+                $permissions = ScopeCache::getPermissionsFromRequestCache($group);
                 if (in_array('INSTITUTE_CREATE_LOWERLEVEL', $permissions)) {
                     return true;
                 }
@@ -539,10 +648,10 @@ class Institute extends DataObject implements PermissionProvider {
 
     public function getIsUsersConextInstitute() {
         $member = Security::getCurrentUser();
-        foreach ($member->Groups() as $group) {
+        foreach ($member->ScopedGroups($this->dataObj()->getRelatedInstitute()->ID) as $group) {
             if ($group->InstituteID == $this->ID) {
                 foreach ($group->Roles() as $role) {
-                    if ($role->Title === Constants::TITLE_OF_MEMBER_ROLE) {
+                    if ($role->Title === RoleConstant::MEMBER) {
                         return true;
                     }
                 }
@@ -572,74 +681,6 @@ class Institute extends DataObject implements PermissionProvider {
 
     public function canRemoveConsortiumParentViaApi($instituteToRemove) {
         return false;
-    }
-
-    private function ensureGroupsExist() {
-        $hasStudentsGroup = false;
-        $hasSupporterGroup = false;
-        $hasSiteadminGroup = false;
-        $hasDefaultMemberGroup = false;
-        $hasStaffGroup = false;
-        foreach ($this->Groups() as $groups) {
-            $rolesInGroup = $groups->Roles();
-            foreach ($rolesInGroup as $roleInGroup) {
-                if ($roleInGroup->Title == Constants::TITLE_OF_STUDENT_ROLE) {
-                    $hasStudentsGroup = true;
-                } else if ($roleInGroup->Title == Constants::TITLE_OF_SUPPORTER_ROLE) {
-                    $hasSupporterGroup = true;
-                } else if ($roleInGroup->Title == Constants::TITLE_OF_MEMBER_ROLE) {
-                    $hasDefaultMemberGroup = true;
-                } else if ($roleInGroup->Title == Constants::TITLE_OF_SITEADMIN_ROLE) {
-                    $hasSiteadminGroup = true;
-                } else if ($roleInGroup->Title == Constants::TITLE_OF_STAFF_ROLE) {
-                    $hasStaffGroup = true;
-                }
-            }
-        }
-
-        if (!$hasStudentsGroup) {
-            $newStudentGroup = Group::create();
-            $newStudentGroup->Title = 'Studenten van ' . $this->Title;
-            $newStudentGroup->Roles()->Add(PermissionRole::get()->filter('Title', Constants::TITLE_OF_STUDENT_ROLE)->first());
-            $newStudentGroup->InstituteID = $this->ID;
-            $newStudentGroup->write();
-        }
-
-        if (!$hasSupporterGroup) {
-            $newSupporterGroup = Group::create();
-            $newSupporterGroup->Title = 'Ondersteuners van ' . $this->Title;
-            $newSupporterGroup->Roles()->Add(PermissionRole::get()->filter('Title', Constants::TITLE_OF_SUPPORTER_ROLE)->first());
-            $newSupporterGroup->InstituteID = $this->ID;
-            $newSupporterGroup->write();
-        }
-
-        if (!$hasSiteadminGroup) {
-            $newSiteadminGroup = Group::create();
-            $newSiteadminGroup->Title = 'Siteadmins van ' . $this->Title;
-            $newSiteadminGroup->Roles()->Add(PermissionRole::get()->filter('Title', Constants::TITLE_OF_SITEADMIN_ROLE)->first());
-            $newSiteadminGroup->InstituteID = $this->ID;
-            $newSiteadminGroup->write();
-        }
-
-        // TODO, only add this group if root institute!
-        if ($this->isRootInstitute()) {
-            if (!$hasDefaultMemberGroup) {
-                $newDefaultMemberGroup = Group::create();
-                $newDefaultMemberGroup->Title = 'Leden van ' . $this->Title;
-                $newDefaultMemberGroup->Roles()->Add(PermissionRole::get()->filter('Title', Constants::TITLE_OF_MEMBER_ROLE)->first());
-                $newDefaultMemberGroup->InstituteID = $this->ID;
-                $newDefaultMemberGroup->write();
-            }
-
-            // TODO, only add this group if root institute!
-            if (!$hasStaffGroup) {
-                $newStaffGroup = Group::create();
-                $newStaffGroup->Title = 'Medewerkers van ' . $this->Title;
-                $newStaffGroup->Roles()->Add(PermissionRole::get()->filter('Title', Constants::TITLE_OF_STAFF_ROLE)->first());
-                $newStaffGroup->InstituteID = $this->ID;
-                $newStaffGroup->write();
-            }
-        }
     }
 
     protected function onBeforeDelete() {
@@ -683,4 +724,61 @@ class Institute extends DataObject implements PermissionProvider {
             throw new ValidationException("Institute is mentioned as a default option, remove this reference before deleting");
         }
     }
+
+    private function setChildInstitutesIsHiddenAttribute() {
+        if($this->Level != 'consortium') {
+            $allChildInstitutes = $this->Institutes();
+            foreach ($allChildInstitutes as $institute) {
+                $institute->IsHidden = $this->IsHidden;
+                $institute->write();
+            }
+        }
+    }
+
+    /**
+     * Syncs groups where user is added to, $groupCodes are the codes the person should have
+     * $compareWith is optional and should exist of group codes
+     * if $compareWith is set it should only compare these group codes and not all of them
+     * It is recommended to always give $compareWith group codes, if not user will lose all given groups (also system groups!)
+     *
+     * @param Person $person
+     * @param array $groupCodes
+     * @param array|null $compareWith
+     * @return void
+     * @throws Exception
+     */
+   public function syncPersonGroups(Person $person, array $groupCodes, ?array $compareWith = null) {
+        $comparedGroups = null;
+        if ($compareWith) {
+            $comparedGroups = array_diff($compareWith, $groupCodes);
+        }
+
+        if (count($groupCodes)) {
+            $addTo = $this->Groups()->filter(['Roles.Title' => $groupCodes]);
+            foreach ($addTo as $group) {
+                /** @var Group $group */
+                if ($group->Members()->find('ID', $person->ID) === null) {
+                    $group->Members()->add($person);
+                }
+            }
+        }
+
+        $removeFrom = $this->Groups();
+
+        if (count($groupCodes)) {
+            $removeFrom = $removeFrom->filter(['Roles.Title:not' => $groupCodes]);
+        }
+
+        if ($comparedGroups !== null) {
+            $removeFrom = $removeFrom->filter(['Roles.Title' => (count($comparedGroups) ? $comparedGroups : [-1])]);
+        }
+
+       foreach ($removeFrom as $group) {
+           /** @var Group $group */
+           if ($group->Members()->find('ID', $person->ID) !== null) {
+               // MB: 2024-06-27 temporary disable removal of user groups
+              // $group->Members()->remove($person);
+           }
+       }
+   }
 }

@@ -15,8 +15,18 @@ use SilverStripe\Versioned\Versioned;
 /**
  * Class Channel
  * @package SurfSharekit\Models
+ * @property string Title
+ * @property string Description
+ * @property string Slug
+ * @property int SkipAPIKeyValidation
+ * @property string CallbackUrl
+ * @property bool PushEnabled
+ * @property bool IsPersonChannel
+ * @property int ProtocolID
+ * @method Protocol Protocol
  * @method HasManyList ChannelFilters
  * @method ManyManyList Members
+ * @method ManyManyList Institutes
  * DataObject representing a channel the external api can open
  */
 class Channel extends DataObject {
@@ -30,11 +40,14 @@ class Channel extends DataObject {
         'Title' => 'Varchar(255)',
         'Description' => 'Varchar(255)',
         'Slug' => 'Varchar(255)',
-        'SkipAPIKeyValidation' => 'Int(0)'
+        'SkipAPIKeyValidation' => 'Int(0)',
+        'CallbackUrl' => 'Varchar(255)',
+        'PushEnabled' => 'Boolean',
+        'IsPersonChannel' => 'Boolean(0)'
     ];
 
     private static $field_labels = [
-
+        'IsPersonChannel' => 'Channel can return Persons'
     ];
 
     private static $has_one = [
@@ -66,8 +79,13 @@ class Channel extends DataObject {
             $skipAPIKeyValidationField = CheckboxField::create('SkipAPIKeyValidation', 'SkipAPIKeyValidation', $this->SkipAPIKeyValidation);
             $skipAPIKeyValidationField->setDescription('When set, an API key is not necessary and the first Member is used.');
             $fields->replaceField('SkipAPIKeyValidation', $skipAPIKeyValidationField);
-
         }
+
+        $fields->dataFieldByName('CallbackUrl')->setDescription('This is the url where RepoItem changes are pushed to on creation, deletion or update');
+        $fields->dataFieldByName('PushEnabled')->setDescription('Enabling this functionality makes sure that changes in RepoItems are send to the callback url defined above');
+        $fields->dataFieldByName('IsPersonChannel')->setDescription('Persons are ALWAYS returned in JSON format, regardless of the selected protocol. Also, Channel and protocol filters do NOT affect the data that is returned for Persons');
+        $fields->dataFieldByName('ProtocolID')->setDescription('After protocol change, cache needs to be rebuild');
+
         return $fields;
 
     }
@@ -82,5 +100,15 @@ class Channel extends DataObject {
 
     public function canView($member = null) {
         return true;
+    }
+
+    public function validate() {
+        $results = parent::validate();
+
+        if(!$this->CallbackUrl && $this->PushEnabled) {
+            $results->addFieldError('CallbackUrl', 'Make sure to define a callback url the push functionality is enabled');
+        }
+
+        return $results;
     }
 }

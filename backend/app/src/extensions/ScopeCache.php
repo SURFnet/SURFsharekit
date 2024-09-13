@@ -19,14 +19,17 @@ class ScopeCache {
         return in_array($dataObject->ID, $GLOBALS['VIEWABLE'][$member->ID][$dataObject->getClassName()]);
     }
 
-    static function getPermissionsFromCache($group) {
+    static function getPermissionsFromRequestCache($group) {
         if (!isset($GLOBALS['GROUP_PERMISSSIONS'][$group->ID])) {
-            $GLOBALS['GROUP_PERMISSSIONS'][$group->ID] = static::getPermissionsWithoutCache($group);
+            $GLOBALS['GROUP_PERMISSSIONS'][$group->ID] = static::getPermissionsOfGroup($group);
         }
         return $GLOBALS['GROUP_PERMISSSIONS'][$group->ID];
     }
 
-    private static function getPermissionsWithoutCache($group) {
+    public static function getPermissionsOfGroup($group) {
+        if ($cache = SimpleCacheItem::getFor($group, 'Permissions')) {
+            return $cache->Value;
+        }
         /**
          * Code copy and edited from @see(Permission::permissions_for_member)
          */
@@ -49,7 +52,10 @@ class ScopeCache {
 				FROM \"Permission\"
 				WHERE \"Type\" = " . Permission::DENY_PERMISSION . " AND \"GroupID\" = $group->ID
 			")->column());
-        return array_diff($allowed, $denied);
+        $permissions = array_diff($allowed, $denied);
+        SimpleCacheItem::cacheFor($group, 'Permissions', $permissions);
+        Logger::debugLog("Caching permissions of group " . $group->ID);
+        return $permissions;
     }
 
     static function removeAllCachedPermissions() {

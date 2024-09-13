@@ -7,6 +7,7 @@ use SilverStripe\Security\Permission;
 use SilverStripe\Security\PermissionProvider;
 use SilverStripe\Security\Security;
 use SurfSharekit\Api\PermissionFilter;
+use SurfSharekit\Models\Helper\Constants;
 
 class RepoItemSummary extends DataObject implements PermissionProvider {
     private static $table_name = 'SurfSharekit_RepoItemSummary';
@@ -37,7 +38,7 @@ class RepoItemSummary extends DataObject implements PermissionProvider {
 
     protected function onAfterWrite() {
         parent::onAfterWrite();
-        if($this->isChanged('OwnerID') || $this->isChanged('InstituteID')) {
+        if ($this->isChanged('OwnerID') || $this->isChanged('InstituteID')) {
             ScopeCache::removeCachedViewable(RepoItemSummary::class);
             ScopeCache::removeCachedDataList(RepoItemSummary::class);
         }
@@ -59,10 +60,13 @@ class RepoItemSummary extends DataObject implements PermissionProvider {
             'subtitle' => $repoItem->Subtitle,
             'lastEdited' => $repoItem->LastEdited,
             'created' => $repoItem->Created,
+            'authorName' => $repoItem->Owner()->FullName,
             'permissions' => $repoItem->LoggedInUserPermissions,
             'isRemoved' => $repoItem->IsRemoved,
             'isArchived' => $repoItem->IsArchived,
-            'publicationDate' => $repoItem->PublicationDate
+            'publicationDate' => $repoItem->PublicationDate,
+            'accessRight' => $repoItem->AccessRight,
+            'embargoDate' => $repoItem->EmbargoDate,
         ];
 
         if ($repoItem->RepoType == 'RepoItemPerson') {
@@ -74,6 +78,14 @@ class RepoItemSummary extends DataObject implements PermissionProvider {
                     $summaryValues['subtitleEN'] = $valuePart->MetaFieldOption()->Label_EN;
                 }
             }
+
+            $personRepoItemExternalMetaField = $repoItem->RepoItemMetaFields()->filter(['MetaField.AttributeKey' => 'External'])->first();
+            if ($personRepoItemExternalMetaField && $personRepoItemExternalMetaField->exists()) {
+                /** @var RepoItemMetaFieldValue $valuePart */
+                $valuePart = $personRepoItemExternalMetaField->RepoItemMetaFieldValues()->filter('IsRemoved', 0)->first();
+                $summaryValues['external'] = !!($valuePart && $valuePart->exists());
+            }
+
             $personRepoItemTitleMetaField = $repoItem->RepoItemMetaFields()->filter(['MetaField.AttributeKey' => 'Title'])->first();
             if ($personRepoItemTitleMetaField && $personRepoItemTitleMetaField->exists()) {
                 $valuePart = $personRepoItemTitleMetaField->RepoItemMetaFieldValues()->filter('IsRemoved', 0)->first();
@@ -84,6 +96,7 @@ class RepoItemSummary extends DataObject implements PermissionProvider {
                 }
             }
         }
+
         if ($repoItem->RepoType == 'RepoItemLink') {
             $urlRepoItemMetaField = $repoItem->RepoItemMetaFields()->filter(['MetaField.MetaFieldType.Title' => 'URL'])->first();
             if ($urlRepoItemMetaField && $urlRepoItemMetaField->exists()) {
@@ -104,7 +117,16 @@ class RepoItemSummary extends DataObject implements PermissionProvider {
             }
         }
 
-        if ($repoItem->RepoType == 'RepoItemLearningObject') {
+        if (in_array($repoItem->RepoType, ['RepoItemLink', 'RepoItemRepoItemFile'])) {
+            $importantMetaField = $repoItem->RepoItemMetaFields()->filter(['MetaField.AttributeKey' => 'Important'])->first();
+            if ($importantMetaField && $importantMetaField->exists()) {
+                /** @var RepoItemMetaFieldValue $valuePart */
+                $valuePart = $importantMetaField->RepoItemMetaFieldValues()->filter('IsRemoved', 0)->first();
+                $summaryValues['important'] = !!($valuePart && $valuePart->exists());
+            }
+        }
+
+        if ($repoItem->RepoType == 'RepoItemLearningObject' || $repoItem->RepoType == 'RepoItemResearchObject') {
             $repoItemRepoItemTitleMetaField = $repoItem->RepoItemMetaFields()->filter(['MetaField.AttributeKey' => 'Title'])->first();
             if ($repoItemRepoItemTitleMetaField && $repoItemRepoItemTitleMetaField->exists()) {
                 $valuePart = $repoItemRepoItemTitleMetaField->RepoItemMetaFieldValues()->filter(['IsRemoved' => 0])->first();
@@ -114,13 +136,41 @@ class RepoItemSummary extends DataObject implements PermissionProvider {
             }
         }
 
+        if (in_array($repoItem->RepoType, ["PublicationRecord", "LearningObject", "ResearchObject", "Dataset"])) {
+            /** @var RepoItem $repoItem */
+            $summaryValues['includesFile'] = !!$repoItem->RepoItemMetaFields()->filter('RepoItemMetaFieldValues.RepoItem.RepoType', 'RepoItemRepoItemFile')->count();
+            $summaryValues['includesUrl'] = !!$repoItem->RepoItemMetaFields()->filter('RepoItemMetaFieldValues.RepoItem.RepoType', 'RepoItemLink')->count();
+        }
+
         $summaryValues['extra'] = [];
 
         foreach (MetaField::get()->filter(['SummaryKey:not' => null]) as $summaryMetaField) {
             $repoItemMetaField = RepoItemMetaField::get()->filter(["RepoItemID" => $repoItem->ID, "MetaFieldID" => $summaryMetaField->ID])->first();
             $extraSummaryKey = $summaryMetaField->SummaryKey;
             if ($extraSummaryKey != '') {
-                $summaryValues['extra'][$extraSummaryKey] = $repoItemMetaField && $repoItemMetaField->exists() ? $summaryMetaField->Values : null;
+                $summaryValue = $repoItemMetaField && $repoItemMetaField->exists() ? $summaryMetaField->Values : null;
+                if (!$summaryValue) {
+                    //If no answers given for summary field, use default answers as summary
+                    $templateMetafield = $repoItem->Template()->TemplateMetaFields()->filter('MetaFieldID', $summaryMetaField->ID)->first();
+                    if ($templateMetafield && $templateMetafield->exists() && ($defaultAnswers = $templateMetafield->getDefaultJsonApiAnswerDescription()) && count($defaultAnswers['values'])) {
+                        if (isset($defaultAnswers['values'][0]['value'])) {
+                            $summaryValue = $defaultAnswers['values'][0]['value'];
+                        }
+                        if (!$summaryValue && isset($defaultAnswers['values'][0]['summary']['title'])) {
+                            $summaryValue = $defaultAnswers['values'][0]['summary']['title'];
+                        }
+                        if (!$summaryValue && isset($defaultAnswers['values'][0]['summary']['name'])) {
+                            $summaryValue = $defaultAnswers['values'][0]['summary']['name'];
+                        }
+                        if (!$summaryValue && isset($defaultAnswers['values'][0]['summary']['name'])) {
+                            $summaryValue = $defaultAnswers['values'][0]['summary']['name'];
+                        }
+                        if (!$summaryValue && isset($defaultAnswers['values'][0]['summary']['value'])) {
+                            $summaryValue = $defaultAnswers['values'][0]['summary']['value'];
+                        }
+                    }
+                }
+                $summaryValues['extra'][$extraSummaryKey] = $summaryValue;
             }
         }
 
@@ -149,7 +199,7 @@ class RepoItemSummary extends DataObject implements PermissionProvider {
     }
 
     public static function updateFor(RepoItem $repoItem) {
-        if (!in_array($repoItem->RepoType, ['PublicationRecord', 'LearningObject', 'ResearchObject'])) {
+        if (!in_array($repoItem->RepoType, Constants::MAIN_REPOTYPES)) {
             return;
         }
         $repoItemSummary = RepoItemSummary::get()->filter(['RepoItemID' => $repoItem->ID])->first();
@@ -209,9 +259,9 @@ class RepoItemSummary extends DataObject implements PermissionProvider {
 
     static function getPermissionCases() {
         $repoItemSummaryCases = RepoItem::getPermissionCases();
-     //   unset($repoItemSummaryCases['REPOITEM_VIEW_PUBLISHED']);
+        //   unset($repoItemSummaryCases['REPOITEM_VIEW_PUBLISHED']);
 
-        if(Permission::check('REPOITEM_VIEW_SUMMARY')) {
+        if (Permission::check('REPOITEM_VIEW_SUMMARY')) {
             $repoItemSummaryCases[PermissionFilter::NO_CODE] = "(SurfSharekit_RepoItem.IsPublic = 1 AND SurfSharekit_RepoItem.Status = 'Published')";
         }
         return $repoItemSummaryCases;

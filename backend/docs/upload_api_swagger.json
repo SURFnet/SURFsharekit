@@ -1,0 +1,1746 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "Upload API",
+        "description": "\nThe SURFsharekit Upload API is an API for creating and publishing Repository Items (RepoItems). The API can be used to (partially) automate the process of creating and publishing a RepoItem.\n\n\n# Authentication\n The use of this API requires an access token which can be aquired using the OAuth2.0 Client Credentials flow. To Obtain an access token the client has to make a request to the token endpoint with a valid client id, client secret and institute identifier. An access token is scoped to a single institute and cannot, under any circumstances, be used to perform actions outside of this scope. An access token is valid for exactly 1 hour after which the client has to obtain a new token through the token endpoint.   \n\n# Authorization\n Within the scope of an institute the client is granted certain permissions. A WORKSAdmin is responsible for granting these permissions. The given permissions determine what a client is allowed to do within the SURFsharekit Upload API. If you have any questions about these permissions, please contact a WORKSAdmin.\n\n# Discovery\n The SURFSharekit Upload API provides a set of discovery endpoints. With these endpoints a client can obtain the required information to successfully create a RepoItem. For instance, a client can consult the /discover/metafields endpoint to obtain information about which type of metadata SURFSharekit supports and how this information should be provided to the Upload API. For more detailed information please consult the individual discovery endpoints. \n\n# Channels\n  RepoItems in SURFsharekit can be exposed through certain channels. To discover available channels, you can consult the /discover/channels endpoint. These can then be enabled or disabled by posting the identifiers of the desired channels to /repoitems/{uuid}/channels. Please consult the individual endpoints for more detailed information. Channels can only be enabled or disabled when a RepoItem has the 'Draft' status.\n  \n\n# Publishing a RepoItem\n  The SURFsharekit Upload API supports the following RepoItem statuses: \n  * Draft\n  * Submitted\n  * Published\n  \n  The default status of a new RepoItem is 'Draft'. A RepoItem can only be edited when it has the 'Draft' status. At any moment the client can try to publish the RepoItem by updating its status to 'Published' or 'Submitted' by using the POST /repoitems/{uuid}/status endpoint. If the client wishes to publish directly, the status 'Published' should be used. When the status is changed from 'Draft' to either 'Published' or 'Submitted' the RepoItem is validated. The new status is applied only when the RepoItem passes validation. When the client is unable to change a RepoItem's status to either 'Published' or 'Submitted' he can use the /repoitems/{uuid}/fill-request endpoint to notify supporters and site admins to manually complete the metadata and publish it.\n  \n# General flow of creating and publishing a RepoItem\n  To successfully create a RepoItem, the following steps can be taken:\n  \n  * Upload a file with the POST /files endpoint **(optional)**\n  * Create a new profile with the POST /persons endpoint **(optional)**\n  * Create a new RepoItem with the POST /repoitems endpoint\n  * Change the status to either 'Published' or 'Submitted' with the POST /repoitems/uuid/status endpoint\n  * Create a fill request if the the RepoItem doesn't pass validation with the /repoitems/uuid/fill-request endpoint **(optional)**\n\n# Persons (profiles)\n## Filtering \n\n The SURFsharekit Upload API offers a diverse range of filtering options for person lookup. These can be specified in the query parameters of the request. For now, only GET /person supports filtering. Filters can be combined to create an even more refined and specific filter. See the following examples on how to use these filters: \n \n `GET https://api.surfsharekit.nl/api/upload/v1/persons?filter[email][LIKE]=%johndoe%`  \n \n `GET https://api.surfsharekit.nl/api/upload/v1/persons?filter[email][LIKE]=%johndoe%&filter[surname][EQ]=Doe`  \n \n \n ### Supported filter modes: \n\n `EQ` Equal to \n\n `NEQ` Not equal to \n\n `LIKE` contains value - pre and postfix value with % ,f.e. %johndoe%\n\n `NOT LIKE` does not contain value - pre and postfix value with % ,f.e. %johndoe% \n\n `LT` lower than \n\n `LE` Lower than or equal to \n\n `GT` Greater than \n\n `GE` Greater than or equal to \n \n \n ## JSON filtering\n \n The API also offers the possibility to filter using JSON in a specific format, for example:\n \n    { \n      \"email\": \"test@zooma.nl\",\n      \"OR\": {\n        \"OR\": {\n          \"orcid\": \"123\",\n          \"dai\": \"abc\",\n          \"AND\": {\n            \"hogeschoolId\": \"abc\",\n            \"isni\": [123,456]\n          }\n        },\n        \"hogeschoolId\": \"890\",\n        \"isni\": \"678\"\n      }\n    } \n   \n    \nThis translates in a where query like this:\n\n    \n    (\n      ( Email = ?  AND ( \n        HogeschoolID = ? OR  ISNI = ?  OR ( \n          ORCID = ? OR  PersistentIdentifier = ?  OR ( \n            HogeschoolID = ? AND  ISNI IN ?  \n            )\n          )\n        )\n      )\n    )\n      \nThe JSON can then be used as follows: \n```\nGET https://api.surfsharekit.nl/api/repoitemupload/person?filter={\"email\":\"test@zooma.nl\",\"OR\":{\"OR\":{\"orcid\":\"123\",\"dai\":\"abc\",\"AND\":{\"hogeschoolId\":\"abc\",\"isni\":[123,456]}},\"hogeschoolId\":\"890\",\"isni\":\"678\"}}\n```\n\n## Filterable fields\nThe fields available for filtering are specified below:\n- institute\n- surname\n- email\n- dai\n- isni\n- orcid\n- hogeschoolId\n- position\n\n      \n",
+        "version": "1.0.0"
+    },
+    "security": [
+        {
+            "BearerAuth": []
+        }
+    ],
+    "paths": {
+        "/auth/token": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "description": "Use this route to authenticate using the client_credentials flow. All Upload API functionalities require authentication. For now the client_credentials flow is the only supported flow. To obtain a token a client must be in possession of a valid client id, client secret and institute identifier. A token is scoped to the provided institute and cannot, under any circumstances, be used to perform actions outside of this scope. Please contact a WORKSAdmin if you require access to the SURFsharekit Upload API.",
+                "requestBody": {
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "client_id": {
+                                        "type": "string"
+                                    },
+                                    "client_secret": {
+                                        "type": "string"
+                                    },
+                                    "institute": {
+                                        "type": "string"
+                                    },
+                                    "grant_type": {
+                                        "type": "string",
+                                        "example": "client_credentials"
+                                    }
+                                },
+                                "required": [
+                                    "client_id",
+                                    "client_secret",
+                                    "institute",
+                                    "grant_type"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Ok",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TokenResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Unauthorized"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Forbidden"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalServerError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/discover/institutes": {
+            "get": {
+                "tags": [
+                    "Discover"
+                ],
+                "description": "Returns all institutes the client is currently authenticated for.",
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "count": {
+                                                    "type": "integer",
+                                                    "example": "3"
+                                                }
+                                            }
+                                        },
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "institutes": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "string",
+                                                                "format": "uuid",
+                                                                "example": "7525cb22-ffd9-4507-bcf3-a2e4104e07cd"
+                                                            },
+                                                            "parentId": {
+                                                                "type": "string",
+                                                                "format": "uuid",
+                                                                "nullable": true,
+                                                                "example": null
+                                                            },
+                                                            "level": {
+                                                                "type": "string",
+                                                                "example": "organisation"
+                                                            },
+                                                            "title": {
+                                                                "type": "string",
+                                                                "example": "Instituut A"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/discover/metafields": {
+            "get": {
+                "tags": [
+                    "Discover"
+                ],
+                "description": "Returns all metadata that can be added to a RepoItem.",
+                "responses": {
+                    "200": {
+                        "description": "A list of publication types",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "example": "8c0c3cc3-cb72-4f4e-8c74-c32eb3436a3e"
+                                            },
+                                            "type": {
+                                                "example": "Dropdown"
+                                            },
+                                            "jsonType": {
+                                                "example": "string"
+                                            },
+                                            "jsonKey": {
+                                                "example": "publicationTypeDropdown"
+                                            },
+                                            "description": {
+                                                "example": "Dropdown for publication type"
+                                            },
+                                            "exampleValue": {
+                                                "example": "8a3b3a84-eb00-43dc-bd21-7d79c579a908"
+                                            },
+                                            "options": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "id": {
+                                                            "example": "8c0c3cc3-cb72-4f4e-8c74-c32eb3436a3e"
+                                                        },
+                                                        "value": {
+                                                            "example": "Tijdschrift"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/discover/channels": {
+            "get": {
+                "tags": [
+                    "Discover"
+                ],
+                "description": "Returns a list of channels the client can enable for a RepoItem. Only channels that are within the client's current scope are returned. The current scope being the institute for which the client is authenticated and the RepoTypes the client is allowed to publish.",
+                "responses": {
+                    "200": {
+                        "description": "Ok",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GetChannelsResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Unauthorized"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Forbidden"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalServerError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/persons": {
+            "post": {
+                "tags": [
+                    "Person"
+                ],
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Creates a SURFsharekit profile",
+                "description": "Creates a SURFsharekit profile with the provided information. Email can be left empty when unknown. ExposeEmail can be omitted and will default to false",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/createPersonRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Ok",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/personResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Unauthorized"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Notfound"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalServerError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "get": {
+                "tags": [
+                    "Person"
+                ],
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Get all SURFsharekit profiles",
+                "description": "Get all SURFsharekit profiles. This endpoint can be used to retrieve a profile's identifier to use when creating or editing a RepoItem. ",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "filter",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Filter using a JSON object.",
+                        "required": false
+                    },
+                    {
+                        "in": "query",
+                        "name": "pageNumber",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Filter using a JSON object.",
+                        "required": false,
+                        "example": 1
+                    },
+                    {
+                        "in": "query",
+                        "name": "pageSize",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Filter using a JSON object.",
+                        "required": false,
+                        "example": 100
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Ok",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/personListResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Unauthorized"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Notfound"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalServerError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/persons/{UUID}": {
+            "get": {
+                "tags": [
+                    "Person"
+                ],
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Get a  SURFsharekit profile by UUID",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "UUID",
+                        "description": "The UUID of the profile",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Ok",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/personResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Unauthorized"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Notfound"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalServerError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/repoitems/{UUID}": {
+            "get": {
+                "tags": [
+                    "RepoItems"
+                ],
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Get RepoItem by UUID",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "UUID",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "required": true,
+                        "description": "Uuid of the RepoItem to get"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Ok",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/repoItemResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Unauthorized"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Notfound"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalServerError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "RepoItems"
+                ],
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Delete RepoItem by UUID",
+                "description": "When given the required permissions you can use this endpoint to delete a RepoItem. When deleting a RepoItem it is placed in trash for 30 days at maximum before being permanently deleted. This action can, if necessary, be reversed. However, the Upload API does not support recovering a RepoItem from trash.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "UUID",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "required": true,
+                        "description": "Uuid of the RepoItem to delete"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Ok"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Unauthorized"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Notfound"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalServerError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/repoitems": {
+            "post": {
+                "tags": [
+                    "RepoItems"
+                ],
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/repoItemRequest"
+                            }
+                        }
+                    }
+                },
+                "summary": "Create new RepoItem",
+                "description": "With this endpoint new RepoItems can be created. The following fields are required: institute, owner and repoItemType. This is the minimum amount of information SURFsharekit needs to create a new RepoItem with the 'Draft' status. When creating a new RepoItem, metadata can be added by adding key value pairs to the 'metadata' JSON object. A JSON key in the metadata object should correspond to the JSON key of a MetaField, these can be retrieved with /discover/metafields. The discovery endpoint also specifies the JSON type that a metafields value should have. All metadata is validated to ensure it was provided in the correct format. When a metafield has options the value should be the identifier of the option. There are a few special cases: files, authorsAndParticipants, links, linkedLearningMaterials and linkedResearchPublications. These metafields specify relations between objects, to these relations metadata can be added. An example of each of these can be found in the example request. Some metadata can be required to successfully publish a RepoItem. The required metadata differs between RepoItem types and institutes. For now, there is no way to know which metadata is required. When the creation of a new RepoItem was successful, the identifier of the newly created RepoItem is returned.",
+                "responses": {
+                    "200": {
+                        "description": "Ok"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Unauthorized"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Forbidden"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalServerError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "tags": [
+                    "RepoItems"
+                ],
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Update RepoItem",
+                "responses": {
+                    "200": {
+                        "description": "Ok"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Unauthorized"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Forbidden"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalServerError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/repoitems/{UUID}/status": {
+            "get": {
+                "tags": [
+                    "RepoItems"
+                ],
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Get the status of a RepoItem",
+                "description": "Returns the current status of a RepoItem",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "UUID",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "required": true,
+                        "description": "Uuid of the RepoItem to get"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Ok",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RepoItemStatusResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Unauthorized"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Notfound"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalServerError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "RepoItems"
+                ],
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Update the status of a RepoItem",
+                "description": "Update the status of a RepoItem. The following statuses are allowed: Draft, Submitted and Published",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "UUID",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "required": true,
+                        "description": "Uuid of the RepoItem to get"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Ok",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RepoItemStatusResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Unauthorized"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Notfound"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalServerError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/repoitems/{UUID}/channels": {
+            "post": {
+                "tags": [
+                    "RepoItems"
+                ],
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Enable one or more channels for a RepoItem",
+                "description": "With this endpoint you can enable the channels that your RepoItem should be exposed to. Channels can only be enabled or disabled when the RepoItem has the 'Draft' status. The channel discovery endpoint can be used to retrieve all possible channels within the institute you're authenticated for. The list of channels provided to this endpoint will completely overwrite the current channel configuration of a RepoItem.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "UUID",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "required": true,
+                        "description": "Uuid of the RepoItem to enable or disable channels for"
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/updateRepoItemChannelsRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Ok"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Unauthorized"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Notfound"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalServerError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/repoitems/{UUID}/fill-request": {
+            "post": {
+                "tags": [
+                    "RepoItems"
+                ],
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Create fill tasks for a RepoItem",
+                "description": "With this endpoint you can create fill tasks for a specific RepoItem. These tasks can then be seen and completed by people who are authorised to perform these actions, which are generally the site admins and supporters of the organisation the RepoItem was created for. Creating fill tasks can be useful if you don't have enough metadata to successfully publish a RepoItem. This way you can delegate the task of getting a RepoItem published to site admins and supporters of the correct institute",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "UUID",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "required": true,
+                        "description": "Uuid of the RepoItem to create a fill request for"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Ok"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Unauthorized"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Notfound"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalServerError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/files": {
+            "post": {
+                "tags": [
+                    "File"
+                ],
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Create file",
+                "description": "Creates a new file and returns the identifier on success. The maximum allowed file size is set to 500Mb.",
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "fileName": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "required": [
+                                    "fileName"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Ok",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UploadFileResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Unauthorized"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Forbidden"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalServerError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/files/{UUID}": {
+            "post": {
+                "tags": [
+                    "File"
+                ],
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Replace existing file",
+                "description": "Replaces an existing file. This is only possible when the linked RepoItem has the 'draft' status or if the file has not yet been linked.",
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "fileName": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "required": [
+                                    "fileName"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "UUID",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "required": true,
+                        "description": "Uuid of the file to replace"
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UploadFileResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequest"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Unauthorized"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Forbidden"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InternalServerError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "BearerAuth": {
+                "type": "http",
+                "scheme": "bearer"
+            }
+        },
+        "schemas": {
+            "TokenResponse": {
+                "type": "object",
+                "description": "Response object returned when a client has successfully authenticated",
+                "properties": {
+                    "accessToken": {
+                        "type": "string",
+                        "example": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0.NHVaYe26MbtOYhSKkoKYdFVomg4i8ZJd8_-RU8VNbftc4TSMb4bXP3l3YlNWACwyXPGffz5aXHc6lty1Y2t4SWRqGteragsVdZufDn5BlnJl9pdR_kdVFUsra2rWKEofkZeIC4yWytE58sMIihvo9H1ScmmVwBcQP6XETqYd0aSHp1gOa9RdUPDvoXQ5oqygTqVtxaDr6wUFKrKItgBMzWIdNZ6y7O9E0DhEPTbE9rfBo6KTFsHAZnMg4k68CDp2woYIaXbmYTWcvbzIuHO7_37GT79XdIwkm95QJ7hYC9RiwrV7mesbY4PAahERJawntho0my942XheVLmGwLMBkQ"
+                    },
+                    "tokenType": {
+                        "type": "string",
+                        "example": "Bearer"
+                    },
+                    "expiresAt": {
+                        "type": "integer",
+                        "example": 1716986318
+                    }
+                }
+            },
+            "personListResponse": {
+                "type": "array",
+                "items": {
+                    "oneOf": [
+                        {
+                            "$ref": "#/components/schemas/personResponse"
+                        }
+                    ]
+                }
+            },
+            "RepoItemStatusResponse": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "example": "Draft"
+                    }
+                }
+            },
+            "personResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "example": "5f71ec26-48dc-46d6-be8b-7a78c191fb39"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "John van der Doe"
+                    },
+                    "surnamePrefix": {
+                        "type": "string",
+                        "example": "van der"
+                    },
+                    "surname": {
+                        "type": "string",
+                        "example": "Doe"
+                    },
+                    "firstName": {
+                        "type": "string",
+                        "example": "John"
+                    },
+                    "organisationId": {
+                        "type": "string",
+                        "example": "ba42e19b-13ea-420e-a424-369f14a91eeb"
+                    },
+                    "orcid": {
+                        "type": "string",
+                        "example": "0000-0001-5109-3700"
+                    },
+                    "dai": {
+                        "type": "string",
+                        "example": "info:eu-repo/dai/nl/123456785"
+                    },
+                    "isni": {
+                        "type": "string",
+                        "example": "ISNI 0000 0001 2149 1740"
+                    },
+                    "position": {
+                        "type": "string",
+                        "example": "student"
+                    },
+                    "rootInstitutesSummary": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "example": "f06e4fc3-ed20-4133-9b5e-84dba5f9a9e7"
+                                },
+                                "title": {
+                                    "type": "string",
+                                    "example": "Hogeschool A"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "createPersonRequest": {
+                "type": "object",
+                "properties": {
+                    "firstName": {
+                        "type": "string",
+                        "example": "John"
+                    },
+                    "surnamePrefix": {
+                        "type": "string",
+                        "example": "van der"
+                    },
+                    "surname": {
+                        "type": "string",
+                        "example": "Doe"
+                    },
+                    "email": {
+                        "type": "string",
+                        "example": "johndoe@gmail.com"
+                    },
+                    "position": {
+                        "type": "string",
+                        "example": "student"
+                    },
+                    "institute": {
+                        "type": "string",
+                        "example": "f06e4fc3-ed20-4133-9b5e-84dba5f9a9e7"
+                    },
+                    "orcid": {
+                        "type": "string",
+                        "example": "0000-0001-5109-3700"
+                    },
+                    "dai": {
+                        "type": "string",
+                        "example": "info:eu-repo/dai/nl/123456785"
+                    },
+                    "isni": {
+                        "type": "string",
+                        "example": "ISNI 0000 0001 2149 1740"
+                    },
+                    "organisationId": {
+                        "type": "string",
+                        "example": "ba42e19b-13ea-420e-a424-369f14a91eeb"
+                    },
+                    "exposeEmail": {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Can be omitted, defaults to false"
+                    }
+                },
+                "required": [
+                    "firstName",
+                    "surname",
+                    "institute",
+                    "position"
+                ]
+            },
+            "repoItemResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "example": "5f71ec26-48dc-46d6-be8b-7a78c191fb39"
+                    },
+                    "institute": {
+                        "type": "string",
+                        "example": "3270298d-774b-4b8c-bf26-ca4cada9ca91"
+                    },
+                    "repoItemType": {
+                        "type": "string",
+                        "example": "Publicationrecord"
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "title": {
+                                "type": "string",
+                                "example": "Publicatie titel"
+                            },
+                            "subtitle": {
+                                "type": "string",
+                                "example": "Publicatie subtitel"
+                            }
+                        }
+                    }
+                }
+            },
+            "repoItemRequest": {
+                "type": "object",
+                "properties": {
+                    "owner": {
+                        "type": "string",
+                        "example": "5f71ec26-48dc-46d6-be8b-7a78c191fb39"
+                    },
+                    "institute": {
+                        "type": "string",
+                        "example": "3270298d-774b-4b8c-bf26-ca4cada9ca91"
+                    },
+                    "repoItemType": {
+                        "type": "string",
+                        "example": "Publicationrecord"
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "title": {
+                                "type": "string",
+                                "example": "Publicatie titel"
+                            },
+                            "subtitle": {
+                                "type": "string",
+                                "example": "Publicatie subtitel"
+                            },
+                            "targetAgeGroup": {
+                                "type": "string",
+                                "example": "776c7f6a-1c03-4299-af2a-0c57247d168f"
+                            },
+                            "keywords": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string",
+                                    "example": "Physics"
+                                }
+                            },
+                            "files": {
+                                "type": "array",
+                                "items" : {
+                                    "type" : "object",
+                                    "properties" : {
+                                        "fileId": {
+                                            "type": "string",
+                                            "example": "e3f93047-7c71-4dcb-8f5e-0607e3d8310c"
+                                        },
+                                        "fileName": {
+                                            "type": "string",
+                                            "example": "Testfile"
+                                        },
+                                        "accessRights": {
+                                            "type": "string",
+                                            "example": "501af14c-2d8f-4cb9-bad7-011e1723a065"
+                                        },
+                                        "termsOfUse": {
+                                            "type": "string",
+                                            "example": "44346f27-5ecf-49de-af04-000baab4c519"
+                                        }
+                                    }
+                                }
+                            },
+                            "links": {
+                                "type": "array",
+                                "items" : {
+                                    "type" : "object",
+                                    "properties" : {
+                                        "url": {
+                                            "type": "string",
+                                            "example": "https://google.com"
+                                        },
+                                        "urlName": {
+                                            "type": "string",
+                                            "example": "Google"
+                                        }
+                                    }
+                                }
+                            },
+                            "authorsAndParticipants": {
+                                "type": "array",
+                                "items" : {
+                                    "type" : "object",
+                                    "properties" : {
+                                        "personId": {
+                                            "type": "string",
+                                            "example": "a3f93047-7c71-4dcb-8f5e-0607e3d8310c"
+                                        },
+                                        "alias": {
+                                            "type": "string",
+                                            "example": "Person alias"
+                                        }
+                                    }
+                                }
+                            },
+                            "linkedLearningMaterials": {
+                                "type": "array",
+                                "items" : {
+                                    "type" : "object",
+                                    "properties" : {
+                                        "repoItemId": {
+                                            "type": "string",
+                                            "example": "b5f93047-7c71-4dcb-8f5e-0607e3d8310c"
+                                        }
+                                    }
+                                }
+                            },
+                            "linkedResearchPublications": {
+                                "type": "array",
+                                "items" : {
+                                    "type" : "object",
+                                    "properties": {
+                                        "repoItemId": {
+                                            "type": "string",
+                                            "example": "c8f93047-7c71-4dcb-8f5e-0607e3d8310c"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "Channel": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "example": "8e7d6903-c766-4aec-ac9d-53cbf2feb125"
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Publinova"
+                    }
+                }
+            },
+            "updateRepoItemChannelsRequest": {
+                "type": "object",
+                "properties": {
+                    "channels": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "example": "3c53864a-3153-4c7e-869a-a76575c71fb1"
+                        }
+                    }
+                },
+                "required": [
+                    "channels"
+                ]
+            },
+            "GetChannelsResponse": {
+                "type": "object",
+                "properties": {
+                    "meta": {
+                        "type": "object",
+                        "properties": {
+                            "count": {
+                                "type": "integer",
+                                "example": 2
+                            }
+                        }
+                    },
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Channel"
+                        },
+                        "example": [
+                            {
+                                "id": "8e7d6903-c766-4aec-ac9d-53cbf2feb125",
+                                "title": "Publinova"
+                            },
+                            {
+                                "id": "70e03f5b-81e9-4376-9015-fcbf4585d1b2",
+                                "title": "HBOKennisbank"
+                            }
+                        ]
+                    }
+                }
+            },
+            "UploadFileResponse": {
+                "type": "object",
+                "properties": {
+                    "meta": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "example": "e0cf09e6-680b-4423-bdff-1e1427e9f2e6"
+                            }
+                        }
+                    }
+                }
+            },
+            "BadRequest": {
+                "type": "object",
+                "description": "Bad Request",
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "example": "UA_BR_001"
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Bad Request"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "client_id parameter is missing or empty"
+                    }
+                }
+            },
+            "Notfound": {
+                "type": "object",
+                "description": "Resource not found",
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "example": "GA_NF_002"
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Resource not found"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "Requested resource could not be found"
+                    }
+                }
+            },
+            "Forbidden": {
+                "type": "object",
+                "description": "Forbidden",
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "example": "UA_FB_001"
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Forbidden"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "Missing permissions for the provided institute"
+                    }
+                }
+            },
+            "Unauthorized": {
+                "type": "object",
+                "description": "Unauthorized",
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "example": "UA_UA_001"
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Unauthorized"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "Invalid client_id and client_secret combination"
+                    }
+                }
+            },
+            "InternalServerError": {
+                "type": "object",
+                "description": "Server Error",
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "example": "GA_ISE_001"
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Internal server error"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "An unexpected error has occurred"
+                    }
+                }
+            }
+        }
+    }
+}

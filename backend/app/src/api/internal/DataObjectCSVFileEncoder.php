@@ -75,11 +75,14 @@ class DataObjectCSVFileEncoder {
         // TODO: performance verbetering mogelijk
         foreach ($downloadFileIds as $downloadFileId) {
             $repoItemFile = RepoItemFile::get()->filter('ID', $downloadFileId)->first();
-            $repoItem = $repoItemFile->RepoItem();
-            if ($repoItem && $repoItem->exists()) {
-                $publicDownloads = $downloadItems->filter('RepoItemFileID', $repoItemFile->ID)->filter('IsPublic', true)->count();
-                $privateDownloads = $downloadItems->filter('RepoItemFileID', $repoItemFile->ID)->filter('IsPublic', false)->count();
-                $statsData[] = [$repoItemFile->getPublicStreamURL(), $repoItem->getFrontEndURL(), $repoItem->SubType, $publicDownloads, $privateDownloads];
+            // removed files cannot be counted, so exclude
+            if($repoItemFile) {
+                $repoItem = $repoItemFile->RepoItem();
+                if ($repoItem && $repoItem->exists()) {
+                    $publicDownloads = $downloadItems->filter('RepoItemFileID', $repoItemFile->ID)->filter('IsPublic', true)->count();
+                    $privateDownloads = $downloadItems->filter('RepoItemFileID', $repoItemFile->ID)->filter('IsPublic', false)->count();
+                    $statsData[] = [$repoItemFile->getPublicStreamURL(), $repoItem->getFrontEndURL(), $repoItem->SubType, $publicDownloads, $privateDownloads];
+                }
             }
         }
 
@@ -189,16 +192,18 @@ class DataObjectCSVFileEncoder {
             }
         }
         $metaFieldLastDescribed = new MetaField();
+        $subMetaFieldLastDescribedId = new MetaField();
         $sameMetaFieldCount = 0;
 
         foreach ($describingProtocol->ProtocolNodes()->filter('ParentNodeID', 0) as $node) {
-            if ($node->MetaField()->ID > 0 && $node->MetaField()->ID == $metaFieldLastDescribed->ID) {
+            if ($node->MetaField()->ID > 0 && $node->MetaField()->ID == $metaFieldLastDescribed->ID && $node->SubMetaFieldID == $subMetaFieldLastDescribedId) {
                 $sameMetaFieldCount++;
             } else {
                 $sameMetaFieldCount = 0;
             }
 
             $metaFieldLastDescribed = $node->MetaField();
+            $subMetaFieldLastDescribedId = $node->SubMetaFieldID;
             $jsonDescription = $node->describeUsing($repoItem, 'json');
             if (is_array($jsonDescription)) {
                 $valueIndex = 0;

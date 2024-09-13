@@ -2,6 +2,7 @@
 
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Security\Security;
+use SilverStripe\View\ViewableData;
 use SurfSharekit\Api\JsonApi;
 
 /**
@@ -49,6 +50,12 @@ class DataObjectJsonApiEncoder {
      * Variable used to paginate through a collection
      */
     public $pageSize = 0;
+
+    /**
+     * @var int $purge
+     * Variable used to force cache purge
+     */
+    public $purge = 0;
 
     public function __construct($classToDescriptionMap, $requestedRelations = []) {
         //Defines how we need to map each dataobject to jsonApi output
@@ -115,7 +122,8 @@ class DataObjectJsonApiEncoder {
         foreach ($descriptionForDataObject->hasOneToRelationMap as $hasOneRelationshipName => $relationshipDefinition) {
             if ($this->doesIncludeQueryParameterIncludeRelationship($hasOneRelationshipName, $relationaryContext)) {
                 $getHasOneMethod = $relationshipDefinition[RELATIONSHIP_GET_RELATED_OBJECTS_METHOD];
-                if ($relatedHasOneObject = $dataObject->$getHasOneMethod()) {
+                $relatedHasOneObject = $dataObject->$getHasOneMethod();
+                if ($relatedHasOneObject && $relatedHasOneObject->ID) {
                     if (!$relatedHasOneObject->canView(Security::getCurrentUser())) {
                         throw new Exception('Not allowed to view object in ' . $hasOneRelationshipName . ' relation');
                     }
@@ -181,7 +189,7 @@ class DataObjectJsonApiEncoder {
      * @return string
      * Utility fucntion to utility to describe the base url for a single DataObject (e.g. Books/123 for a Book with id 123)
      */
-    private static function getDataObjectURLDescriptorForDataObject(DataObject $dataObject, DataObjectJsonApiDescription $desc) {
+    private static function getDataObjectURLDescriptorForDataObject(ViewableData $dataObject, DataObjectJsonApiDescription $desc) {
         return $desc->type_plural . '/' . static::getJSONAPIID($dataObject);
     }
 
@@ -190,7 +198,7 @@ class DataObjectJsonApiEncoder {
      * @return mixed
      * Utility function to use a UUID instead of SilverStripe's ID
      */
-    public static function getJSONAPIID(DataObject $dataObject) {
+    public static function getJSONAPIID(ViewableData $dataObject) {
         return $dataObject->Uuid;//;dbObject('Uuid')->getValue();
     }
 
@@ -201,7 +209,7 @@ class DataObjectJsonApiEncoder {
      * @return array|null
      * Method to describe a single DataObject as its type, id, attributes and relationsships, i.e. the 'data'-tag of JsonApi
      */
-    public function describeDataObjectAsData(DataObject $dataObject, string $contextURL, array $relationaryContext = []) {
+    public function describeDataObjectAsData(ViewableData $dataObject, string $contextURL, array $relationaryContext = []) {
         $descriptionForDataObject = $this->getJsonApiDescriptionForClass((string)$dataObject);
         $directUrlToDataObject = static::getDataObjectURLDescriptorForDataObject($dataObject, $descriptionForDataObject);
         if (sizeof($relationaryContext) != 0 && in_array($directUrlToDataObject, $this->listOfDataObjectsDescribed)) {
@@ -209,22 +217,24 @@ class DataObjectJsonApiEncoder {
         }
         $this->listOfDataObjectsDescribed[] = $directUrlToDataObject;
 
-        $cachedAttributesOfObject = $descriptionForDataObject->getCache($dataObject);
-
+        // purge cache, pretend there is no cache
+        if ($this->purge == 0) {
+            $cachedAttributesOfObject = $descriptionForDataObject->getCache($dataObject);
+        } else {
+            $cachedAttributesOfObject = null;
+        }
         if ($cachedAttributesOfObject) {
             $dataDescription = $cachedAttributesOfObject;
         } else {
             $dataDescription = [];
             $dataDescription[JsonApi::TAG_ATTRIBUTES] = $descriptionForDataObject->describeAttributesOfDataObject($dataObject);
             $dataDescription[JsonApi::TAG_TYPE] = static::describeTypeOfDataObject($descriptionForDataObject);
-            if ($metaInformation = $descriptionForDataObject->describeMetaOfDataObject($dataObject)){
+            if ($metaInformation = $descriptionForDataObject->describeMetaOfDataObject($dataObject)) {
                 $dataDescription[JsonApi::TAG_META] = $metaInformation;
             }
             $dataDescription[JsonApi::TAG_ID] = static::describeIdOfDataObject($dataObject);
             $descriptionForDataObject->cache($dataObject, $dataDescription);
         }
-
-
 
         $relationsOfDataObject = static::describeRelationshipsOfDataObject($dataObject, $descriptionForDataObject, $contextURL, $this);
         if (!empty($relationsOfDataObject)) {
@@ -250,7 +260,7 @@ class DataObjectJsonApiEncoder {
      * @return string
      * JsonApi ID's are always a String, this utility method is used to describe the JsonApi ID as such
      */
-    public static function describeIdOfDataObject(DataObject $dataObject) {
+    public static function describeIdOfDataObject(ViewableData $dataObject) {
         return "" . static::getJSONAPIID($dataObject);
     }
 
@@ -266,10 +276,10 @@ class DataObjectJsonApiEncoder {
      * @see DataObjectJsonApiDescription::$hasManyToRelationsMap
      * as JsonApi objectIdentifiers
      */
-    private static function describeRelationshipsOfDataObject(DataObject $dataObject,
+    private static function describeRelationshipsOfDataObject(ViewableData                 $dataObject,
                                                               DataObjectJsonApiDescription $descriptionForDataObject,
-                                                              string $contextURL,
-                                                              DataObjectJsonApiEncoder $descr) {
+                                                              string                       $contextURL,
+                                                              DataObjectJsonApiEncoder     $descr) {
 
         $relationships = [];
         foreach ($descriptionForDataObject->hasOneToRelationMap as $hasOneRelationshipName => $relationshipDefinition) {
@@ -290,7 +300,7 @@ class DataObjectJsonApiEncoder {
      * @return string
      * Utility method to retrieve the url needed to access the actual objects behind a relationship
      */
-    public function getContextURLForDataObjectRelationshipDescription(DataObject $dataObject, $relationshipName, string $contextURL) {
+    public function getContextURLForDataObjectRelationshipDescription(ViewableData $dataObject, $relationshipName, string $contextURL) {
         $dataObjectURL = $this->getContextURLForDataObject($dataObject, $contextURL);
         return "$dataObjectURL/relationships/$relationshipName";
     }
@@ -301,7 +311,7 @@ class DataObjectJsonApiEncoder {
      * @return string
      * Utility method to retrieve the url of the dataObject described
      */
-    public function getContextURLForDataObject(DataObject $dataObject, string $contextURL) {
+    public function getContextURLForDataObject(ViewableData $dataObject, string $contextURL) {
         $desc = $this->getJsonApiDescriptionForClass((string)$dataObject);
         return "$contextURL/$desc->type_plural/" . static::getJSONAPIID($dataObject);
     }
@@ -340,10 +350,10 @@ class DataObjectJsonApiEncoder {
      * @return array
      * Method to describe a single hasOne relation of the requested DataObject
      */
-    private static function describeHasOneRelationshipDescriptionForDataObject(DataObject $dataObject,
-                                                                               string $hasOneRelationshipName,
-                                                                               array $relationshipDefinition,
-                                                                               string $contextURL,
+    private static function describeHasOneRelationshipDescriptionForDataObject(DataObject               $dataObject,
+                                                                               string                   $hasOneRelationshipName,
+                                                                               array                    $relationshipDefinition,
+                                                                               string                   $contextURL,
                                                                                DataObjectJsonApiEncoder $descr) {
         $relationDataObjectClassDescription = $descr->getJsonApiDescriptionForClass((string)$relationshipDefinition[RELATIONSHIP_RELATED_OBJECT_CLASS]);
         $getHasOneMethod = $relationshipDefinition[RELATIONSHIP_GET_RELATED_OBJECTS_METHOD];
@@ -374,10 +384,10 @@ class DataObjectJsonApiEncoder {
      * @return array
      * Method to describe a single hasMany relation of the requested DataObject
      */
-    private static function describeHasManyRelationshipDescriptionForDataObject(DataObject $dataObject,
-                                                                                string $hasManyRelationShipName,
-                                                                                array $relationshipDefinition,
-                                                                                string $contextURL,
+    private static function describeHasManyRelationshipDescriptionForDataObject(DataObject               $dataObject,
+                                                                                string                   $hasManyRelationShipName,
+                                                                                array                    $relationshipDefinition,
+                                                                                string                   $contextURL,
                                                                                 DataObjectJsonApiEncoder $descr) {
 
         $relationDataObjectClassDescription = $descr->getJsonApiDescriptionForClass((string)$relationshipDefinition[RELATIONSHIP_RELATED_OBJECT_CLASS]);
@@ -428,8 +438,8 @@ class DataObjectJsonApiEncoder {
      * Describes a relation with name $relationshipName of DataObject $dataObject as part of the requested data
      */
     public function describeRelationshipForDataObject(DataObject $dataObject,
-                                                      string $relationshipName,
-                                                      string $contextURL) {
+                                                      string     $relationshipName,
+                                                      string     $contextURL) {
         $descriptionForDataObject = $this->getJsonApiDescriptionForClass((string)$dataObject);
         if (array_key_exists($relationshipName, $descriptionForDataObject->hasOneToRelationMap)) {
             return DataObjectJsonApiEncoder::describeHasOneRelationshipForDataObject($dataObject, $descriptionForDataObject->hasOneToRelationMap[$relationshipName], $contextURL, $this);
@@ -490,8 +500,8 @@ class DataObjectJsonApiEncoder {
      * Describe a single Relationships with $relationshipName of DataObject $dataobject
      */
     public function describeRelationshipDescriptionForDataObject(DataObject $dataObject,
-                                                                 string $relationshipName,
-                                                                 string $contextURL) {
+                                                                 string     $relationshipName,
+                                                                 string     $contextURL) {
         $descriptionForDataObject = $this->getJsonApiDescriptionForClass((string)$dataObject);
         foreach ($descriptionForDataObject->hasOneToRelationMap as $hasOneRelationshipName => $relationshipDefinition) {
             if ($relationshipName == $hasOneRelationshipName) {
@@ -541,6 +551,10 @@ class DataObjectJsonApiEncoder {
     public function setPagination($pageSize, $pageNumber) {
         $this->pageSize = floor($pageSize);
         $this->pageNumber = floor($pageNumber);
+    }
+
+    public function setPurge($purge) {
+        $this->purge = $purge;
     }
 
     public function setTotalCount($totalCount) {

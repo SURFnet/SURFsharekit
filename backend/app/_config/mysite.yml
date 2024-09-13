@@ -4,19 +4,6 @@ Name: surfsharekit
 SilverStripe\Core\Manifest\ModuleManifest:
   project: app
 
-SilverStripe\Assets\File:
-  allowed_extensions:
-    - ppsx
-    - mhtml
-    - mht
-    - odt
-    - sib
-    - zip
-    - epub
-    - imscc
-    - imscp
-    - md
-
 # Remove default reports from admin interface
 SilverStripe\Reports\Report:
   excluded_reports:

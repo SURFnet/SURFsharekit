@@ -76,24 +76,26 @@ class Protocol extends DataObject {
             $protocolFiltersGridfieldConfig->removeComponentsByType([new GridFieldAddExistingAutocompleter(), new GridFieldArchiveAction(), new GridFieldDeleteAction()]);
 
             $fields->removeByName('CacheLock');
-            if (in_array($this->SystemKey, ['OAI-PMH', 'CSV', 'JSON:API'])) {
-                $invalidateCacheField = CheckboxField::create('InvalidateCache', 'Invalidate Cache', $this->InvalidateCache);
-                $fields->replaceField('InvalidateCache', $invalidateCacheField);
-                $invalidateCacheField = $fields->dataFieldByName('InvalidateCache');
-                $invalidateCacheField->setDescription('When invalidate cache is set, the related caches will be updated during the next update cycle');
-                if ($this->InvalidateCache) {
-                    $fields->makeFieldReadonly('InvalidateCache');
-                    $invalidateCacheField = $fields->dataFieldByName('InvalidateCache');
-                    if ($this->CacheLock) {
-                        $invalidateCacheField->setDescription('Cache is currently being refreshed... this can take up to 4 hours to complete!');
-                    } else {
-                        $invalidateCacheField->setDescription('Cache is scheduled to be refreshed... this can take up to 4 hours to complete!');
-                    }
-
-                }
-            } else {
+            // Removed because we have a new way of clearing cache
+//            if (in_array($this->SystemKey, ['OAI-PMH', 'CSV', 'JSON:API'])) {
+//                $invalidateCacheField = CheckboxField::create('InvalidateCache', 'Invalidate Cache', $this->InvalidateCache);
+//                $fields->replaceField('InvalidateCache', $invalidateCacheField);
+//                $invalidateCacheField = $fields->dataFieldByName('InvalidateCache');
+//                $invalidateCacheField->setDescription('When invalidate cache is set, the related caches will be updated during the next update cycle');
+//                if ($this->InvalidateCache) {
+//                    $fields->makeFieldReadonly('InvalidateCache');
+//                    $invalidateCacheField = $fields->dataFieldByName('InvalidateCache');
+//                    if ($this->CacheLock) {
+//                        $invalidateCacheField->setDescription('Cache is currently being refreshed... this can take up to 4 hours to complete!');
+//                    } else {
+//                        $invalidateCacheField->setDescription('Cache is scheduled to be refreshed... this can take up to 4 hours to complete!');
+//                    }
+//
+//                }
+//            } else {
+//              $fields->removeByName('InvalidateCache');
+//            }
                 $fields->removeByName('InvalidateCache');
-            }
         }
         return $fields;
     }

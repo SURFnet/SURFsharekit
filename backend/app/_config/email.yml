@@ -2,6 +2,65 @@
 Name: zooma-email
 After: '#emailconfig'
 ---
+
+---
+Only:
+  environment: 'live'
+---
+SilverStripe\Core\Injector\Injector:
+  Swift_Transport:
+    class: Swift_SmtpTransport
+    properties:
+      Host: localhost
+      Port: 25
+
+---
+Only:
+  environment: 'acceptance'
+---
+SilverStripe\Core\Injector\Injector:
+  Swift_Transport:
+    class: Swift_SmtpTransport
+    properties:
+      Host: localhost
+      Port: 25
+
+---
+Only:
+  environment: 'staging'
+---
+SilverStripe\Core\Injector\Injector:
+  Swift_Transport:
+    class: Swift_SmtpTransport
+    properties:
+      Host: email-smtp.eu-west-1.amazonaws.com
+      Port: 587
+      Encryption: tls
+    calls:
+      Username: [ setUsername, ["`SES_SMTP_USERNAME`"] ] # CONSTANTS IN ENV
+      Password: [ setPassword, ["`SES_SMTP_PASSWORD`"] ]
+      AuthMode: [ setAuthMode, ['login'] ]
+
+---
+Only:
+  environment: 'test'
+---
+SilverStripe\Core\Injector\Injector:
+  Swift_Transport:
+    class: Swift_SmtpTransport
+    properties:
+      Host: email-smtp.eu-west-1.amazonaws.com
+      Port: 587
+      Encryption: tls
+    calls:
+      Username: [ setUsername, ["`SES_SMTP_USERNAME`"] ] # CONSTANTS IN ENV
+      Password: [ setPassword, ["`SES_SMTP_PASSWORD`"] ]
+      AuthMode: [ setAuthMode, ['login'] ]
+
+---
+Only:
+  environment: 'dev'
+---
 SilverStripe\Core\Injector\Injector:
   Swift_Transport:
     class: Swift_SmtpTransport

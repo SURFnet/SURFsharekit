@@ -2,8 +2,12 @@
 
 use Ramsey\Uuid\Uuid;
 use SilverStripe\ORM\DataObject;
+use SilverStripe\Security\Group;
+use SilverStripe\Security\Member;
 use SilverStripe\Security\Security;
+use SilverStripe\View\ViewableData;
 use SurfSharekit\Api\JsonApi;
+use Zooma\SilverStripe\Models\ApiObject;
 
 /**
  * Class DataObjectJsonApiDecoder
@@ -47,6 +51,9 @@ class DataObjectJsonApiDecoder {
                 }
             } catch (Exception $e) {
                 try {
+                    if ($newDataObject instanceof ApiObject) {
+                        throw $e; // ApiObject doesn't have any relations, only attributes
+                    }
                     $newDataObject = $this->setRelationsFromObjectDataJSON($newDataObject, $jsonData);
                     if (count($this->errorLog) == 0) {
                         $newDataObject->write();
@@ -200,7 +207,7 @@ class DataObjectJsonApiDecoder {
      * @return DataObject
      * This method is used to update or create a multitude of relations the inserted or updated object has to other objects
      */
-    private function setRelationsFromObjectDataJSON(DataObject $dataObject, $jsonData) {
+    private function setRelationsFromObjectDataJSON(ViewableData $dataObject, $jsonData) {
         if (isset($jsonData[JsonApi::TAG_RELATIONSHIPS]) && ($postedRelationships = $jsonData[JsonApi::TAG_RELATIONSHIPS])) {
             foreach ($postedRelationships as $postedRelationshipName => $relationshipInfo) {
                 $this->setRelationFromRelationJSON($dataObject, $postedRelationshipName, $relationshipInfo, static::$REPLACE);
@@ -304,7 +311,16 @@ class DataObjectJsonApiDecoder {
                             return;
                         }
                     }
-                    $hasManyMethod()->removeAll(); //remove preexisting relationships
+                    if ($dataObject instanceof Member && $hasManyMethod == "Groups") {
+                        // When removing a person from a group, this has to be done from the Members() relation on Group instead of the Groups() relation on Member
+                        // If a Member is removed from a group using the Groups() relation on Member, the ManyManyListExtended logic will nog be triggered
+                        // as the Groups() relation on Member is a belongs_many_many relation
+                        foreach ($hasManyMethod() as $group) {
+                            $group->remove($dataObject);
+                        }
+                    } else {
+                        $hasManyMethod()->removeAll(); //remove preexisting relationships
+                    }
                 }
 
                 foreach ($postedRelationshipData as $postedRelationshipObjectIdentifier) {
@@ -335,7 +351,14 @@ class DataObjectJsonApiDecoder {
 
                     if ($editMode == static::$ADD || $editMode == static::$REPLACE) {
                         if ($permissionAddMethod($relatedObject)) {
-                            $hasManyMethod()->Add($relatedObject);
+                            if ($dataObject instanceof Member && $relatedObject instanceof Group) {
+                                // When adding a person to a group, this has to be done from the Members() relation on Group instead of the Groups() relation on Member
+                                // If a Member is added to a group using the Groups() relation on Member, the ManyManyListExtended logic will nog be triggered
+                                // as the Groups() relation on Member is a belongs_many_many relation
+                                $relatedObject->Members()->Add($dataObject);
+                            } else {
+                                $hasManyMethod()->Add($relatedObject);
+                            }
                         } else {
                             $this->errorLog[] = [
                                 JsonApi::TAG_ERROR_TITLE => 'Missing permission to edit this relationship',
@@ -354,7 +377,14 @@ class DataObjectJsonApiDecoder {
                             return;
                         }
                         if ($permissionRemoveMethod($relatedObject)) {
-                            $hasManyMethod()->Remove($relatedObject);
+                            if ($dataObject instanceof Member && $relatedObject instanceof Group) {
+                                // When removing a person from a group, this has to be done from the Members() relation on Group instead of the Groups() relation on Member
+                                // If a Member is removed from a group using the Groups() relation on Member, the ManyManyListExtended logic will nog be triggered
+                                // as the Groups() relation on Member is a belongs_many_many relation
+                                $relatedObject->Members()->Remove($dataObject);
+                            } else {
+                                $hasManyMethod()->Remove($relatedObject);
+                            }
                         } else {
                             $this->errorLog[] = [
                                 JsonApi::TAG_ERROR_TITLE => 'Missing permission to edit this relationship',

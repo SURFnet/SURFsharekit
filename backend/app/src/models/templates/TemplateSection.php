@@ -27,11 +27,16 @@ class TemplateSection extends DataObject {
         'Subtitle_NL' => 'Varchar(255)',
         'SortOrder' => 'Int(0)',
         'IconKey' => 'Varchar(255)',
-        'IsUsedForSelection' => 'Boolean(0)'
+        'IsUsedForSelection' => 'Boolean(0)',
+        'Icon' => 'Enum(array("DEFAULT", "LINK", "UPLOAD", "SHARE", "TOOLS"), "DEFAULT")'
     ];
 
     private static $has_many = [
         'TemplateMetaFields' => TemplateMetaField::class
+    ];
+
+    private static $has_one = [
+        'TemplateStep' => TemplateStep::class
     ];
 
     private static $summary_fields = [

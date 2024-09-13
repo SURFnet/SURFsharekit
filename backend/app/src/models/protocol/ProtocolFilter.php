@@ -38,13 +38,13 @@ class ProtocolFilter extends DataObject {
         $fields = parent::getCMSFields();
         /** @var DropdownField $virtualMetaField */
         $virtualMetaField = $fields->dataFieldByName('VirtualMetaField');
-        $virtualMetaField->setEmptyString('Select a vritual metafield');
+        $virtualMetaField->setEmptyString('Select a virtual metafield');
         $virtualMetaField->setHasEmptyDefault(true);
 
         $repoItemAttributeDropdown = $fields->dataFieldByName('RepoItemAttribute');
         $repoItemAttributeDropdown->setHasEmptyDefault(true);
 
-        return $fields;
+        return MetaField::ensureDropdownField($this, $fields, 'ChildMetaFieldID', 'ChildMetaField');
     }
 
     public function canCreate($member = null, $context = []) {

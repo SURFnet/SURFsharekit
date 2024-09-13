@@ -2,6 +2,7 @@
 
 namespace SurfSharekit\Api;
 
+use ClaimJsonApiDescription;
 use DataObjectJsonApiBodyDecoder;
 use DataObjectJsonApiBodyEncoder;
 use DataObjectJsonApiDecoder;
@@ -13,28 +14,46 @@ use InstituteJsonApiDescription;
 use MetaFieldJsonApiDescription;
 use MetaFieldOptionJsonApiDescription;
 use MetaFieldTypeJsonApiDescription;
+use OpenApi\Annotations\Link;
+use PersonConfigJsonApiDescription;
 use PersonImageJsonApiDescription;
 use PersonJsonApiDescription;
 use PersonSummaryJsonApiDescription;
 use RepoItemJsonApiDescription;
+use BulkActionJsonApiDescription;
 use RepoItemSummaryJsonApiDescription;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Security\Group;
 use SilverStripe\Security\Security;
+use SurfSharekit\api\internal\descriptions\NotificationCategoryJsonApiDescription;
+use SurfSharekit\api\internal\descriptions\NotificationJsonApiDescription;
+use SurfSharekit\api\internal\descriptions\NotificationSettingJsonApiDescription;
+use SurfSharekit\api\internal\descriptions\PermissionCategoryJsonApiDescription;
+use SurfSharekit\api\internal\descriptions\PermissionDescriptionJsonApiDescription;
+use SurfSharekit\Models\Claim;
 use SurfSharekit\Models\DefaultMetaFieldOptionPart;
 use SurfSharekit\Models\Institute;
 use SurfSharekit\Models\InstituteImage;
 use SurfSharekit\Models\MetaField;
 use SurfSharekit\Models\MetaFieldOption;
 use SurfSharekit\Models\MetaFieldType;
+use SurfSharekit\models\notifications\Notification;
+use SurfSharekit\models\notifications\NotificationCategory;
+use SurfSharekit\models\notifications\NotificationSetting;
+use SurfSharekit\models\PermissionCategory;
+use SurfSharekit\models\PermissionDescription;
 use SurfSharekit\Models\Person;
+use SurfSharekit\Models\PersonConfig;
 use SurfSharekit\Models\PersonImage;
 use SurfSharekit\Models\PersonSummary;
 use SurfSharekit\Models\RepoItem;
 use SurfSharekit\Models\RepoItemFile;
+use SurfSharekit\Models\BulkAction;
 use SurfSharekit\Models\RepoItemSummary;
+use SurfSharekit\Models\Task;
 use SurfSharekit\Models\Template;
 use SurfSharekit\Models\TemplateMetaField;
+use TaskJsonApiDescription;
 use TemplateJsonApiDescription;
 use TemplateMetaFieldJsonApiDescription;
 
@@ -57,13 +76,16 @@ class InternalJsonApiController extends JsonApiController {
      * returns a map of DataObjects to their Respective @see DataObjectJsonApiDescription
      */
     protected function getClassToDescriptionMap() {
-        return [Group::class => new GroupJsonApiDescription(),
+        return [
+            Group::class => new GroupJsonApiDescription(),
             Institute::class => new InstituteJsonApiDescription(),
             Template::class => new TemplateJsonApiDescription(),
             TemplateMetaField::class => new TemplateMetaFieldJsonApiDescription(),
             MetaField::class => new MetaFieldJsonApiDescription(),
             Person::class => new PersonJsonApiDescription(),
+            Claim::class => new ClaimJsonApiDescription(),
             PersonImage::class => new PersonImageJsonApiDescription(),
+            PersonConfig::class => new PersonConfigJsonApiDescription(),
             InstituteImage::class => new \InstituteImageJsonApiDescription(),
             RepoItemFile::class => new \RepoItemFileJsonApiDescription(),
             MetaFieldType::class => new MetaFieldTypeJsonApiDescription(),
@@ -71,7 +93,15 @@ class InternalJsonApiController extends JsonApiController {
             DefaultMetaFieldOptionPart::class => new DefaultMetaFieldOptionPartJsonApiDescription(),
             RepoItem::class => new RepoItemJsonApiDescription(),
             RepoItemSummary::class => new RepoItemSummaryJsonApiDescription(),
-            PersonSummary::class => new PersonSummaryJsonApiDescription()];
+            PersonSummary::class => new PersonSummaryJsonApiDescription(),
+            BulkAction::class => new BulkActionJsonApiDescription(),
+            Task::class => new TaskJsonApiDescription(),
+            NotificationCategory::class => new NotificationCategoryJsonApiDescription(),
+            Notification::class => new NotificationJsonApiDescription(),
+            NotificationSetting::class => new NotificationSettingJsonApiDescription(),
+            PermissionCategory::class => new PermissionCategoryJsonApiDescription(),
+            PermissionDescription::class => new PermissionDescriptionJsonApiDescription(),
+        ];
     }
 
     /**
@@ -87,7 +117,9 @@ class InternalJsonApiController extends JsonApiController {
         $response = DataObjectJsonApiBodyDecoder::changeObjectWithTypeFromRequestBody($objectClass, $requestBody, $decoder, $prexistingObject, $relationshipToPatch, DataObjectJsonApiDecoder::$REPLACE);
         if ($response instanceof DataObject) {
             return $this->getJsonApiRequest();
-        } else {
+        } else if ($response === null) {
+            return $this->getResponse()->setStatusCode(410);
+        }  else {
             return InternalJsonApiController::createJsonApiBodyResponseFrom($response, 200);
         }
     }

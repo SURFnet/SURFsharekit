@@ -8,10 +8,13 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\BadResponseException;
 use SilverStripe\Core\Environment;
 use SilverStripe\Security\Security;
+use SurfSharekit\constants\RoleConstant;
 use SurfSharekit\Models\Helper\Constants;
 use SurfSharekit\Models\Helper\Logger;
 use SurfSharekit\Models\Institute;
+use SurfSharekit\Models\LogItem;
 use SurfSharekit\Models\Person;
+use const SurfSharekit\Models\AUTHENTICATION_LOG;
 
 /**
  * Class ConextLoginApiController
@@ -28,6 +31,7 @@ class ConextLoginApiController extends CORSController {
     private $conextURL = null;
 
     const ERROR_TAG = 'error';
+    const EDUID_CONEXTCODE = 'eduid.nl';
 
     private static $url_handlers = [
         '' => 'login',
@@ -54,14 +58,18 @@ class ConextLoginApiController extends CORSController {
         $redirect_uri = $request->requestVar('redirect_uri');
 
         $this->getResponse()->setStatusCode(401);
-        if (!$code) {
-            Logger::debugLog('Bad request, missing code', __CLASS__, __FUNCTION__);
+        // Disable SRAM/Conext login if the variable "DISABLE_LOGIN" is true
+        if (Environment::getEnv('DISABLE_LOGIN') == "true") {
+            LogItem::debugLog('Login temporarily disabled', __CLASS__, __FUNCTION__, AUTHENTICATION_LOG);
+            return json_encode([self::ERROR_TAG => 'Login temporarily disabled']);
+        } else if (!$code) {
+            LogItem::debugLog('Bad request, missing code', __CLASS__, __FUNCTION__, AUTHENTICATION_LOG);
             return json_encode([self::ERROR_TAG => 'Bad request, missing code']);
         } else if (!$redirect_uri) {
-            Logger::debugLog('Bad request, missing redirect_uri', __CLASS__, __FUNCTION__);
+            LogItem::debugLog('Bad request, missing redirect_uri', __CLASS__, __FUNCTION__, AUTHENTICATION_LOG);
             return json_encode([self::ERROR_TAG => 'Bad request, missing redirect_uri']);
         } else if ($request->getHeader('Content-Type') != 'application/x-www-form-urlencoded') {
-            Logger::debugLog('Incorrect Content-Type (use application/x-www-form-urlencoded)', __CLASS__, __FUNCTION__);
+            LogItem::debugLog('Incorrect Content-Type (use application/x-www-form-urlencoded)', __CLASS__, __FUNCTION__, AUTHENTICATION_LOG);
             return json_encode([self::ERROR_TAG => 'Incorrect Content-Type (use application/x-www-form-urlencoded)']);
         }
         $this->getResponse()->setStatusCode(200);
@@ -107,10 +115,10 @@ class ConextLoginApiController extends CORSController {
 
             $this->getResponse()->setStatusCode(401);
             if (is_string($tokenInformation)) {
-                Logger::debugLog('Could not ensure ConextMember exists ' . $tokenInformation, __CLASS__, __FUNCTION__);
+                LogItem::debugLog('Could not ensure ConextMember exists ' . $tokenInformation, __CLASS__, __FUNCTION__, AUTHENTICATION_LOG);
                 return json_encode([self::ERROR_TAG => $tokenInformation]);
             }
-            Logger::debugLog('Could not ensure ConextMember exists', __CLASS__, __FUNCTION__);
+            LogItem::debugLog('Could not ensure ConextMember exists', __CLASS__, __FUNCTION__, AUTHENTICATION_LOG);
             return json_encode([self::ERROR_TAG => 'Could not ensure ConextMember exists']);
         }
         $this->getResponse()->setStatusCode($conextResponse->getStatusCode());
@@ -138,32 +146,49 @@ class ConextLoginApiController extends CORSController {
             );
         } catch (BadResponseException $exception) {
             $conextUserInfoResponse = $exception->getResponse();
-            Logger::debugLog('Bad response ' . $conextUserInfoResponse, __CLASS__, __FUNCTION__);
+            LogItem::debugLog('Bad response ' . $conextUserInfoResponse, __CLASS__, __FUNCTION__, AUTHENTICATION_LOG);
         } catch (Exception $e) {
-            Logger::warnLog($e->getMessage(), __CLASS__, __FUNCTION__);
+            LogItem::warnLog($e->getMessage(), __CLASS__, __FUNCTION__, AUTHENTICATION_LOG);
             return $e->getMessage();
         }
 
         if ($conextUserInfoResponse->getStatusCode() == 200) {
             $conextBodyStream = $conextUserInfoResponse->getBody();
             $conextMemberJSON = json_decode($conextBodyStream, true);
-            Logger::debugLog($conextMemberJSON);
+            LogItem::debugLog($conextMemberJSON, __CLASS__, __FUNCTION__, AUTHENTICATION_LOG);
             $name = isset($conextMemberJSON['name']) ? $conextMemberJSON['name'] : null;
             $surname = isset($conextMemberJSON['family_name']) ? $conextMemberJSON['family_name'] : null;
             $firstName = isset($conextMemberJSON['given_name']) ? $conextMemberJSON['given_name'] : null;
             $email = isset($conextMemberJSON['email']) ? $conextMemberJSON['email'] : null;
             $organization = isset($conextMemberJSON['schac_home_organization']) ? $conextMemberJSON['schac_home_organization'] : null;
-            $consortiumTeamIdentifier = isset($conextMemberJSON['edumember_is_member_of']) ? $conextMemberJSON['edumember_is_member_of'] : null;
+            $teamIdentifiers = isset($conextMemberJSON['edumember_is_member_of']) ? $conextMemberJSON['edumember_is_member_of'] : null;
             $conextRoles = isset($conextMemberJSON['eduperson_affiliation']) ? $conextMemberJSON['eduperson_affiliation'] : null;
             $uniqueConextCodeIdentifier = isset($conextMemberJSON['sub']) ? $conextMemberJSON['sub'] : null;
+
             if (!$uniqueConextCodeIdentifier) {
                 return null;
             }
 
+            LogItem::debugLog([
+                '-----------------------------------------------',
+                "name:" . json_encode($name),
+                "surname:" . json_encode($surname),
+                "firstName:" . json_encode($firstName),
+                "email:" . json_encode($email),
+                "organization:" . json_encode($organization),
+                "teamIdentifiers:" . json_encode($teamIdentifiers),
+                "conextRoles:" . json_encode($conextRoles),
+                "uniqueConextCodeIdentifier:" . json_encode($uniqueConextCodeIdentifier),
+                '-----------------------------------------------',
+            ], __CLASS__, __FUNCTION__, AUTHENTICATION_LOG);
+
+            /**
+             * @var $institute Institute
+             */
             $institute = Institute::get()->filter('ConextCode', $organization)->first();
-            if (!($institute && $institute->exists())) {
+            if ($organization != static::EDUID_CONEXTCODE && !($institute && $institute->exists())) {
                 $err = 'Could not find institute ' . $organization;
-                Logger::debugLog($err, __CLASS__, __FUNCTION__);
+                LogItem::debugLog($err, __CLASS__, __FUNCTION__, AUTHENTICATION_LOG);
                 return $err;
             }
 
@@ -184,7 +209,6 @@ class ConextLoginApiController extends CORSController {
                 $person->FirstName = $firstName;
             }
 
-
             if (!$person->ConextRoles && $conextRoles) {
                 $person->ConextRoles = implode(',', $conextRoles);
 
@@ -198,31 +222,40 @@ class ConextLoginApiController extends CORSController {
             if (!$person->HasLoggedIn) {
                 $firstTimeLoggingIn = true;
                 $person->HasLoggedIn = true;
+            }
 
-                $memberGroup = $institute->Groups()->filter(['Roles.Title' => Constants::TITLE_OF_MEMBER_ROLE])->first();
+            if ($organization != static::EDUID_CONEXTCODE && $firstTimeLoggingIn) {
+                $memberGroup = $institute->Groups()->filter(['Roles.Title' => RoleConstant::MEMBER])->first();
                 if (!$memberGroup || !$memberGroup->exists()) {
-                    Logger::debugLog('Could not find institute ' . $organization, __CLASS__, __FUNCTION__);
-                    return $institute->Title . ' Does not have a group for the role of ' . Constants::TITLE_OF_MEMBER_ROLE;
+                    LogItem::debugLog('Could not find institute ' . $organization, __CLASS__, __FUNCTION__, AUTHENTICATION_LOG);
+                    return $institute->Title . ' Does not have a group for the role of ' . RoleConstant::MEMBER;
                 }
+
+                LogItem::debugLog("Institute $institute->Title", __CLASS__, __FUNCTION__, AUTHENTICATION_LOG);
+                LogItem::debugLog("Adding to $memberGroup->Title", __CLASS__, __FUNCTION__, AUTHENTICATION_LOG);
 
                 $groupsToPutPersonIn[] = $memberGroup;
 
                 if ($person->IsStaffOrEmployee) {
-                    $staffGroup = $institute->Groups()->filter(['Roles.Title' => Constants::TITLE_OF_STAFF_ROLE])->first();
+                    $staffGroup = $institute->Groups()->filter(['Roles.Title' => RoleConstant::STAFF])->first();
                     if (!$staffGroup || !$staffGroup->exists()) {
-                        Logger::debugLog('Could not find institute ' . $organization, __CLASS__, __FUNCTION__);
-                        return $institute->Title . ' Does not have a group for the role of ' . Constants::TITLE_OF_STAFF_ROLE;
+                        LogItem::debugLog('Could not find institute ' . $organization, __CLASS__, __FUNCTION__, AUTHENTICATION_LOG);
+                        return $institute->Title . ' Does not have a group for the role of ' . RoleConstant::STAFF;
                     }
+                    LogItem::debugLog("Adding to $staffGroup->Title", __CLASS__, __FUNCTION__, AUTHENTICATION_LOG);
                     $groupsToPutPersonIn[] = $staffGroup;
                 }
             }
 
-            if ($consortiumTeamIdentifier) {
-                $consortium = Institute::get()->filter('Level', 'consortium')->filter('ConextTeamIdentifier', $consortiumTeamIdentifier)->first();
-                if ($consortium && $consortium->exists()) {
-                    $consortiumStaffGroup = $consortium->Groups()->filter(['Roles.Title' => Constants::TITLE_OF_STAFF_ROLE])->first();
-                    if ($consortiumStaffGroup && $consortiumStaffGroup->exists() && !$person->Groups()->filter('ID', $consortiumStaffGroup->ID)->exists()) {
-                        $groupsToPutPersonIn[] = $consortiumStaffGroup;
+            if ($teamIdentifiers) {
+                foreach ($teamIdentifiers as $teamIdentifier) {
+                    $institute = Institute::get()->filter('ConextTeamIdentifier:PartialMatch', $teamIdentifier)->first();
+                    if ($institute && $institute->exists()) {
+                        $instituteStaffGroup = $institute->Groups()->filter(['Roles.Title' => RoleConstant::STAFF])->first();
+                        if ($instituteStaffGroup && $instituteStaffGroup->exists() && !$person->Groups()->filter('ID', $instituteStaffGroup->ID)->exists()) {
+                            $groupsToPutPersonIn[] = $instituteStaffGroup;
+                            LogItem::debugLog("Adding to $instituteStaffGroup->Title", __CLASS__, __FUNCTION__, AUTHENTICATION_LOG);
+                        }
                     }
                 }
             }
@@ -248,17 +281,26 @@ class ConextLoginApiController extends CORSController {
                 $generatedTokenInformation = ApiMemberExtension::getHashedTokenInformation($person);
             }
             try {
+                if ($firstTimeLoggingIn && (!count($groupsToPutPersonIn) && !$person->Groups()->count())) {
+                    LogItem::warnLog('New account without any groups', __CLASS__, __FUNCTION__, AUTHENTICATION_LOG);
+                    return 'Could not create new member';
+                }
                 $person->IsRemoved = false;
                 $person->IsLoggingIn = true;
                 $person->write();
 
                 if (count($groupsToPutPersonIn)) {
                     foreach ($groupsToPutPersonIn as $group) {
-                        $person->Groups()->Add($group);
+                        $group->Members()->add($person);
                     }
                 }
             } catch (Exception $exception) {
-                Logger::warnLog('Could not create new member: ' . $exception->getMessage(), __CLASS__, __FUNCTION__);
+                LogItem::warnLog('Could not create new member: ' . $exception->getMessage(), __CLASS__, __FUNCTION__, AUTHENTICATION_LOG);
+                return 'Could not create new member';
+            }
+
+            if (!$person->Groups()->count()) {
+                LogItem::warnLog('member not connected to any groups', __CLASS__, __FUNCTION__,AUTHENTICATION_LOG);
                 return 'Could not create new member';
             }
 
@@ -270,7 +312,7 @@ class ConextLoginApiController extends CORSController {
                 'id' => DataObjectJsonApiEncoder::getJSONAPIID($person),
             ];
         }
-        Logger::debugLog('Could not find member information', __CLASS__, __FUNCTION__);
+        LogItem::debugLog('Could not find member information', __CLASS__, __FUNCTION__, AUTHENTICATION_LOG);
         return 'Could not find member information';
     }
 }

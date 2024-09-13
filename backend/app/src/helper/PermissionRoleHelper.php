@@ -6,6 +6,8 @@ namespace SurfSharekit\Models\Helper;
 use SilverStripe\Security\Group;
 use SilverStripe\Security\PermissionRole;
 use SilverStripe\Security\PermissionRoleCode;
+use SurfSharekit\constants\GroupConstant;
+use SurfSharekit\constants\RoleConstant;
 
 class PermissionRoleHelper {
 
@@ -40,13 +42,13 @@ class PermissionRoleHelper {
 
     static function addDefaultPermissionRoles() {
         $defaultPermissionRoles = [
-            Constants::TITLE_OF_STUDENT_ROLE,
-            Constants::TITLE_OF_SUPPORTER_ROLE,
-            Constants::TITLE_OF_SITEADMIN_ROLE,
-            Constants::TITLE_OF_MEMBER_ROLE,
-            Constants::TITLE_OF_STAFF_ROLE,
-            Constants::TITLE_OF_WORKSADMIN_ROLE,
-            Constants::TITLE_OF_APIUSER_ROLE
+            RoleConstant::STUDENT,
+            RoleConstant::SUPPORTER,
+            RoleConstant::SITEADMIN,
+            RoleConstant::MEMBER,
+            RoleConstant::STAFF,
+            RoleConstant::WORKSADMIN,
+            RoleConstant::APIUSER
         ];
 
         foreach ($defaultPermissionRoles as $permissionRoleTitle) {
@@ -63,20 +65,20 @@ class PermissionRoleHelper {
         }
 
         // Works admins group
-        $worksadminGroup = Group::get()->filter(['Title' => Constants::TITLE_OF_WORKSADMIN_GROUP])->first();
+        $worksadminGroup = Group::get()->filter(['Title' => GroupConstant::WORKSADMIN_TITLE])->first();
         if(!($worksadminGroup && $worksadminGroup->exists())){
             $worksadminGroup = Group::create();
-            $worksadminGroup->setField('Title', Constants::TITLE_OF_WORKSADMIN_GROUP);
-            $worksadminGroup->setField('Code', Constants::CODE_OF_WORKSADMIN_GROUP);
+            $worksadminGroup->setField('Title', GroupConstant::WORKSADMIN_TITLE);
+            $worksadminGroup->setField('Code', GroupConstant::WORKSADMIN_CODE);
             $worksadminGroup->write();
         }
 
         // API group
-        $apiGroup = Group::get()->filter(['Title' => Constants::TITLE_OF_API_GROUP])->first();
+        $apiGroup = Group::get()->filter(['Title' => GroupConstant::API_TITLE])->first();
         if(!($apiGroup && $apiGroup->exists())){
             $apiGroup = Group::create();
-            $apiGroup->setField('Title', Constants::TITLE_OF_API_GROUP);
-            $apiGroup->setField('Code', Constants::CODE_OF_API_GROUP);
+            $apiGroup->setField('Title', GroupConstant::API_TITLE);
+            $apiGroup->setField('Code', GroupConstant::API_CODE);
             $apiGroup->write();
         }
     }

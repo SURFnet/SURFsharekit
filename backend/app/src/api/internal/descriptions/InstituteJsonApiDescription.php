@@ -24,7 +24,8 @@ class InstituteJsonApiDescription extends DataObjectJsonApiDescription {
         'IsUsersConextInstitute' => 'isUsersConextInstitute',
         'Type' => 'type',
         'IsBaseScopeForUser' => 'isBaseScopeForUser',
-        'ChildrenInstitutesCount' => 'childrenInstitutesCount'
+        'ChildrenInstitutesCount' => 'childrenInstitutesCount',
+        'IsHidden' => 'isHidden'
     ];
 
     public $attributeToFieldMap = [
@@ -33,7 +34,8 @@ class InstituteJsonApiDescription extends DataObjectJsonApiDescription {
         'level' => 'Level',
         'abbreviation' => 'Abbreviation',
         'type' => 'Type',
-        'isRemoved' => 'IsRemovedFromApi'
+        'isRemoved' => 'IsRemovedFromApi',
+        'isHidden' => 'IsHidden'
     ];
 
     public $hasOneToRelationMap = [
@@ -78,6 +80,8 @@ class InstituteJsonApiDescription extends DataObjectJsonApiDescription {
 
     public function getFilterableAttributesToColumnMap(): array {
         return [
+            'inactive' => '`SurfSharekit_Institute`.`IsRemoved`',
+            'isHidden' => '`SurfSharekit_Institute`.`IsHidden`',
             'title' => '`SurfSharekit_Institute`.`Title`',
             'isRemoved' => '`SurfSharekit_Institute`.`IsRemoved`',
             'level' => '`SurfSharekit_Institute`.`Level`',
@@ -87,6 +91,10 @@ class InstituteJsonApiDescription extends DataObjectJsonApiDescription {
             'distinctTemplates' => null,
             'scope' => null
         ];
+    }
+
+    public function applyGeneralFilter(DataList $objectsToDescribe): DataList {
+        return $objectsToDescribe->filter(['IsHidden' => false]);
     }
 
     public function getFilterFunction(array $fieldsToSearchIn) {

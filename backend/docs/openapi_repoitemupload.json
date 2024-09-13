@@ -1,0 +1,774 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Upload API",
+    "description": "This API provides functionalities for managing repository items, uploading files, and handling information about individuals in the system. This API makes sure that institutes can handle actions without using the Sharekit portal, but through their own system. \n\nAccess Tokens are required for certain operations to ensure secure access. This can be done by logging in with a conext account, which then provides access to the system. \n\n # Filtering \n\n The API offers a diverse range of filtering options. These can be specified in the query parameters of the request. For now, only GET /person supports filtering. Filters can be combined to create an even more refined and specific filter. See the following examples on how to use these filters: \n \n `GET https://api.surfsharekit.nl/api/repoitemupload/person?filter[email][LIKE]=johndoe`  \n \n `GET https://api.surfsharekit.nl/api/repoitemupload/person?filter[email][LIKE]=johndoe&filter[surname][EQ]=Doe`  \n \n \n ### Supported filter modes: \n\n `EQ` Equal to \n\n `NEQ` Not equal to \n\n `LIKE` contains value\n\n `NOT LIKE` does not contain value \n\n `LT` lower than \n\n `LE` Lower than or equal to \n\n `GT` Greater than \n\n `GE` Greater than or equal to \n \n \n ## JSON filtering\n \n The API also offers the possibility to filter using JSON in a specific format, for example:\n \n    { \n      \"email\": \"test@zooma.nl\",\n      \"OR\": {\n        \"OR\": {\n          \"orcid\": \"123\",\n          \"dai\": \"abc\",\n          \"AND\": {\n            \"hogeschoolId\": \"abc\",\n            \"isni\": [123,456]\n          }\n        },\n        \"hogeschoolId\": \"890\",\n        \"isni\": \"678\"\n      }\n    } \n   \n    \nThis translates in a where query like this:\n\n    \n    (\n      ( Email = ?  AND ( \n        HogeschoolID = ? OR  ISNI = ?  OR ( \n          ORCID = ? OR  PersistentIdentifier = ?  OR ( \n            HogeschoolID = ? AND  ISNI IN ?  \n            )\n          )\n        )\n      )\n    )\n      \nThe JSON can then be used as follows: \n```\nGET https://api.surfsharekit.nl/api/repoitemupload/person?filter={\"email\":\"test@zooma.nl\",\"OR\":{\"OR\":{\"orcid\":\"123\",\"dai\":\"abc\",\"AND\":{\"hogeschoolId\":\"abc\",\"isni\":[123,456]}},\"hogeschoolId\":\"890\",\"isni\":\"678\"}}\n```\n\n## Filterable fields\nThe fields available for filtering are specified below:\n- institute\n- surname\n- email\n- dai\n- isni\n- orcid\n- hogeschoolId\n- position\n\n      \n",
+    "version": "1.0.0"
+  },
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "paths": {
+    "/create": {
+      "post": {
+        "summary": "Creates Repository item",
+        "description": "API call to create a RepoItem through the Upload API. For each file uploaded using the /upload endpoint, a unique identifier (UUID) is generated. This UUID, obtained in the response, is crucial for subsequent /create operations. A file must be present in Sharekit before it can be annotated using the /create endpoint.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "description": "The body of the POST call to create a new repoItem through the 'Upload API'",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRepoItem"
+              }
+            }
+          }
+        },
+        "tags": [
+          "Repository item"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "example": {
+                  "id": "12345ab6-8cd9-12e3-4567-89f12g345678"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/401"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/upload": {
+      "post": {
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "File"
+        ],
+        "summary": "Upload file (limit of 5GB).",
+        "description": "The UUID inside the response can be used inside the request body of the /create endpoint. Use GET /format to fetch the expected request body format.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "example": {
+                  "data": {
+                    "attributes": {
+                      "url": "\"http://localhost:8080/api/v1/files/repoItemFiles/4a6dbc5d-7732-4642-bb41-256051d20e4a\"",
+                      "title": "titleoffile",
+                      "permissions": {
+                        "canView": true
+                      }
+                    },
+                    "type": "repoItemFile",
+                    "id": "14975049-2421-454c-93cb-5781d314ccbf"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/401"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/format": {
+      "get": {
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "Format"
+        ],
+        "summary": "Returns requested format for create route (including options for specific fields)",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "example": {
+                  "title": {
+                    "type": "text",
+                    "labelNL": "Titel",
+                    "labelEN": "Title",
+                    "isRequired": 1,
+                    "regex": null,
+                    "options": []
+                  },
+                  "type": {
+                    "type": "string",
+                    "labelNL": "RepoType",
+                    "labelEN": "RepoType",
+                    "isRequired": 1,
+                    "regex": null,
+                    "options": [
+                      "PublicationRecord",
+                      "LearningObject",
+                      "ResearchObject",
+                      "Dataset",
+                      "Project"
+                    ]
+                  },
+                  "institute": {
+                    "type": "uuid",
+                    "labelNL": "InstituteID",
+                    "labelEN": "InstituteID",
+                    "isRequired": 1,
+                    "regex": null,
+                    "options": [
+                      {
+                        "value": "37f9d11b-0a73-45b2-9855-150b7f57efa0",
+                        "title": "Title of institute"
+                      }
+                    ]
+                  },
+                  "subtitle": {
+                    "type": "text",
+                    "labelNL": "Ondertitel",
+                    "labelEN": "Subtitle",
+                    "isRequired": 0,
+                    "regex": null,
+                    "options": []
+                  },
+                  "summary": {
+                    "type": "textarea",
+                    "labelNL": "Samenvatting",
+                    "labelEN": "Summary",
+                    "isRequired": 0,
+                    "regex": null,
+                    "options": []
+                  },
+                  "files": {
+                    "type": "attachment",
+                    "labelNL": "Bestand",
+                    "labelEN": "File",
+                    "isRequired": 0,
+                    "regex": null,
+                    "options": []
+                  },
+                  "persons": {
+                    "type": "personinvolved",
+                    "labelNL": "Auteurs en betrokkenen",
+                    "labelEN": null,
+                    "isRequired": 0,
+                    "regex": null,
+                    "options": []
+                  },
+                  "owner": {
+                    "type": "uuid",
+                    "labelNL": "OwnerID",
+                    "labelEN": "OwnerID",
+                    "isRequired": 1,
+                    "regex": null,
+                    "options": []
+                  },
+                  "keywords": {
+                    "type": "dropdowntag",
+                    "labelNL": "Trefwoorden",
+                    "labelEN": "Keywords",
+                    "isRequired": 0,
+                    "regex": null,
+                    "options": []
+                  },
+                  "links": {
+                    "type": "repoitemlink",
+                    "labelNL": null,
+                    "labelEN": null,
+                    "isRequired": 0,
+                    "regex": null,
+                    "options": []
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/401"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/person": {
+      "post": {
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "Person"
+        ],
+        "summary": "Creates a person in SURFsharekit",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/person_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "example": {
+                  "id": "4e2b0cb8-2671-4d15-b5fa-19dd8e84e76a"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/401"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "Person"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "filter",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter using a JSON object.",
+            "required": false
+          }
+        ],
+        "summary": "Get person using a filter",
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/personListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/401"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "persons not found"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/delete": {
+      "delete": {
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "Repository item"
+        ],
+        "summary": "Deletes Repository item",
+        "description": "When making a /delete call, it's imperative to note that you can only delete items for which you are the owner. Furthermore, the deleted repoItem is moved to the trash bin and does not get permanently removed immediately. Instead, permanent deletion occurs after 30 days if the item remains in the trash bin, ensuring a grace period for potential recovery.",
+        "responses": {
+          "200": {
+            "description": "A RepoItem resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "repoItemID": {
+                      "type": "string",
+                      "example": "e38d3234-8f25-4049-89c4-e49d4401cbca"
+                    },
+                    "repoItem": {
+                      "type": "string",
+                      "example": "This is a title"
+                    },
+                    "repoItemInstitute": {
+                      "type": "string",
+                      "example": "Hogeschool Test"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/401"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "description": "Delete Repoitem request",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "repoItemID": {
+                    "type": "string",
+                    "example": "e38d3234-8f25-4049-89c4-e49d4401cbca"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/person/{ID}": {
+      "get": {
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "Person"
+        ],
+        "summary": "Get person by ID",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "ID",
+            "description": "The UUID of the person",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/personResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/401"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "person not found"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "400": {
+        "type": "object",
+        "description": "Missing required fields",
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "{error message description}"
+          }
+        }
+      },
+      "401": {
+        "type": "string",
+        "description": "Missing authorization to execute the call",
+        "example": "Missing Authorization Bearer token in header"
+      },
+      "CreateRepoItem": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "LearningObject"
+          },
+          "title": {
+            "type": "string",
+            "example": "Title of LearningObject"
+          },
+          "owner": {
+            "type": "string",
+            "example": "c39fb6ae-fcb9-4993-93ad-9caf39fb87ea"
+          },
+          "institute": {
+            "type": "string",
+            "example": "9bfb1cae-7d5e-4258-b23d-83ec9114ea3f"
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/File"
+            }
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Link"
+            }
+          },
+          "persons": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "example": "42bbe744-6f1f-4454-861e-9ba73dfcc08e"
+            }
+          },
+          "keywords": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "example": "Biology"
+            }
+          }
+        }
+      },
+      "File": {
+        "type": "object",
+        "properties": {
+          "fileId": {
+            "type": "string",
+            "example": "8c0c3cc3-cb72-4f4e-8c74-c32eb3436a3e"
+          },
+          "title": {
+            "type": "string",
+            "example": "Title of the file"
+          },
+          "access": {
+            "type": "string",
+            "example": "openaccess"
+          }
+        }
+      },
+      "Link": {
+        "type": "object",
+        "properties": {
+          "URL": {
+            "type": "string",
+            "example": "https://www.example.org"
+          },
+          "title": {
+            "type": "string",
+            "example": "Title of the Link"
+          },
+          "access": {
+            "type": "string",
+            "example": "openaccess"
+          }
+        }
+      },
+      "personResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "5f71ec26-48dc-46d6-be8b-7a78c191fb39"
+          },
+          "firstName": {
+            "type": "string",
+            "example": "John"
+          },
+          "surnamePrefix": {
+            "type": "string",
+            "example": "van der"
+          },
+          "surname": {
+            "type": "string",
+            "example": "Doe"
+          },
+          "email": {
+            "type": "string",
+            "example": "johndoe@example.org"
+          },
+          "institutes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "example": "ba42e19b-13ea-420e-a424-369f14a91eeb"
+                },
+                "title": {
+                  "type": "string",
+                  "example": "Title of Institute"
+                }
+              }
+            }
+          },
+          "position": {
+            "type": "string",
+            "example": "teacher"
+          },
+          "dai": {
+            "type": "string",
+            "example": "info:eu-repo/dai/nl/123456785"
+          },
+          "isni": {
+            "type": "string",
+            "example": "ISNI 0000 0001 2149 1740"
+          },
+          "orcid": {
+            "type": "string",
+            "example": "0000-0001-5109-3700"
+          },
+          "hogeschoolId": {
+            "type": "string",
+            "example": "ba42e19b-13ea-420e-a424-369f14a91eeb"
+          }
+        }
+      },
+      "person_post": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string",
+            "example": "John"
+          },
+          "surnamePrefix": {
+            "type": "string",
+            "example": "van der"
+          },
+          "surname": {
+            "type": "string",
+            "example": "Doe"
+          },
+          "institute": {
+            "type": "string",
+            "example": "0db366e1-f579-465e-8c1c-ea174c642b34"
+          },
+          "position": {
+            "type": "string",
+            "example": "teacher"
+          },
+          "email": {
+            "type": "string",
+            "example": "johnvanderdoe@email.com"
+          },
+          "dai": {
+            "type": "string",
+            "example": "info:eu-repo/dai/nl/123456785"
+          },
+          "isni": {
+            "type": "string",
+            "example": "ISNI 0000 0001 2149 1740"
+          },
+          "orcid": {
+            "type": "string",
+            "example": "0000-0001-5109-3700"
+          },
+          "hogeschoolId": {
+            "type": "string",
+            "example": "9b99f0a5-c2d8-4b14-81a6-d783ae2431e5"
+          }
+        }
+      },
+      "personListResponse": {
+        "type": "array",
+        "items": {
+          "oneOf": [
+            {
+              "$ref": "#/components/schemas/personResponse"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

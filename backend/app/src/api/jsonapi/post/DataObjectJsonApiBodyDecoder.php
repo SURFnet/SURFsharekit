@@ -183,7 +183,6 @@ class DataObjectJsonApiBodyDecoder {
                             ]]];
                         }
                     }
-
                     DB::get_conn()->transactionEnd();
                     return $dataObject::get_by_id($dataObject->ID); //to make sure nothing is done from cache
                 }

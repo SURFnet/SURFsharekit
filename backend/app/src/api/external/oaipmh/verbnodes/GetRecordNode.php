@@ -7,6 +7,7 @@ use SilverStripe\ORM\DB;
 use SilverStripe\ORM\ValidationException;
 use SimpleXMLElement;
 use SurfSharekit\Models\Cache_RecordNode;
+use SurfSharekit\Models\Channel;
 use SurfSharekit\Models\Helper\Logger;
 use SurfSharekit\Models\Helper\XMLHelper;
 use SurfSharekit\Models\Protocol;
@@ -14,16 +15,27 @@ use SurfSharekit\Models\RepoItem;
 use UuidExtension;
 
 class GetRecordNode extends OAIPMHVerbNode {
-    static function addTo(SimpleXMLElement $node, HttpRequest $request, $channel = null) {
-        $identifier = $request->getVar('identifier') ?: $request->postVar('identifier');
-        if (!$identifier) {
-            throw new BadArgumentException('Missing record identifier');
+    static function addTo(SimpleXMLElement $node, $request, $channel = null, $repoItem = null) {
+
+        if(is_null($repoItem)) {
+            $identifier = $request->getVar('identifier') ?: $request->postVar('identifier');
+            if (!$identifier) {
+                throw new BadArgumentException('Missing record identifier');
+            }
+            $metadataPrefix = $request->getVar('metadataPrefix') ?: $request->postVar('metadataPrefix');
+            if (!$metadataPrefix) {
+                throw new BadArgumentException('Missing metadataPrefix to describe record in');
+            }
+        } else {
+            $metadataPrefix = $channel->Protocol()->Prefix;
         }
-        $metadataPrefix = $request->getVar('metadataPrefix') ?: $request->postVar('metadataPrefix');
-        if (!$metadataPrefix) {
-            throw new BadArgumentException('Missing metadataPrefix to describe record in');
+
+        if(is_null($repoItem)) {
+            $purge = $request->getVar('purge') ?: $request->postVar('purge');
+        } else {
+            $purge = 0;
         }
-        $purge = $request->getVar('purge') ?: $request->postVar('purge');
+
         if ($purge) {
             $purge = intval($purge);
             set_time_limit(0); // increase time limit when purging
@@ -39,13 +51,20 @@ class GetRecordNode extends OAIPMHVerbNode {
             $channelFilter = $channelFilterArray['channelFilterString'];
             $channelJoin = $channelFilterArray['channelJoinString'];
         }
-        $repoItemUuid = OaipmhApiController::getRepoItemIDFromIdentifier($identifier);
+
+        if(is_null($repoItem)) {
+            $repoItemUuid = OaipmhApiController::getRepoItemIDFromIdentifier($identifier);
+        } else {
+            $repoItemUuid = $repoItem->Uuid;
+        }
 
         $repoItemIsAvailable = DB::prepared_query("SELECT * FROM SurfSharekit_RepoItem 
                         $channelJoin
                         WHERE SurfSharekit_RepoItem.IsRemoved = 0 AND SurfSharekit_RepoItem.IsArchived = 0 AND SurfSharekit_RepoItem.Uuid = ? $channelFilter", [$repoItemUuid])->numRecords();
 
-        $repoItem = UuidExtension::getByUuid(RepoItem::class, $repoItemUuid);
+        if(is_null($repoItem)) {
+            $repoItem = UuidExtension::getByUuid(RepoItem::class, $repoItemUuid);
+        }
 
         if (!$repoItemIsAvailable) {
             //Item isn't added to this channel or inactive
@@ -88,11 +107,20 @@ class GetRecordNode extends OAIPMHVerbNode {
             //create recordnode for repoitem
             $recordNode = $getRecordNode->addChild('record');
             $headerNode->addTo($recordNode);
+            $cachedNode = Cache_RecordNode::get()->filter(['RepoItemID' => $repoItem->ID, 'ChannelID' => ($channel ? $channel->ID : -1)])->first();
+            if ($cachedNode) {
+                $cachedNode->Deleted = true;
+                $cachedNode->write();
+            }
             return;
         }
 
+        if ($channel && $channel->exists()) {
+            $protocol = Protocol::get()->filter(['Prefix' => $metadataPrefix, 'ID' => $channel->ProtocolID, 'SystemKey' => 'OAI-PMH'])->first();
+        } else {
+            $protocol = Protocol::get()->filter(['Prefix' => $metadataPrefix, 'SystemKey' => 'OAI-PMH'])->first();
+        }
 
-        $protocol = Protocol::get()->filter(['Prefix' => $metadataPrefix])->filter(['SystemKey' => 'OAI-PMH'])->first();
         Logger::debugLog("Add to : " . $repoItem->Uuid . ' : purge=' . $purge);
         // use cache if not purged (by job)
         $cachedNode = Cache_RecordNode::get()->where(['Endpoint' => 'OAI', 'ProtocolID' => $protocol->ID, 'RepoItemID' => $repoItem->ID, 'CachedLastEdited' => $repoItem->LastEdited]);
@@ -127,13 +155,18 @@ class GetRecordNode extends OAIPMHVerbNode {
             $cachedNode->setField('Endpoint', 'OAI');
             $cachedNode->setField('RepoItemID', $repoItem->ID);
             $cachedNode->setField('ProtocolID', $protocol->ID);
+            $cachedNode->setField('Deleted', false);
+            $cachedNode->setField('DeleteWebhookSent', false);
             if ($channel) {
                 $cachedNode->setField('ChannelID', $channel->ID);
             }
         }
+
         $cachedNode->setField('Data', (string)$recordNode->asXML());
         $cachedNode->setField('ProtocolVersion', $protocol->Version);
         $cachedNode->setField('CachedLastEdited', $repoItem->LastEdited);
+        $cachedNode->setField('Deleted', false);
+        $cachedNode->setField('DeleteWebhookSent', false);
         try {
             $cachedNode->write();
         } catch (ValidationException $e) {
@@ -141,51 +174,28 @@ class GetRecordNode extends OAIPMHVerbNode {
         }
     }
 
-    static function addTosru(SimpleXMLElement $node, HttpRequest $request) {
-        $identifier = $request->getVar('identifier') ?: $request->postVar('identifier');
-        if (!$identifier) {
-            throw new BadArgumentException('Missing record identifier');
-        }
-        $metadataPrefix = $request->getVar('metadataPrefix') ?: $request->postVar('metadataPrefix');
-        if (!$metadataPrefix) {
-            throw new BadArgumentException('Missing metadataPrefix to describe record in');
-        }
+    public static function repoItemPassesFilter(Channel $channel, RepoItem $repoItem): bool {
+        if ($isXML = $channel->Protocol()->SystemKey == 'OAI-PMH') {
+            $repoItemUuid = $repoItem->Uuid;
 
-        $repoItemUuid = OaipmhApiController::getRepoItemIDFromIdentifier($identifier);
-        $repoItem = UuidExtension::getByUuid(RepoItem::class, $repoItemUuid);
-        if (!$repoItem || !$repoItem->exists()) {
-            throw new IdDoesNotExistException();
-        }
+            $channelFilterArray = static::getChannelFilter($channel);
+            if (is_null($channelFilterArray)) {
+                $channelFilter = '';
+                $channelJoin = '';
+            } else {
+                $channelFilter = $channelFilterArray['channelFilterString'];
+                $channelJoin = $channelFilterArray['channelJoinString'];
+            }
 
-        $allProtocolsForRepoItem = DB::query(
-            "SELECT DISTINCT SurfSharekit_Protocol.ID AS ProtocolID, SurfSharekit_Protocol.Prefix AS ProtocolPrefix FROM SurfSharekit_RepoItem
-            LEFT JOIN SurfSharekit_ProtocolNode ON SurfSharekit_ProtocolNode.MetaFieldID = SurfSharekit_TemplateMetaField.MetaFieldID
-            LEFT JOIN SurfSharekit_Protocol ON SurfSharekit_Protocol.ID = SurfSharekit_ProtocolNode.ProtocolID
-            WHERE SurfSharekit_RepoItem.Uuid = '$repoItemUuid'
-            AND SurfSharekit_Protocol.SystemKey = 'OAI-PMH'");
+            $repoItemIsAvailable = DB::prepared_query("SELECT * FROM SurfSharekit_RepoItem 
+                        $channelJoin
+                        WHERE SurfSharekit_RepoItem.IsRemoved = 0 AND SurfSharekit_RepoItem.IsArchived = 0 AND SurfSharekit_RepoItem.Uuid = ? $channelFilter", [$repoItemUuid])->numRecords();
 
-        $allProtocolPrefixesForRepoItem = $allProtocolsForRepoItem->column('ProtocolPrefix');
-
-        if (count($allProtocolPrefixesForRepoItem) == 0) {
-            throw new NoMetadataFormatsException('The requested item has no metadata descriptions available');
+            if ($repoItemIsAvailable) {
+                return true;
+            }
         }
 
-        if (!in_array($metadataPrefix, $allProtocolPrefixesForRepoItem)) {
-            throw new CannotDisseminateFormatException("$metadataPrefix is not a valid prefix");
-        }
-
-        $getRecordNode = $node->addChild('GetRecord');
-        //create recordnode for repoitem
-        $recordNode = $getRecordNode->addChild('srw:record');
-        //Add identifier header to getRecord node
-        $headerNode = new IdentifierNode($repoItem->Uuid, $repoItem->LastEdited, $repoItem->Institute->Uuid);
-        $headerNode->addToSru($recordNode);
-        $metadataNode = $recordNode->addChild('srw:recordData');
-
-        //add actual metadata information to getRecord node
-        $protocol = Protocol::get()->filter(['Prefix' => $metadataPrefix])->filter(['SystemKey' => 'OAI-PMH'])->first();
-        foreach ($protocol->ProtocolNodes()->filter('ParentNodeID', 0) as $protocolRootNode) {
-            $protocolRootNode->addTo($repoItem, $metadataNode);
-        }
+        return false;
     }
 }

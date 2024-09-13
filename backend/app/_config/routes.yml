@@ -4,18 +4,40 @@ After: framework/_config/routes#coreroutes
 ---
 SilverStripe\Control\Director:
   rules:
+
+    # Upload API
+    'api/upload/v1/discover': 'SurfSharekit\Api\Upload\Controllers\UploadApiDiscoveryController'
+    'api/upload/v1/repoitems': 'SurfSharekit\Api\Upload\Controllers\UploadApiRepoItemController'
+    'api/upload/v1/persons': 'SurfSharekit\Api\Upload\Controllers\UploadApiPersonController'
+    'api/upload/v1/files': 'SurfSharekit\Api\Upload\Controllers\UploadApiFileController'
+    'api/upload/v1/auth/token': 'SurfSharekit\Api\Upload\Controllers\UploadApiTokenController'
+
+    # Upload API Docs
+    'api/upload/v1/docs': 'SurfSharekit\Api\Upload\Controllers\UploadApiDocsController'
+
+    # Deprecated
+    'api/repoitemupload/v1//$Action!': 'SurfSharekit\Api\RepoItemUploadApiController'
+
     'api/v1/files//$Action/$ID/$Relations/$RelationNam': 'SurfSharekit\Api\FileJsonApiController'
     'api/v1/generateAccessToken': 'SurfSharekit\Api\AccessTokenApiController'
+    'api/v1/uploadPart//$Action!': 'SurfSharekit\Api\S3FileUploadPartApiController'
+    'api/v1/upload//$Action!': 'SurfSharekit\Api\S3FileUploadApiController'
     'api/v1/reports': 'SurfSharekit\Api\ReportsJsonApiController'
     'api/v1/search': 'SurfSharekit\Api\SearchApiController'
     'api/v1/upload': 'SurfSharekit\Api\UploadFileApiController'
-    'api/v1/login': 'SurfSharekit\Api\ConextLoginApiController'
+    'api/v1/login/conext': 'SurfSharekit\Api\ConextLoginApiController'
+    'api/v1/login/sram': 'SurfSharekit\Api\SramLoginApiController'
     'api/v1/csv': 'SurfSharekit\Api\CSVJsonApiController'
     'api/v1/operations': 'SurfSharekit\Api\OperationsJsonApiController'
-    'api/oaipmh/v1': 'SurfSharekit\Api\OaipmhApiController'
-    'api/sru/v1': 'SurfSharekit\Api\SruApiController'
+#    'api/oaipmh/v1': 'SurfSharekit\Api\OaipmhApiController'
+    'api/oaipmh/v1//$Action': 'SurfSharekit\Api\OaipmhSwaggerApiController'
+#    'api/sru/v1': 'SurfSharekit\Api\SruApiController'
     'api/v1/repoItems//$Uuid/doi': 'SurfSharekit\Api\DoiApiController'
+#    'api/jsonapi/v1//$Action/$ID/$Relations/$RelationName': 'SurfSharekit\Api\ExternalJsonApiController'
     'api/jsonapi/v1//$Action/$ID/$Relations/$RelationName': 'SurfSharekit\Api\ExternalJsonApiController'
+    'api/jsonapi/repoItems/v1//$Action': 'SurfSharekit\Api\ExternalJsonApiSwaggerController'
+    'api/jsonapi/persons/v1//$Action': 'SurfSharekit\Api\ExternalPersonJsonApiController'
+    'api/v1/actions//$Action/$ID/$Relations/$RelationName': 'SurfSharekit\Api\ActionJsonApiController'
     'api/v1//$Action/$ID/$Relations/$RelationName': 'SurfSharekit\Api\InternalJsonApiController'
     'api/oaipmh/channel/v1//$channel': 'SurfSharekit\Api\OaipmhChannelApiController'
     'api/jsonapi/channel/v1//$channel/$Action/$ID/$Relations/$RelationName': 'SurfSharekit\Api\ExternalChannelJsonApiController'

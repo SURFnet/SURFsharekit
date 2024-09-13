@@ -15,7 +15,10 @@ use SilverStripe\Assets\FileNameFilter;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Security\Group;
 use SilverStripe\Security\Security;
+use SurfSharekit\Models\Helper\Logger;
+use SurfSharekit\Models\Helper\MimetypeHelper;
 use SurfSharekit\Models\InstituteImage;
+use SurfSharekit\Models\MimetypeObject;
 use SurfSharekit\Models\Person;
 use SurfSharekit\Models\PersonImage;
 use SurfSharekit\Models\RepoItemFile;
@@ -57,13 +60,20 @@ class UploadFileApiController extends JsonApiController {
         $request = $this->getRequest();
         $this->classToDescriptionMap = $this->getClassToDescriptionMap();
         $this->getResponse()->addHeader("content-type", "application/vnd.api+json");
-        $mb = 1000000;// bytes
+        $kb = 1024; // 1 KiB
+        $mb = $kb * 1024; // 1 MiB
+        $gb = $mb * 1024; // 1 GiB
+
+        // Windows: 500 MB = 524,288,000 Bytes
+        // MacOS: 500 MB = 500,000,000 Bytes
+
+        // MacOS displays MiB's but uses the MB postfix, which is incorrect. Beware of this.
         foreach ($_FILES as $postFile) {
             $internaFileType = $this->request->param('Action');
             $this->postFile = $postFile;
             $bytesOfFile = $this->postFile['size'];
-            if ($bytesOfFile > (500 * $mb)) {
-                return JsonApiController::createJsonApiBodyResponseFrom(static::unsupportedAction('File too large, please keep it max 500mb supported'), 400);
+            if ($bytesOfFile > (10 * $gb)) {
+                return JsonApiController::createJsonApiBodyResponseFrom(static::unsupportedAction('File too large, max 10,0 GB supported'), 400);
             }
             $response = $this->postToObject($internaFileType, $request, null, null);
             return JsonApiController::createJsonApiBodyResponseFrom($response, 200);
@@ -130,7 +140,9 @@ class UploadFileApiController extends JsonApiController {
         /***
          * @var $fileTypeToCreate File
          */
+        Logger::debugLog('Start creating file');
         $file = $fileTypeToCreate::create();
+        Logger::debugLog('Start publishing file');
         $file->publishFile();
         $fileTypeExtension = null;
 
@@ -148,7 +160,9 @@ class UploadFileApiController extends JsonApiController {
 
         if(is_null($fileTypeExtension)){
             $ext = pathinfo($this->postFile['name'], PATHINFO_EXTENSION);
-            $allowedExtensions = Config::inst()->get(File::class, 'allowed_extensions');
+
+            $allowedExtensions = MimetypeHelper::getWhitelistedExtensions();
+//            $allowedExtensions = Config::inst()->get(File::class, 'allowed_extensions');
 //            Logger::debugLog($allowedExtensions);
 //            Logger::debugLog($ext);
             if(in_array($ext, $allowedExtensions)){
@@ -157,12 +171,14 @@ class UploadFileApiController extends JsonApiController {
         }
 
         if ($fileTypeExtension) {
+            Logger::debugLog('Start setting from localfile');
             $uuid = Uuid::uuid4()->toString();
             $fileName = FileNameFilter::singleton()->filter($this->postFile['name']);
             $file->setFromLocalFile($this->postFile['tmp_name'], "file/" . $uuid . '/' . $fileName);
             $file->setField('Uuid', $uuid);
+            Logger::debugLog('Start writing file');
             $file->write();
-
+            Logger::debugLog('End writing file');
             $this->getResponse()->setStatusCode(200);
 
             try {

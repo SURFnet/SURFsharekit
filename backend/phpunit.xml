@@ -2,4 +2,7 @@
     <testsuite name="Default">
         <directory>app/tests</directory>
     </testsuite>
+    <testsuite name="upload-api">
+        <directory>app/tests/api/upload</directory>
+    </testsuite>
 </phpunit>

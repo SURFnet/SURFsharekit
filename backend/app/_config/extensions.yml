@@ -2,6 +2,10 @@
 Name: surf-sharekit-uuiddataobject-config
 ---
 
+Silverstripe\SiteConfig\SiteConfig:
+  extensions:
+    - SharekitSiteConfig
+
 #api and conext Member Extensions
 SilverStripe\Security\Member:
   extensions:
@@ -11,8 +15,6 @@ SilverStripe\Security\Member:
     - UuidRelationExtension
     - SurfSharekit\Models\DataObjectAuditExtension
     - SilverStripe\Versioned\Versioned.versioned
-SurfShareKit\Models\Person:
-  extensions:
     - SurfSharekit\Models\MemberPermisionExtension
 
 SilverStripe\Assets\File:
@@ -28,6 +30,14 @@ SilverStripe\Security\Group:
     - UuidExtension
     - UuidRelationExtension
     - SurfSharekit\Models\DataObjectAuditExtension
+
+SilverStripe\Security\PermissionRole:
+  extensions:
+    - SurfShareKit\Models\PermissionRoleExtension
+
+SilverStripe\Security\Permission:
+  extensions:
+    - SurfShareKit\Models\PermissionExtension
 
 #uuiddataobject Objects
 SurfSharekit\Models\MetaField:
@@ -75,6 +85,11 @@ SurfSharekit\Models\TemplateSection:
     - UuidExtension
     - UuidRelationExtension
     - SurfSharekit\Models\DataObjectAuditExtension
+SurfSharekit\Models\TemplateStep:
+  extensions:
+    - UuidExtension
+    - UuidRelationExtension
+    - SurfSharekit\Models\DataObjectAuditExtension
 SurfSharekit\Models\DefaultMetaFieldOptionPart:
   extensions:
     - UuidExtension
@@ -85,9 +100,29 @@ SurfSharekit\Models\Institute:
     - UuidExtension
     - UuidRelationExtension
     - SurfSharekit\Models\DataObjectAuditExtension
+SurfSharekit\Models\PersonConfig:
+  extensions:
+    - UuidExtension
+    - UuidRelationExtension
+    - SurfSharekit\Models\DataObjectAuditExtension
+SurfSharekit\Models\BulkAction:
+  extensions:
+    - UuidExtension
+    - UuidRelationExtension
+    - SurfSharekit\Models\DataObjectAuditExtension
+SurfSharekit\Models\Task:
+  extensions:
+    - UuidExtension
+    - UuidRelationExtension
+    - SurfSharekit\Models\DataObjectAuditExtension
 SurfSharekit\Models\MigrationLog:
   extensions:
     - UuidExtension
+SurfSharekit\Models\Claim:
+  extensions:
+    - SurfSharekit\Models\DataObjectAuditExtension
+    - UuidExtension
+    - UuidRelationExtension
 SurfSharekit\Models\RepoItemSummary:
   extensions:
     - UuidRelationExtension
@@ -97,3 +132,11 @@ SilverStripe\Admin\LeftAndMain:
 SilverStripe\Security\MemberAuthenticator\LostPasswordHandler:
   extensions:
     - LostPasswordExtension
+SurfSharekit\Models\UploadApiClient:
+  extensions:
+    - UuidExtension
+    - UuidRelationExtension
+SurfSharekit\Models\UploadApiClientConfig:
+  extensions:
+    - UuidExtension
+    - UuidRelationExtension

@@ -18,6 +18,7 @@ use RepoItemSummaryJsonApiDescription;
 use SilverStripe\ORM\DB;
 use SilverStripe\Security\Group;
 use SilverStripe\Security\Security;
+use SurfSharekit\constants\RoleConstant;
 use SurfSharekit\Models\DefaultMetaFieldOptionPart;
 use SurfSharekit\Models\Helper\Constants;
 use SurfSharekit\Models\Institute;
@@ -100,7 +101,7 @@ class SearchApiController extends JsonApiController {
         $extendedSearch = false;
         foreach (Security::getCurrentUser()->Groups() as $group) {
             foreach ($group->Roles() as $role) {
-                if (!in_array($role->Title, [Constants::TITLE_OF_STUDENT_ROLE, Constants::TITLE_OF_MEMBER_ROLE])) {
+                if (!in_array($role->Title, [RoleConstant::STUDENT, RoleConstant::MEMBER])) {
                     $extendedSearch = true;
                     break;
                 }
@@ -136,6 +137,14 @@ class SearchApiController extends JsonApiController {
                 return $this->createJsonApiBodyResponseFrom(static::invalidFiltersJsonApiBodyError(), 400);
             }
             $this->filters = $filtersPerAttribute;
+        }
+
+        if ($requestVars && isset($requestVars['additionalFilter'])) {
+            $additionalFiltersPerAttribute = $requestVars['additionalFilter'];
+            if (!is_array($additionalFiltersPerAttribute)) {
+                return $this->createJsonApiBodyResponseFrom(static::invalidAdditionalFiltersJsonApiBodyError(), 400);
+            }
+            $this->filters = $additionalFiltersPerAttribute;
         }
 
         if ($requestVars && isset($requestVars['page'])) {
@@ -178,7 +187,7 @@ class SearchApiController extends JsonApiController {
             $repoItems = InstituteScoper::getAll(RepoItemSummary::class);
             $repoItemDescription = new RepoItemSummaryJsonApiDescription();
             $repoItems = $repoItemDescription->applyGeneralFilter($repoItems);
-            $repoItems = $repoItems->whereAny(["SurfSharekit_RepoItem.RepoType = 'PublicationRecord'", "SurfSharekit_RepoItem.RepoType = 'ResearchObject'", "SurfSharekit_RepoItem.RepoType = 'LearningObject'"]);
+            $repoItems = $repoItems->whereAny(["SurfSharekit_RepoItem.RepoType = 'PublicationRecord'", "SurfSharekit_RepoItem.RepoType = 'ResearchObject'", "SurfSharekit_RepoItem.RepoType = 'LearningObject'", "SurfSharekit_RepoItem.RepoType = 'Dataset'", "SurfSharekit_RepoItem.RepoType = 'Project'"]);
             if ($filterOnIsRemoved != null) {
                 $repoItems = $repoItems->where(['SurfSharekit_RepoItem.IsRemoved' => $filterOnIsRemoved]);
             }

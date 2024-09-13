@@ -2,6 +2,8 @@
 
 use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
+use SilverStripe\View\ViewableData;
+use SurfSharekit\Models\SimpleCacheItem;
 
 const RELATIONSHIP_GET_RELATED_OBJECTS_METHOD = 'RELATIONSHIP_DATA_OBJECT_FIELD'; //method to getRelated object with
 const RELATIONSHIP_RELATED_OBJECT_CLASS = 'RELATIONSHIP_CLASS'; //type of dataobject that related object is
@@ -14,6 +16,7 @@ abstract class DataObjectJsonApiDescription {
         'EQ' => '=',
         'NEQ' => '!=',
         'LIKE' => 'LIKE',
+        'NOT LIKE' => 'NOT LIKE',
         'LT' => '<',
         'LE' => '<=',
         'GT' => '>',
@@ -107,7 +110,7 @@ abstract class DataObjectJsonApiDescription {
                 if (isset(self::$filterModeMap[$mode])) {
                     $joinedQuery = $whereFunction($joinedQuery, $modeValue, self::$filterModeMap[$mode]);
                 } else {
-                    throw new Exception("$mode is an invalid filter modifier, use on of: [EQ, NEQ, LIKE, LT, LE, GT, GE]");
+                    throw new Exception("$mode is an invalid filter modifier, use on of: [EQ, NEQ, LIKE, NOT LIKE, LT, LE, GT, GE]");
                 }
             }
             return $joinedQuery;
@@ -143,13 +146,32 @@ abstract class DataObjectJsonApiDescription {
      * @return array
      * Method to loop through all @see DataObjectJsonApiDescription::$fieldToAttributeMap to describe fields of a single dataobject to JsonApi attributes
      */
-    public function describeAttributesOfDataObject(DataObject $dataObject) {
+    public function describeAttributesOfDataObject(ViewableData $dataObject) {
         $attributes = [];
         foreach ($this->fieldToAttributeMap as $field => $attribute) {
+            $isCachable = false;
+            if (property_exists($dataObject, 'jsonApiCachableAttributes') && $jsonApiCachableAttributes = $dataObject::$jsonApiCachableAttributes) {
+                if (in_array($field, $jsonApiCachableAttributes)) {
+                    $isCachable = true;
+                }
+            }
+
+            if ($isCachable) {
+                $SimpleCacheItem = SimpleCacheItem::get()->filter(['DataObjectID' => $dataObject->ID, 'Key' => $field])->first();
+                if ($SimpleCacheItem && $SimpleCacheItem->exists()) {
+                    $attributes[$attribute] = $SimpleCacheItem->Value;
+                    continue;
+                }
+            }
+
             if (is_int($field)) {
                 $attributes[$attribute] = $this->describeAttribute($dataObject, $attribute);
             } else {
                 $attributes[$attribute] = $dataObject->$field;
+            }
+
+            if ($isCachable) {
+                SimpleCacheItem::cacheFor($dataObject, $field, $attributes[$attribute]);
             }
         }
         return $attributes;
@@ -166,7 +188,7 @@ abstract class DataObjectJsonApiDescription {
             foreach ($fieldsToSearchIn as $searchField) {
                 if (isset($filterableFields[$searchField])) {
                     $columnDescription = $filterableFields[$searchField];
-                    if ($modifier == '=' && $filterValue == 'NULL') {
+                    if ($modifier == '=' && $filterValue === 'NULL') {
                         $filterAnyArray[] = $columnDescription . ' IS NULL';
                     } else {
                         $filterAnyArray[$columnDescription . ' ' . $modifier . ' ?'] = $filterValue;
@@ -207,7 +229,11 @@ abstract class DataObjectJsonApiDescription {
     public function cache($dataObject, array $dataDescription) {
     }
 
-    public function describeMetaOfDataObject(DataObject $dataObject) {
+    public function describeMetaOfDataObject(ViewableData $dataObject) {
         return null;
+    }
+
+    public function getPossibleFilters(DataList $objectsToDescribe): array {
+        return [];
     }
 }

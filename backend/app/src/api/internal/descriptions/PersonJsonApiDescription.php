@@ -3,6 +3,8 @@
 use SilverStripe\ORM\DataList;
 use SilverStripe\Security\Group;
 use SurfSharekit\Api\SearchApiController;
+use SurfSharekit\Models\Institute;
+use SurfSharekit\Models\PersonConfig;
 use SurfSharekit\Models\PersonImage;
 
 class PersonJsonApiDescription extends DataObjectJsonApiDescription {
@@ -36,23 +38,34 @@ class PersonJsonApiDescription extends DataObjectJsonApiDescription {
         "HasFinishedOnboarding" => 'hasFinishedOnboarding',
         "IsEmailEditable" => 'isEmailEditable',
         "InstituteTitles" => 'institutes',
-        "LastEdited" => "lastEdited"
+        "LastEdited" => "lastEdited",
+        "RootInstitutesSummary" => "rootInstitutesSummary",
+        "DisableEmailChange" => "disableEmailChange",
+        'LastEditorSummary' => 'lastEditor',
+        'CreatorSummary' => 'creator',
     ];
 
     public $hasOneToRelationMap = [
         'image' => [
             RELATIONSHIP_GET_RELATED_OBJECTS_METHOD => 'PersonImage',
             RELATIONSHIP_RELATED_OBJECT_CLASS => PersonImage::class
+        ],
+        'config' => [
+            RELATIONSHIP_GET_RELATED_OBJECTS_METHOD => 'PersonConfig',
+            RELATIONSHIP_RELATED_OBJECT_CLASS => PersonConfig::class
         ]
     ];
 
     public $hasManyToRelationsMap = [
-        'groups' =>
-            [
-                RELATIONSHIP_GET_RELATED_OBJECTS_METHOD => 'Groups',
-                RELATIONSHIP_RELATED_OBJECT_CLASS => Group::class,
-                RELATIONSHIP_REMOVE_PERMISSION_METHOD => 'canRemoveGroup'
-            ]
+        'groups' => [
+            RELATIONSHIP_GET_RELATED_OBJECTS_METHOD => 'Groups',
+            RELATIONSHIP_RELATED_OBJECT_CLASS => Group::class,
+            RELATIONSHIP_REMOVE_PERMISSION_METHOD => 'canRemoveGroup'
+        ],
+        'rootInstitutes' => [
+            RELATIONSHIP_GET_RELATED_OBJECTS_METHOD => 'RootInstitutes',
+            RELATIONSHIP_RELATED_OBJECT_CLASS => Institute::class,
+        ],
     ];
 
     //POST information
@@ -67,6 +80,7 @@ class PersonJsonApiDescription extends DataObjectJsonApiDescription {
         'researchGateUrl' => 'ResearchGateUrl',
         'city' => 'City',
         'skipEmail' => 'SkipEmail',
+        'disableEmailChange' => 'DisableEmailChange',
         'phone' => 'Phone',
         "title" => 'FormOfAddress',
         "academicTitle" => 'AcademicTitle',
@@ -78,6 +92,7 @@ class PersonJsonApiDescription extends DataObjectJsonApiDescription {
         "hogeschoolId" => 'HogeschoolID',
         "position" => 'Position',
         "institute" => 'BaseInstitute',
+        "isInstituteKnown" => "IsInstituteKnown",
         "discipline" => 'BaseDiscipline',
         "hasFinishedOnboarding" => 'HasFinishedOnboarding',
     ];
@@ -103,7 +118,7 @@ class PersonJsonApiDescription extends DataObjectJsonApiDescription {
                     throw new Exception('Only ?filter[group][EQ] or ...[NEQ] supported');
                 }
 
-                return $datalist->leftJoin('Group_Members', '`Group_Members`.`MemberID` = `Member`.`ID`')
+                 return $datalist->leftJoin('Group_Members', '`Group_Members`.`MemberID` = `Member`.`ID`')
                     ->leftJoin('Group', '`Group`.`ID` = `Group_Members`.`GroupID`')
                     ->where("`Group`.`Uuid` $modifier '$filterValue'");
             };
@@ -143,9 +158,14 @@ class PersonJsonApiDescription extends DataObjectJsonApiDescription {
                 $searchTagsWithoutPlus = SearchApiController::getSearchTagsFromSearch($filterValue);
 
                 foreach ($searchTagsWithoutPlus as $tag) {
+                    if(stripos($tag, '-') !== false){
+                        $matchTag =  '"' . $tag . '"';
+                    }else{
+                        $matchTag =  $tag . '*';
+                    }
                     $datalist = $datalist->whereAny(
-                        ["(MATCH(Member.FirstName, Member.Surname) AGAINST(? IN BOOLEAN MODE) AND (Member.FirstName like ? or Member.Surname like ?))" => ['+' . $tag . '*','%' . $tag . '%','%' . $tag . '%'],
-                            "(MATCH(Member.FirstName, Member.SurnamePrefix, Member.Surname) AGAINST(? IN BOOLEAN MODE) AND (Member.FirstName like ? or Member.SurnamePrefix like ? or Member.Surname like ?))" => ['+' . $tag . '*','%' . $tag . '%','%' . $tag . '%','%' . $tag . '%']]);
+                        ["(MATCH(Member.FirstName, Member.Surname) AGAINST(? IN BOOLEAN MODE) AND (Member.FirstName like ? or Member.Surname like ?))" => ['+' . $matchTag,'%' . $tag . '%','%' . $tag . '%'],
+                            "(MATCH(Member.FirstName, Member.SurnamePrefix, Member.Surname) AGAINST(? IN BOOLEAN MODE) AND (Member.FirstName like ? or Member.SurnamePrefix like ? or Member.Surname like ?))" => ['+' . $matchTag,'%' . $tag . '%','%' . $tag . '%','%' . $tag . '%']]);
                 }
                 return $datalist;
             };

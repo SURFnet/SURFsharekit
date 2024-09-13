@@ -2,11 +2,12 @@
 
 namespace SurfSharekit\Models;
 
+use Exception;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\DB;
-use SilverStripe\ORM\ValidationException;
-use SilverStripe\Security\Security;
+use SilverStripe\ORM\Queries\SQLUpdate;
 use SilverStripe\Versioned\Versioned;
+use SurfSharekit\Models\Helper\Constants;
 use SurfSharekit\Models\Helper\Logger;
 
 /**
@@ -151,8 +152,22 @@ class RepoItemMetaFieldValue extends DataObject {
     protected function onAfterWrite() {
         parent::onAfterWrite();
         $this->updateAttributeOfRepoItems();
+        $this->updateAttributeOfRepoItemFiles();
         if (!$this->DisableForceWriteRepoItem) {
-            $this->forceWriteRepoItem();
+            $this->forceWriteRepoItem(true);
+        }
+
+        if ($this->isChanged('IsRemoved') && $this->IsRemoved == 1 && $this->RepoItemID) {
+            // Remove Linked RepoItem when RepoItemMetaFieldValue is set to IsRemoved = 1
+            $links = RepoItemMetaFieldValue::get()->filter(['RepoItemID' => $this->RepoItemID, 'IsRemoved' => 0])->count();
+            // if no linked repoitem found, than remove repoitemrepoitemfile
+            if ($links < 1) {
+                $repoItemToDelete = RepoItem::get()->byID($this->RepoItemID);
+                if ($repoItemToDelete && in_array($repoItemToDelete->RepoType, Constants::SECONDARY_REPOTYPES)) {
+                    $repoItemToDelete->IndirectDelete = true;
+                    $repoItemToDelete->delete();
+                }
+            }
         }
     }
 
@@ -169,7 +184,6 @@ class RepoItemMetaFieldValue extends DataObject {
 
         $fieldName = null;
 
-        //Logger::debugLog($metaField->AttributeKey);
         switch ($metaField->AttributeKey) {
             case 'Title':
                 $fieldName = 'Title';
@@ -188,6 +202,9 @@ class RepoItemMetaFieldValue extends DataObject {
                 break;
             case 'PublicationDate':
                 $fieldName = 'PublicationDate';
+                break;
+            case 'AccessRight':
+                $fieldName = 'AccessRight';
                 break;
             case 'SubType':
                 $fieldName = 'SubType';
@@ -227,6 +244,7 @@ class RepoItemMetaFieldValue extends DataObject {
                 SET ri.$fieldName = ?
                 WHERE rimfv.ID = $this->ID";
                 DB::prepared_query($updateQuery, [$value]);
+                Logger::debugLog($fieldName . $value);
             } else {
                 foreach ($repoItems as $repoItem) {
                     $repoItem->$fieldName = $value;
@@ -235,10 +253,64 @@ class RepoItemMetaFieldValue extends DataObject {
         }
     }
 
-    private function forceWriteRepoItem() {
+    private function updateAttributeOfRepoItemFiles() {
+        if ($this->IsRemoved) {
+            return;
+        }
+        $repoItemMetaField = $this->RepoItemMetaField();
+        $metaField = $repoItemMetaField->MetaField();
+
+        $fieldName = null;
+
+        switch ($metaField->AttributeKey) {
+            case 'AccessRight':
+                $fieldName = 'AccessRight';
+                $value = $this->MetaFieldOption->Value;
+                break;
+        }
+
+        if ($fieldName === null) {
+            return;
+        }
+
+        $parentRepoItem = $this->RepoitemMetaField()->RepoItem();
+
+        if ($parentRepoItem->RepoType !== 'RepoItemRepoItemFile') {
+            return;
+        }
+
+        /** @var RepoItemMetaField $repoItemMetaFieldFile */
+        if (null === $repoItemMetaFieldFile = $parentRepoItem->RepoItemMetaFields()->filter('RepoItemMetaFieldValues.RepoItemFileID:not', 0)->first()) {
+            return;
+        }
+
+        /** @var RepoItemMetaFieldValue $repoItemMetaFieldValueFile */
+        if (null === $repoItemMetaFieldValueFile = $repoItemMetaFieldFile->RepoItemMetaFieldValues()->filter('RepoItemFileID:not', 0)->first()) {
+            return;
+        }
+
+        /** @var RepoItemFile $repoItemFile */
+        if (null === $repoItemFile = $repoItemMetaFieldValueFile->RepoItemFile) {
+            return;
+        }
+
         try {
-            $this->RepoitemMetaField()->RepoItem()->write(false, false, true);
-        } catch (ValidationException $e) {
+            RepoItemFile::get_by_id($repoItemFile->ID)->update([$fieldName => $value ?? null])->write();
+        } catch (Exception $exception) {
+            // no-op
+            Logger::errorLog("Failed to set $fieldName with value $value for repoItemFile $repoItemFile->ID");
+        }
+    }
+
+    private function forceWriteRepoItem($disableRepoItemValidation = false) {
+        try {
+            $repoItem = $this->RepoitemMetaField()->RepoItem();
+            if($disableRepoItemValidation) {
+                $repoItem->SkipValidation = true;
+            }
+            Logger::debugLog("Force writing $repoItem->Uuid from RepoItemMetaFieldValue $this->Uuid; skipValidation = $disableRepoItemValidation");
+           $repoItem->write(false, false, true);
+        } catch (Exception $e) {
             Logger::debugLog($e->getMessage());
         }
     }

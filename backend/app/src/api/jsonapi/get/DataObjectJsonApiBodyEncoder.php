@@ -44,7 +44,7 @@ class DataObjectJsonApiBodyEncoder {
      * @throws Exception
      * This method does the same as @see DataObjectJsonApiBodyEncoder::dataObjectToRelationJsonApiBodyArray() but for a collection of dataObjects
      */
-    public static function dataListToMultipleObjectsJsonApiBodyArray(DataList $dataList, DataObjectJsonApiEncoder $descriptor, string $contextURL): array {
+    public static function dataListToMultipleObjectsJsonApiBodyArray(DataList $dataList, DataObjectJsonApiEncoder $descriptor, array $possibleFilters, string $contextURL): array {
         if (is_null($descriptor->totalResultCount)) {
             $canViewMethod = function (DataObject $viewMaybeObj) {
                 return $viewMaybeObj->canView(Security::getCurrentUser());
@@ -56,6 +56,8 @@ class DataObjectJsonApiBodyEncoder {
         }
 
         $jsonApiMap[JsonApi::TAG_META][JsonApi::TAG_TOTAL_COUNT] = !is_null($descriptor->totalResultCount) ? $descriptor->totalResultCount : count($dataListCanViewArray);
+
+        $jsonApiMap[JsonApi::TAG_FILTERS] = $possibleFilters;
 
         if ($descriptor->pageNumber && $descriptor->pageSize && $descriptor->totalResultCount) {
             $pageSize = $descriptor->pageSize;

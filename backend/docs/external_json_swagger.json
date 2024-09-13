@@ -1,0 +1,1194 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "External JSON:API",
+    "description": "This document describes the external JSON:API of SURFsharekit. This API exposes RepoItems over different channels. Each channel can expose different RepoItems depending on the channel's filters. An Authorization Bearer Token header is needed to access\nthis API. To gain one, please contact info@zooma.nl \n---\n\n # Filtering\n \nThe API offers a diverse range of filtering options. These can be specified in the query parameters of the request. Filters can be combined to create an even more refined and specific filter. \n\nSee the following examples on how to use these filters:\n\n`GET https://api.surfsharekit.nl/api/exampleChannel/repoItems?filter[email][LIKE]=johndoe`\n\n`GET https://api.surfsharekit.nl/api/repoitemupload/person?filter[email][LIKE]=johndoe&filter[surname][EQ]=Doe`\n\n### Supported filter modes:\n\n`EQ` Equal to\n\n`NEQ` Not equal to\n\n`LIKE` contains value\n\n`NOT LIKE` does not contain value\n\n`LT` lower than\n\n`LE` Lower than or equal to\n\n`GT` Greater than\n\n`GE` Greater than or equal to \n\n### Filterable fields\n\nThe fields available for filtering are specified below:\n\n- isRemoved\n- lastEdited\n- modified\n- title\n- publicationDate\n- id\n- access\n- institute\n\n # Webhooks \n\n Webhooks in our system provide real-time notifications when RepoItems are updated, created or deleted. This allows external applications or services to stay synchronized with the latest changes in our repository. Webhooks are triggered for the following events: `creation`, `update` or `deletion` of a RepoItem. Upon failure webhooks are retransmitted once.\n \n Webhooks are enabled and configured per channel. Please contact a WORKSAdmin to enable webhooks for a specific channel and configuring the callback url.\n \n## Payload: \n\n``` \n{\n    \"id\": \"5cc6a7b9-8923-47fc-9161-1c52754e1a1f\",\n    \"type\": \"Create\",\n    \"createdAt\": \"2024-01-03T09:00:00\",\n    \"data\": {\n        \"id\": \"c65b2f38-7a8d-4ba7-964c-2153a1b8d92e\",\n        \"type\": \"RepoItem\"\n    }\n}\n```\n\\\n**id:** A unique UuidV4 identifier to identify this webhook.\\\n**type:** Type of webhook, the following types are supported: `Create`, `Update` and `Delete`.\\\n**createdAt:** Timestamp indicating the time at which the webhook was created.\\\n**data**: Contains a JSON object with information about the object for which the webhook was created.\\\n**(data) id:** A unique UuidV4 identifier to identify the object.\\\n**(data) type:** The type of object, for now it can only contain the value `RepoItem`.\n\n\n---\n",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://url.nl"
+    }
+  ],
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "paths": {
+    "/{channel}/repoItems": {
+      "get": {
+        "tags": [
+          "Repoitems"
+        ],
+        "summary": "This endpoint allows you to retrieve all Repository Items you're authorized for and all subsequent sub-institutes. If the user identified by the Authorization Bearer Token header cannot be found, a 401 error is returned.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "channel",
+            "description": "Select the desired channel to retrieve repoItems from",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page[size]",
+            "description": "Set the total amount of items for that page",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page[number]",
+            "description": "Set the page number",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "meta": {
+                          "type": "object",
+                          "properties": {
+                            "totalCount": {
+                              "type": "integer",
+                              "example": 1242
+                            }
+                          }
+                        },
+                        "filters": {
+                          "type": "array",
+                          "items": {}
+                        },
+                        "links": {
+                          "type": "object",
+                          "properties": {
+                            "first": {
+                              "type": "string",
+                              "example": "/api/jsonapi/channel/v1/edusources/repoItems?page[size]=2&page[number]=1"
+                            },
+                            "self": {
+                              "type": "string",
+                              "example": "/api/jsonapi/channel/v1/edusources/repoItems?page[size]=2&page[number]=1"
+                            },
+                            "next": {
+                              "type": "string",
+                              "example": "/api/jsonapi/channel/v1/edusources/repoItems?page[size]=2&page[number]=2"
+                            },
+                            "last": {
+                              "type": "string",
+                              "example": "/api/jsonapi/channel/v1/edusources/repoItems?page[size]=2&page[number]=1112"
+                            }
+                          }
+                        },
+                        "data": {
+                          "$ref": "#/components/schemas/repoItemDataArray"
+                        }
+                      }
+                    },
+                    {
+                      "$ref": "#/components/schemas/deletedRepoItems"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/401"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/405"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{channel}/repoItems/{id}": {
+      "get": {
+        "tags": [
+          "Repoitems"
+        ],
+        "summary": "This endpoint allows you to retrieve a specific Repository Item you're authorized for and all subsequent sub-institutes. If the user identified by the Authorization Bearer Token header cannot be found, a 401 error is returned.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "channel",
+            "description": "Select the desired channel to retrieve repoItems from",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "description": "The UUID of a repoItem",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succesfull response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/repoItemDataObject"
+                    },
+                    {
+                      "$ref": "#/components/schemas/deletedRepoItem"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/401"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/405"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "400": {
+        "type": "object",
+        "description": "Missing required fields",
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "{error message description}"
+          }
+        }
+      },
+      "401": {
+        "type": "string",
+        "description": "Missing authorization to execute the call",
+        "example": "Incorrect token"
+      },
+      "405": {
+        "type": "string",
+        "description": "When try to access through a channel you don't have access to",
+        "example": "channelNotAllowed"
+      },
+      "repoItemDataArray": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "attributes": {
+              "type": "object",
+              "properties": {
+                "owner": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "example": "6949c6f2-517c-4c3e-881f-3d712e0b0640"
+                    },
+                    "name": {
+                      "type": "string",
+                      "example": "Title institute"
+                    },
+                    "type": {
+                      "type": "string",
+                      "example": "organisation"
+                    }
+                  }
+                },
+                "consortium": {
+                  "type": "string",
+                  "example": "Stimuleringsregeling Open en Online Onderwijs"
+                },
+                "typicalAgeRange": {
+                  "type": "string",
+                  "example": null
+                },
+                "cost": {
+                  "type": "object",
+                  "properties": {
+                    "source": {
+                      "example": null
+                    },
+                    "value": {
+                      "example": null
+                    }
+                  }
+                },
+                "urn:nbn": {
+                  "type": "string",
+                  "example": null
+                },
+                "modifiedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "example": "2023-11-09T11:24:46Z"
+                },
+                "title": {
+                  "type": "string",
+                  "example": "EDUSOURCES: Test embargo, verloopt op 10-11-2023: 1 bestand restriced en 1 bestand closed"
+                },
+                "subtitle": {
+                  "type": "string",
+                  "example": null
+                },
+                "publishers": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "example": "University of Harderwijk (TEST) organisatie"
+                  }
+                },
+                "publishedAt": {
+                  "type": "string",
+                  "format": "date",
+                  "example": "2023"
+                },
+                "place": {
+                  "example": null
+                },
+                "abstract": {
+                  "type": "string",
+                  "example": "test"
+                },
+                "keywords": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "example": "biology"
+                  }
+                },
+                "numOfPages": {
+                  "example": null
+                },
+                "links": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "url": {
+                        "type": "string",
+                        "example": "https://nos.nl"
+                      },
+                      "accessRight": {
+                        "type": "string",
+                        "example": "openaccess"
+                      },
+                      "urlName": {
+                        "type": "string",
+                        "example": "NOS"
+                      }
+                    }
+                  }
+                },
+                "authors": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "person": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "example": "40ebd0f9-72f5-41bc-8816-860cfa3dea45"
+                          },
+                          "name": {
+                            "type": "string",
+                            "example": "John Doe"
+                          },
+                          "email": {
+                            "type": "string",
+                            "example": "johndoe@example.org"
+                          },
+                          "dai": {
+                            "example": "info:eu-repo/dai/nl/123456785"
+                          },
+                          "orcid": {
+                            "example": "0000-0001-5109-3700"
+                          },
+                          "isni": {
+                            "example": "ISNI 0000 0001 2149 1740"
+                          }
+                        }
+                      },
+                      "role": {
+                        "type": "string",
+                        "example": "Begeleider"
+                      }
+                    }
+                  }
+                },
+                "files": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "fileName": {
+                        "type": "string",
+                        "example": "Test bestand"
+                      },
+                      "accessRight": {
+                        "type": "string",
+                        "example": "openaccess"
+                      },
+                      "eTag": {
+                        "type": "string",
+                        "example": "73e3d03235b03bec89514603f4aca86f"
+                      },
+                      "url": {
+                        "type": "string",
+                        "example": "https://www.location.file.url"
+                      },
+                      "resourceMimeType": {
+                        "type": "string",
+                        "example": "text/plain"
+                      }
+                    }
+                  }
+                },
+                "institutes": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "example": "Bedrijfscommunicatie"
+                      },
+                      "type": {
+                        "type": "string",
+                        "example": "discipline"
+                      },
+                      "id": {
+                        "type": "string",
+                        "example": "ff133bfb-adb1-4dc5-b462-1ee57a14134e"
+                      }
+                    }
+                  }
+                },
+                "language": {
+                  "type": "string",
+                  "example": "de"
+                },
+                "themesResearchObject": {
+                  "example": null
+                },
+                "termsOfUse": {
+                  "type": "string",
+                  "example": "cc-by-40"
+                },
+                "educationalLevels": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "source": {
+                        "type": "string",
+                        "example": "http://purl.edustandaard.nl/vdex_context_czp_20060628.xml"
+                      },
+                      "value": {
+                        "type": "string",
+                        "example": "HBO"
+                      }
+                    }
+                  }
+                },
+                "typeResearchObject": {
+                  "example": null
+                },
+                "typesLearningMaterial": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "example": "document"
+                  }
+                },
+                "themesLearningMaterial": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "example": "exact_informatica"
+                  }
+                },
+                "hasParts": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "example": "6c70e6b8-0173-4eff-99ed-1f3218c426dc"
+                  }
+                },
+                "partOf": {
+                  "type": "array",
+                  "items": {}
+                },
+                "technicalFormat": {
+                  "type": "string",
+                  "example": "printable-object"
+                },
+                "vocabularies": {
+                  "type": "object",
+                  "properties": {
+                    "vocabularyZiezo": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "source": {
+                            "type": "string",
+                            "example": "http://purl.edustandaard.nl/concept/c4fdab5a4-224f-4774-bfe5-71eecf669083"
+                          },
+                          "value": {
+                            "type": "string",
+                            "example": "Afnemen meetinstrument"
+                          }
+                        }
+                      }
+                    },
+                    "vocabularyDas": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "source": {
+                            "type": "string",
+                            "example": "http://purl.edustandaard.nl/concept/6d78d67c-9d42-4f57-9fa2-b24aabbcf892"
+                          },
+                          "value": {
+                            "type": "string",
+                            "example": "Chemistry"
+                          }
+                        }
+                      }
+                    },
+                    "vocabularyInformationLiteracy": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "source": {
+                            "type": "string",
+                            "example": "http://purl.edustandaard.nl/concept/9805b56e-4fe8-46b2-9fb0-76ee2026d47b"
+                          },
+                          "value": {
+                            "type": "string",
+                            "example": "Identificeren van informatiebehoefte"
+                          }
+                        }
+                      }
+                    },
+                    "vocabularyVerpleegkunde": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "source": {
+                            "type": "string",
+                            "example": "http://purl.edustandaard.nl/concept/20c66254-fbf7-4ae6-b4c1-29101adc1376"
+                          },
+                          "value": {
+                            "type": "string",
+                            "example": "Reflectieve EBP-professional"
+                          }
+                        }
+                      }
+                    },
+                    "vocabularyVaktherapie": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "source": {
+                            "type": "string",
+                            "example": "http://purl.edustandaard.nl/concept/07c606df-bb05-4588-9f59-7f83a48f04e0"
+                          },
+                          "value": {
+                            "type": "string",
+                            "example": "Kritische houding"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "aggregationlevel": {
+                  "type": "string",
+                  "example": "1"
+                },
+                "intendedUser": {
+                  "type": "string",
+                  "example": "learner"
+                },
+                "doi": {
+                  "type": "string",
+                  "example": "10.80467/8b0f8e7a-4ac8-4401-81ff-59cfec949f48"
+                },
+                "availability": {
+                  "type": "object",
+                  "example": null
+                },
+                "handle": {
+                  "type": "object",
+                  "example": null
+                },
+                "publishedIn": {
+                  "type": "object",
+                  "properties": {
+                    "title": {
+                      "type": "string",
+                      "example": "Publication Title"
+                    },
+                    "publisherDocument": {
+                      "type": "string",
+                      "example": "Publisher Document"
+                    },
+                    "placeOfPublication": {
+                      "type": "string",
+                      "example": "Publication Place"
+                    },
+                    "year": {
+                      "type": "integer",
+                      "example": 2023
+                    },
+                    "issue": {
+                      "type": "string",
+                      "example": "Publication Issue"
+                    },
+                    "edition": {
+                      "type": "string",
+                      "example": "Publication Edition"
+                    },
+                    "issn": {
+                      "type": "string",
+                      "example": "1234-5678"
+                    },
+                    "isbn": {
+                      "type": "string",
+                      "example": "978-1-2345-6789-0"
+                    },
+                    "pageStart": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "pageEnd": {
+                      "type": "integer",
+                      "example": 10
+                    }
+                  }
+                },
+                "conference": {
+                  "type": "object",
+                  "example": null
+                }
+              }
+            },
+            "type": {
+              "type": "string",
+              "example": "repoItem"
+            },
+            "id": {
+              "type": "string",
+              "example": "7c90e92e-712a-423f-9d62-a15d38ef28ed"
+            }
+          }
+        }
+      },
+      "deletedRepoItem": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "attributes": {
+                  "type": "object",
+                  "properties": null
+                },
+                "type": {
+                  "type": "string"
+                },
+                "meta": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "deletedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                },
+                "id": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "deletedRepoItems": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "type": "object",
+            "properties": {
+              "totalCount": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          },
+          "filters": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": null
+            }
+          },
+          "links": {
+            "type": "object",
+            "properties": {
+              "first": {
+                "type": "string"
+              },
+              "self": {
+                "type": "string"
+              },
+              "last": {
+                "type": "string"
+              }
+            }
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "attributes": {
+                  "type": "object",
+                  "properties": null
+                },
+                "type": {
+                  "type": "string"
+                },
+                "meta": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "deletedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                },
+                "id": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "repoItemDataObject": {
+        "type": "object",
+        "properties": {
+          "attributes": {
+            "type": "object",
+            "properties": {
+              "owner": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "example": "6949c6f2-517c-4c3e-881f-3d712e0b0640"
+                  },
+                  "name": {
+                    "type": "string",
+                    "example": "Title institute"
+                  },
+                  "type": {
+                    "type": "string",
+                    "example": "organisation"
+                  }
+                }
+              },
+              "consortium": {
+                "type": "string",
+                "example": "Stimuleringsregeling Open en Online Onderwijs"
+              },
+              "typicalAgeRange": {
+                "type": "string",
+                "example": null
+              },
+              "cost": {
+                "type": "object",
+                "properties": {
+                  "source": {
+                    "example": null
+                  },
+                  "value": {
+                    "example": null
+                  }
+                }
+              },
+              "urn:nbn": {
+                "type": "string",
+                "example": null
+              },
+              "modifiedAt": {
+                "type": "string",
+                "format": "date-time",
+                "example": "2023-11-09T11:24:46Z"
+              },
+              "title": {
+                "type": "string",
+                "example": "EDUSOURCES: Test embargo, verloopt op 10-11-2023: 1 bestand restriced en 1 bestand closed"
+              },
+              "subtitle": {
+                "type": "string",
+                "example": null
+              },
+              "publishers": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "example": "University of Harderwijk (TEST) organisatie"
+                }
+              },
+              "publishedAt": {
+                "type": "string",
+                "format": "date",
+                "example": "2023"
+              },
+              "place": {
+                "example": null
+              },
+              "abstract": {
+                "type": "string",
+                "example": "test"
+              },
+              "keywords": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "example": "biology"
+                }
+              },
+              "numOfPages": {
+                "example": null
+              },
+              "links": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string",
+                      "example": "https://nos.nl"
+                    },
+                    "accessRight": {
+                      "type": "string",
+                      "example": "openaccess"
+                    },
+                    "urlName": {
+                      "type": "string",
+                      "example": "NOS"
+                    }
+                  }
+                }
+              },
+              "authors": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "person": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "example": "40ebd0f9-72f5-41bc-8816-860cfa3dea45"
+                        },
+                        "name": {
+                          "type": "string",
+                          "example": "John Doe"
+                        },
+                        "email": {
+                          "type": "string",
+                          "example": "johndoe@example.org"
+                        },
+                        "dai": {
+                          "example": "info:eu-repo/dai/nl/123456785"
+                        },
+                        "orcid": {
+                          "example": "0000-0001-5109-3700"
+                        },
+                        "isni": {
+                          "example": "ISNI 0000 0001 2149 1740"
+                        }
+                      }
+                    },
+                    "role": {
+                      "type": "string",
+                      "example": "Begeleider"
+                    }
+                  }
+                }
+              },
+              "files": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "fileName": {
+                      "type": "string",
+                      "example": "Test bestand"
+                    },
+                    "accessRight": {
+                      "type": "string",
+                      "example": "openaccess"
+                    },
+                    "eTag": {
+                      "type": "string",
+                      "example": "73e3d03235b03bec89514603f4aca86f"
+                    },
+                    "url": {
+                      "type": "string",
+                      "example": "https://www.location.file.url"
+                    },
+                    "resourceMimeType": {
+                      "type": "string",
+                      "example": "text/plain"
+                    }
+                  }
+                }
+              },
+              "institutes": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "example": "Bedrijfscommunicatie"
+                    },
+                    "type": {
+                      "type": "string",
+                      "example": "discipline"
+                    },
+                    "id": {
+                      "type": "string",
+                      "example": "ff133bfb-adb1-4dc5-b462-1ee57a14134e"
+                    }
+                  }
+                }
+              },
+              "language": {
+                "type": "string",
+                "example": "de"
+              },
+              "themesResearchObject": {
+                "example": null
+              },
+              "termsOfUse": {
+                "type": "string",
+                "example": "cc-by-40"
+              },
+              "educationalLevels": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "source": {
+                      "type": "string",
+                      "example": "http://purl.edustandaard.nl/vdex_context_czp_20060628.xml"
+                    },
+                    "value": {
+                      "type": "string",
+                      "example": "HBO"
+                    }
+                  }
+                }
+              },
+              "typeResearchObject": {
+                "example": null
+              },
+              "typesLearningMaterial": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "example": "document"
+                }
+              },
+              "themesLearningMaterial": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "example": "exact_informatica"
+                }
+              },
+              "hasParts": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "example": "6c70e6b8-0173-4eff-99ed-1f3218c426dc"
+                }
+              },
+              "partOf": {
+                "type": "array",
+                "items": {}
+              },
+              "technicalFormat": {
+                "type": "string",
+                "example": "printable-object"
+              },
+              "vocabularies": {
+                "type": "object",
+                "properties": {
+                  "vocabularyZiezo": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "source": {
+                          "type": "string",
+                          "example": "http://purl.edustandaard.nl/concept/c4fdab5a4-224f-4774-bfe5-71eecf669083"
+                        },
+                        "value": {
+                          "type": "string",
+                          "example": "Afnemen meetinstrument"
+                        }
+                      }
+                    }
+                  },
+                  "vocabularyDas": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "source": {
+                          "type": "string",
+                          "example": "http://purl.edustandaard.nl/concept/6d78d67c-9d42-4f57-9fa2-b24aabbcf892"
+                        },
+                        "value": {
+                          "type": "string",
+                          "example": "Chemistry"
+                        }
+                      }
+                    }
+                  },
+                  "vocabularyInformationLiteracy": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "source": {
+                          "type": "string",
+                          "example": "http://purl.edustandaard.nl/concept/9805b56e-4fe8-46b2-9fb0-76ee2026d47b"
+                        },
+                        "value": {
+                          "type": "string",
+                          "example": "Identificeren van informatiebehoefte"
+                        }
+                      }
+                    }
+                  },
+                  "vocabularyVerpleegkunde": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "source": {
+                          "type": "string",
+                          "example": "http://purl.edustandaard.nl/concept/20c66254-fbf7-4ae6-b4c1-29101adc1376"
+                        },
+                        "value": {
+                          "type": "string",
+                          "example": "Reflectieve EBP-professional"
+                        }
+                      }
+                    }
+                  },
+                  "vocabularyVaktherapie": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "source": {
+                          "type": "string",
+                          "example": "http://purl.edustandaard.nl/concept/07c606df-bb05-4588-9f59-7f83a48f04e0"
+                        },
+                        "value": {
+                          "type": "string",
+                          "example": "Kritische houding"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "aggregationlevel": {
+                "type": "string",
+                "example": "1"
+              },
+              "intendedUser": {
+                "type": "string",
+                "example": "learner"
+              },
+              "doi": {
+                "type": "string",
+                "example": "10.80467/8b0f8e7a-4ac8-4401-81ff-59cfec949f48"
+              },
+              "availability": {
+                "type": "object",
+                "example": null
+              },
+              "handle": {
+                "type": "object",
+                "example": null
+              },
+              "publishedIn": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "example": "Publication Title"
+                  },
+                  "publisherDocument": {
+                    "type": "string",
+                    "example": "Publisher Document"
+                  },
+                  "placeOfPublication": {
+                    "type": "string",
+                    "example": "Publication Place"
+                  },
+                  "year": {
+                    "type": "integer",
+                    "example": 2023
+                  },
+                  "issue": {
+                    "type": "string",
+                    "example": "Publication Issue"
+                  },
+                  "edition": {
+                    "type": "string",
+                    "example": "Publication Edition"
+                  },
+                  "issn": {
+                    "type": "string",
+                    "example": "1234-5678"
+                  },
+                  "isbn": {
+                    "type": "string",
+                    "example": "978-1-2345-6789-0"
+                  },
+                  "pageStart": {
+                    "type": "integer",
+                    "example": 1
+                  },
+                  "pageEnd": {
+                    "type": "integer",
+                    "example": 10
+                  }
+                }
+              },
+              "conference": {
+                "type": "object",
+                "example": null
+              }
+            }
+          },
+          "type": {
+            "type": "string",
+            "example": "repoItem"
+          },
+          "id": {
+            "type": "string",
+            "example": "7c90e92e-712a-423f-9d62-a15d38ef28ed"
+          }
+        }
+      }
+    }
+  }
+}

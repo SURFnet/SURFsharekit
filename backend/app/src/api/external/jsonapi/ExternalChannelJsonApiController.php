@@ -3,15 +3,17 @@
 namespace SurfSharekit\Api;
 
 use Exception;
+use ExternalPersonJsonApiDescription;
 use ExternalRepoItemChannelJsonApiDescription;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Security\Member;
 use SilverStripe\Security\Security;
 use SurfSharekit\Models\Channel;
+use SurfSharekit\Models\Helper\Logger;
+use SurfSharekit\Models\Person;
 use SurfSharekit\Models\RepoItem;
 
 class ExternalChannelJsonApiController extends ExternalJsonApiController {
-
     private static $url_handlers = [
         'GET $channel/$Action/$ID/$Relations/$RelationName' => 'getJsonApiRequest'
     ];
@@ -21,16 +23,33 @@ class ExternalChannelJsonApiController extends ExternalJsonApiController {
     ];
 
     protected function getApiURLSuffix() {
-        return '/api/jsonapi/channel/v1/' . $this->channel->Slug ;
+        return '/api/jsonapi/channel/v1/' . $this->channel->Slug;
     }
 
+
+    protected function handleAction($request, $action) {
+        // set defaults for this controller
+        $this->pageSize = 10;
+        $this->pageNumber = 1;
+        return parent::handleAction($request, $action);
+    }
 
     /**
      * @return mixed
      * returns a map of DataObjects to their Respective @see DataObjectJsonApiDescription
      */
     protected function getClassToDescriptionMap() {
-        return [RepoItem::class => new ExternalRepoItemChannelJsonApiDescription($this->channel)];
+        $classToDescriptionMap = [];
+        
+        if ($this->channel && $this->channel->IsPersonChannel) {
+            $classToDescriptionMap[Person::class] = new ExternalPersonJsonApiDescription($this->channel);
+        }
+
+        if ($this->channel) {
+            $classToDescriptionMap[RepoItem::class] = new ExternalRepoItemChannelJsonApiDescription($this->channel);
+        }
+
+        return $classToDescriptionMap;
     }
 
     public function getJsonApiRequest() {
@@ -46,23 +65,19 @@ class ExternalChannelJsonApiController extends ExternalJsonApiController {
             $this->channel = Channel::get()->filter(['Slug' => $channel])->first();
             if (is_null($this->channel)) {
                 throw new BadChannelException();
-            }
-            else{
+            } else {
                 $this->classToDescriptionMap = $this->getClassToDescriptionMap();
             }
             if (!$this->canAccess()) {
                 throw new ChannelNotAllowedException();
             }
         } catch (BadChannelException $e) {
-            $this->getResponse()->setStatusCode(400 );
+            $this->getResponse()->setStatusCode(400);
             return 'badChannel';
         } catch (ChannelNotAllowedException $e) {
-            $this->getResponse()->setStatusCode(405 );
+            $this->getResponse()->setStatusCode(405);
             return 'channelNotAllowed';
         }
-        // set defaults for this controller
-        $this->pageSize = 10;
-        $this->pageNumber = 1;
         return parent::getJsonApiRequest();
     }
 
@@ -88,7 +103,7 @@ class ExternalChannelJsonApiController extends ExternalJsonApiController {
                 throw new BadChannelException();
             }
         } catch (BadChannelException $e) {
-            $this->getResponse()->setStatusCode(400 );
+            $this->getResponse()->setStatusCode(400);
             return 'badChannel';
         }
 
@@ -107,7 +122,7 @@ class ExternalChannelJsonApiController extends ExternalJsonApiController {
      * Called when the use request all objects of a certain type
      */
     function getDataList($objectClass) {
-        if ($this->sparseFields){
+        if ($this->sparseFields) {
             throw new Exception("Sparse fields not supported");
         }
         return $objectClass::get();

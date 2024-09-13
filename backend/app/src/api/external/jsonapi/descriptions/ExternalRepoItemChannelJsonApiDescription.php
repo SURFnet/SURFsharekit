@@ -1,9 +1,11 @@
 <?php
 
+use Ramsey\Uuid\Uuid;
 use SilverStripe\Core\Convert;
 use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\ValidationException;
+use SilverStripe\View\ViewableData;
 use SurfSharekit\Api\RepoItemDescribingNode;
 use SurfSharekit\Models\Cache_RecordNode;
 use SurfSharekit\Models\Helper\DateHelper;
@@ -11,6 +13,7 @@ use SurfSharekit\Models\Helper\Logger;
 use SurfSharekit\Models\Protocol;
 use SurfSharekit\Models\ProtocolNode;
 use SurfSharekit\Models\RepoItem;
+use SurfSharekit\Models\RepoItemFile;
 
 /***
  * This class defines in what way a repoItem should be output to the external api when requested a jsonapi protocol
@@ -27,11 +30,31 @@ class ExternalRepoItemChannelJsonApiDescription extends DataObjectJsonApiDescrip
     private $repoItemsCurrentlyInChannel = [];
 
     /**
+     * @var $accessControlFilter = function that takes a repoitem and returns either the repoitem or null if it passes the given access control filter
+     */
+    public static $accessControlFilter;
+
+    /**
      * ExternalRepoItemJsonApiDescription constructor.
      * When created, this class created an fieldToAttribute list for each title of the ProtocolNodes for the external  JsonAPI protocol
      * To map said attributes to the actual values in the RepoItem, a attributeToNodeMap is established as well.
      */
     public function __construct($channel = null) {
+        //by default no acces control filter is given
+        static::$accessControlFilter = function ($repoItem) {
+            if ($repoItem->RepoType == "RepoItemRepoItemFile") {
+                if ($repoItem->Status == "Embargo") {
+                    return null;
+                }
+
+                if ($repoItem->AccessRight == RepoItemFile::CLOSED_ACCESS) {
+                    return null;
+                }
+            }
+
+            return $repoItem;
+        };
+
         $describingProtocolFilter = ['SystemKey' => 'JSON:API'];
         if (!is_null($channel)) {
             $describingProtocolFilter['ID'] = $channel->ProtocolID;
@@ -47,8 +70,8 @@ class ExternalRepoItemChannelJsonApiDescription extends DataObjectJsonApiDescrip
         }
     }
 
-    public function describeAttributesOfDataObject(DataObject $dataObject) {
-        if(isset($this->objectsToDescribe)) {
+    public function describeAttributesOfDataObject(ViewableData $dataObject) {
+        if (isset($this->objectsToDescribe)) {
             if (!$this->repoItemsCurrentlyInChannel) {
                 $this->repoItemsCurrentlyInChannel = $this->getAllItemsToDescribe($this->objectsToDescribe, false)->column('ID');
             }
@@ -114,7 +137,7 @@ class ExternalRepoItemChannelJsonApiDescription extends DataObjectJsonApiDescrip
                 if (isset(static::$filterModeMap[$mode])) {
                     $joinedQuery = $whereFunction($joinedQuery, $modeValue, static::$filterModeMap[$mode]);
                 } else {
-                    throw new Exception("$mode is an invalid filter modifier, use on of: [EQ, NEQ, LIKE, LT, LE, GT, GE]");
+                    throw new Exception("$mode is an invalid filter modifier, use on of: [EQ, NEQ, LIKE, NOT LIKE, LT, LE, GT, GE]");
                 }
             }
             return $joinedQuery;
@@ -152,42 +175,76 @@ class ExternalRepoItemChannelJsonApiDescription extends DataObjectJsonApiDescrip
      * 'lastEdited' => '`SurfSharekit_RepoItem`.`LastEdited`']
      */
     public function getFilterableAttributesToColumnMap(): array {
-        return [
+        $filters = [
             'isRemoved' => '`SurfSharekit_RepoItem`.`IsRemoved`',
             'lastEdited' => '`SurfSharekit_RepoItem`.`LastEdited`',
             'modified' => '`SurfSharekit_RepoItem`.`LastEdited`',
             'title' => '`SurfSharekit_RepoItem`.`Title`',
             'publicationDate' => '`SurfSharekit_RepoItem`.`PublicationDate`',
             'id' => '`SurfSharekit_RepoItem`.`Uuid`',
+            'access' => null,
             'institute' => '`SurfSharekit_RepoItem`.`InstituteUuid`'];
+        // Allow filtering of protocolfilters
+        foreach ($this->protocol->ProtocolFilters() as $protocolFilter) {
+            $filters[$protocolFilter->Title] = null;
+        }
+        return $filters;
     }
 
     public function getFilterFunction(array $fieldsToSearchIn) {
-        $filterableFields = $this->getFilterableAttributesToColumnMap();
-        if (count($filterableFields) === 0) {
-            throw new Exception("Search not supported for this object type");
-        }
-
-        return function (DataList $datalist, $filterValue, $modifier) use ($fieldsToSearchIn, $filterableFields) {
-            $filterAnyArray = [];
-            foreach ($fieldsToSearchIn as $searchField) {
-                if (isset($filterableFields[$searchField])) {
-                    $columnDescription = $filterableFields[$searchField];
-                    if ($modifier == '=' && $filterValue == 'NULL') {
-                        $filterAnyArray[] = $columnDescription . ' IS NULL';
-                    } else {
-                        $filterAnyArray[$columnDescription . ' ' . $modifier . ' ?'] = $filterValue;
-                    }
-                } else {
-                    throw new Exception("$searchField is not a supported filter, try filtering on one of: [" . implode(',', array_keys($filterableFields)) . ']');
+        // Allow filtering of protocolfilters
+        foreach ($this->protocol->ProtocolFilters() as $protocolFilter) {
+            if (in_array($protocolFilter->Title, $fieldsToSearchIn)) {
+                if (count($fieldsToSearchIn) > 1) {
+                    throw new Exception('Cannot mix ' . $protocolFilter->Title . ' filter with another filter');
                 }
+                return function (DataList $datalist, $filterValue, $modifier)  use ($protocolFilter){
+                    // TODO, hard coded voor trefwoorden en dropdowns, generiek oplossen
+                    $joinKey = str_replace('-', '', Uuid::uuid4());
+                    return $datalist->leftJoin("SurfSharekit_RepoItemMetaField","rmf$joinKey.RepoItemID = SurfSharekit_RepoItem.ID AND rmf$joinKey.MetaFieldID = $protocolFilter->MetaFieldID", "rmf$joinKey")
+                        ->leftJoin("SurfSharekit_RepoItemMetaFieldValue", "rmfv$joinKey.RepoItemMetaFieldID = rmf$joinKey.ID AND rmfv$joinKey.IsRemoved = 0", "rmfv$joinKey")
+                        ->leftJoin("SurfSharekit_MetaFieldOption", "rmfvo$joinKey.ID = rmfv$joinKey.MetaFieldOptionID", "rmfvo$joinKey")
+                        ->whereAny(["rmfvo$joinKey.Value $modifier ?" => $filterValue, "rmfv$joinKey.Value $modifier ?" => $filterValue]);
+                };
             }
-            return $datalist->whereAny($filterAnyArray);
-        };
+        }
+        if (in_array('access', $fieldsToSearchIn)) {
+            if (count($fieldsToSearchIn) > 1) {
+                throw new Exception('Cannot mix access filter with another filter');
+            }
+            return function (DataList $datalist, $filterValue, $modifier) {
+                if (!($modifier == '=' || $modifier == '!=')) {
+                    throw new Exception('Only ?filter[access][EQ] or ...[NEQ] supported');
+                }
+
+                //Connect to values
+                $repoItemsWithChildren = $datalist->innerJoin('SurfSharekit_RepoItemMetaField', 'child_rimf.RepoItemID = SurfSharekit_RepoItem.ID', 'child_rimf')
+                    ->innerJoin('SurfSharekit_RepoItemMetaFieldValue', 'child_rimfv.RepoItemMetaFieldID = child_rimf.ID', 'child_rimfv')
+                    ->where("child_rimfv.IsRemoved = 0");
+                //Connect to filerepoitems child to repoitem and its repoitemmetafieldvalues
+                $repoItemsAndRepoItemFiles = $repoItemsWithChildren->innerJoin('SurfSharekit_RepoItem', 'file_ri.ID = child_rimfv.RepoItemID', 'file_ri')
+                    ->innerJoin('SurfSharekit_RepoItemMetaField', 'file_rimf.RepoItemID = file_ri.ID', 'file_rimf')
+                    ->innerJoin('SurfSharekit_RepoItemMetaFieldValue', 'file_rimfv.RepoItemMetaFieldID = file_rimf.ID', 'file_rimfv')
+                    ->innerJoin('SurfSharekit_MetaField', 'file_rimf.MetaFieldID = file_mf.ID', 'file_mf')
+                    ->innerJoin('SurfSharekit_MetaFieldOption', 'file_rimfv.MetaFieldOptionID = file_mfo.ID', 'file_mfo')
+                    ->where("file_ri.RepoType = 'RepoItemRepoItemFile'");
+                //Filter on access control field
+                $repoItemsAndRepoItemFiles = $repoItemsAndRepoItemFiles
+                    ->where("file_rimfv.IsRemoved = 0")
+                    ->where("file_mf.SystemKey = 'AccessControl'")
+                    ->where(['file_mfo.Value ' . $modifier . ' ?' => $filterValue]);
+                //update $accessControlFilter to use in other code
+                static::$accessControlFilter = function ($repoItem) use ($repoItemsAndRepoItemFiles) {
+                    return $repoItemsAndRepoItemFiles->where("file_ri.ID = $repoItem->ID")->exists() ? $repoItem : null;
+                };
+                return $repoItemsAndRepoItemFiles;
+            };
+        }
+        return parent::getFilterFunction($fieldsToSearchIn);
     }
 
     public function getCache($dataObject) {
-        if(!(isset($this->objectsToDescribe))){
+        if (!(isset($this->objectsToDescribe))) {
             $this->objectsToDescribe = $dataObject::get();
         }
 
@@ -215,6 +272,14 @@ class ExternalRepoItemChannelJsonApiDescription extends DataObjectJsonApiDescrip
         $cachedNode->Data = json_encode($dataDescription);
         $cachedNode->ProtocolVersion = $this->protocol->Version;
         $cachedNode->CachedLastEdited = $dataObject->LastEdited;
+
+        if (!in_array($dataObject->ID, $this->repoItemsCurrentlyInChannel) && $cachedNode->isInDB()) {
+            $cachedNode->Deleted = true;
+        } else {
+            $cachedNode->Deleted = false;
+            $cachedNode->DeleteWebhookSent = false;
+        }
+
         try {
             $cachedNode->write();
         } catch (ValidationException $e) {
@@ -222,7 +287,11 @@ class ExternalRepoItemChannelJsonApiDescription extends DataObjectJsonApiDescrip
         }
     }
 
-    private function getAllItemsToDescribe(DataList $objectsToDescribe, $includeCachedItems = true) {
+    /**
+     * @param DataList $objectsToDescribe
+     * @return DataList
+     */
+    public function getAllItemsToDescribe(DataList $objectsToDescribe, $includeCachedItems = true) {
         $this->objectsToDescribe = $objectsToDescribe;
         $objectsToDescribe = parent::applyGeneralFilter($objectsToDescribe);
         //general filter
@@ -238,12 +307,13 @@ class ExternalRepoItemChannelJsonApiDescription extends DataObjectJsonApiDescrip
                 $selectionQuery[0] = substr_replace($selectionQuery[0], Convert::raw2sql($param, true), $pos, strlen("?"));
             }
         }
+        /** @var DataList $allObjects */
         $allObjects = $objectsToDescribe->innerJoin("($selectionQuery[0])", 'sel.ID = SurfSharekit_RepoItem.ID', 'sel');
         //Logger::debugLog($allObjects->sql());
         return $allObjects;
     }
 
-    public function describeMetaOfDataObject(DataObject $dataObject) {
+    public function describeMetaOfDataObject(ViewableData $dataObject) {
         if (!in_array($dataObject->ID, $this->repoItemsCurrentlyInChannel)) {
             return ['status' => 'deleted', 'deletedAt' => DateHelper::iso8601zFromString($dataObject->LastEdited)];
         }

@@ -24,8 +24,9 @@ class MetaFieldType extends DataObject {
         'Title' => 'Varchar(255)',
         'Key' => 'Varchar(255)',
         'ValidationRegex' => 'Text',
+        'ValidationRegexErrorMessage' => 'Text',
         'OptionGenerationKey' => 'Varchar(255)',
-        'JSONEncodedStorage' => 'Boolean(0)'
+        'JSONEncodedStorage' => 'Boolean(0)',
     ];
 
     private static $summary_fields = [

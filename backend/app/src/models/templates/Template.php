@@ -21,8 +21,6 @@ use SilverStripe\Security\PermissionProvider;
 use SilverStripe\Security\Security;
 use SilverStripe\Versioned\Versioned;
 use SurfSharekit\Api\InstituteScoper;
-use SurfSharekit\Api\PermissionFilter;
-use SurfSharekit\Models\Helper\Constants;
 use SurfSharekit\Models\Helper\Logger;
 use Symbiote\GridFieldExtensions\WritingGridFieldOrdereableRows;
 
@@ -51,8 +49,10 @@ class Template extends DataObject implements PermissionProvider {
 
     private static $db = [
         'Title' => 'Varchar(255)',
+        'Label_NL' => 'Varchar(255)',
+        'Label_EN' => 'Varchar(255)',
         'Description' => 'Text',
-        'RepoType' => 'Enum(array("PublicationRecord", "LearningObject", "ResearchObject", "RepoItemRepoItemFile", "RepoItemLearningObject", "RepoItemLink", "RepoItemPerson"))',
+        'RepoType' => 'Enum(array("PublicationRecord", "LearningObject", "ResearchObject", "Dataset", "Project", "RepoItemRepoItemFile", "RepoItemLearningObject", "RepoItemLink", "RepoItemPerson", "RepoItemResearchObject"))',
         'AllowCustomization' => 'Int(0)'
     ];
 
@@ -88,12 +88,14 @@ class Template extends DataObject implements PermissionProvider {
         'PublicationRecord' => 'd38365bd-1fb4-4928-b3d6-501a5d7af282',
         'RepoItemRepoItemFile' => 'c5ea3076-d11b-4611-a7af-c424cc0dcf15',
         'LearningObject' => '38fe1064-0ead-4d9f-a5cf-b7f1dcbd6848',
+        'Dataset' => '85126a1f-072f-4bdb-bb75-d83da2f744db',
+        'Project' => '69ee56b9-b093-49af-87f8-2bf963585d98',
         'ResearchObject' => '93311c51-8d31-4595-b64e-0b15ce50798a',
         'RepoItemPerson' => 'b08fa914-8ac8-4bc5-8708-a96b26858819',
         'RepoItemLearningObject' => 'b3521815-26d2-4cf5-a7d4-6f9aa8b74187',
-        'RepoItemLink' => '94661347-0626-43ed-afe1-c3d9aaee0e0f'
+        'RepoItemLink' => '94661347-0626-43ed-afe1-c3d9aaee0e0f',
+        'RepoItemResearchObject' => 'f0152c72-d86b-4eac-a6b0-804d27dbe1cd'
     ];
-
 
     private static $indexes = [
         'RepoType' => true
@@ -103,6 +105,8 @@ class Template extends DataObject implements PermissionProvider {
 
     public function getCMSFields() {
         $fields = parent::getCMSFields();
+
+        $fields->dataFieldByName('Title')->setReadonly(true);
 
         $allowCustomizationField = CheckboxField::create('AllowCustomization', 'AllowCustomization', $this->AllowCustomization);
         $allowCustomizationField->setDescription('When allow customization is set, this template could be customized by site-admins.');
@@ -288,22 +292,27 @@ class Template extends DataObject implements PermissionProvider {
 
     protected function onAfterWrite() {
         parent::onAfterWrite();
-        Logger::debugLog('Template::OnAfterWrite $this->isChanged(\'ID\') = ' . $this->isChanged('ID'));
 
         if (!$this->isChanged('ID')) {//if not recently created
-          //  $this->downPropagateTemplateMetaFields();
+            //  $this->downPropagateTemplateMetaFields();
         }
 
-        if($this->isChanged('InstituteID')) {
+        if ($this->isChanged('InstituteID')) {
             ScopeCache::removeCachedViewable(Template::class);
             ScopeCache::removeCachedDataList(Template::class);
         }
+
+        if ($this->isChanged('Label_NL')){
+            $this->Title = $this->Label_NL;
+        }
+
+        $this->removeCacheWhereNeeded();
     }
 
     public function downPropagateTemplateMetaFields($limitToTemplate = null) {
-        if(!is_null($limitToTemplate)){
+        if (!is_null($limitToTemplate)) {
             $templateTitle = $limitToTemplate->Title;
-        }else{
+        } else {
             $templateTitle = 'null';
         }
         Logger::debugLog("downPropagateTemplateMetaFields " . $this->Title . ' limitToTemplate = ' . $templateTitle);
@@ -364,29 +373,44 @@ class Template extends DataObject implements PermissionProvider {
         ];
     }
 
-    function getSectionsForJsonApi() {
-        $templateSections = [];
+    function getStepsForJsonApi($contextualRepoItem = null) {
+        $templateSteps = [];
 
-        foreach (TemplateSection::get() as $templateSection) {
-            $fieldsInSection = [];
-            foreach ($this->TemplateMetaFields()->filter(['IsRemoved' => 0, 'TemplateSectionID' => $templateSection->ID]) as $templateMetaField) {
-                $fieldsInSection[] = $templateMetaField->getJsonAPIDescription();
+        foreach (TemplateStep::get() as $templateStep) {
+            $templateSections = [];
+
+            foreach (TemplateSection::get() as $templateSection) {
+                $fieldsInSection = [];
+                foreach ($this->TemplateMetaFields()->filter(['IsRemoved' => 0, 'TemplateSectionID' => $templateSection->ID]) as $templateMetaField) {
+                    $fieldsInSection[] = $templateMetaField->getJsonAPIDescription($contextualRepoItem);
+                }
+                if (count($fieldsInSection)) {
+                    $templateSections[] = [
+                        'sortOrder' => $templateSection->SortOrde,
+                        'titleNL' => $templateSection->Title_NL,
+                        'titleEN' => $templateSection->Title_EN,
+                        'id' => DataObjectJsonApiEncoder::getJSONAPIID($templateSection),
+                        'subtitleNL' => $templateSection->Subtitle_NL,
+                        'subtitleEN' => $templateSection->Subtitle_EN,
+                        'iconKey' => $templateSection->IconKey,
+                        'isUsedForSelection' => $templateSection->IsUsedForSelection,
+                        'icon' => $templateSection->Icon,
+                        'fields' => $fieldsInSection
+                    ];
+                }
             }
-            if (count($fieldsInSection)) {
-                $templateSections[] = [
-                    'sortOrder' => $templateSection->SortOrder,
-                    'titleNL' => $templateSection->Title_NL,
-                    'titleEN' => $templateSection->Title_EN,
-                    'id' => DataObjectJsonApiEncoder::getJSONAPIID($templateSection),
-                    'subtitleNL' => $templateSection->Subtitle_NL,
-                    'subtitleEN' => $templateSection->Subtitle_EN,
-                    'iconKey' => $templateSection->IconKey,
-                    'isUsedForSelection' => $templateSection->IsUsedForSelection,
-                    'fields' => $fieldsInSection
-                ];
-            }
+            $templateSteps[] = [
+                'id' => $templateStep->Uuid,
+                'titleNL' => $templateStep->Title_NL,
+                'titleEN' => $templateStep->Title_EN,
+                'subtitleNL' => $templateStep->Subtitle_NL,
+                'subtitleEN' => $templateStep->Subtitle_EN,
+                'sortOrder' => $templateStep->SortOrder,
+                'templateSections' => $templateSections
+            ];
         }
-        return $templateSections;
+
+        return $templateSteps;
     }
 
     function requireDefaultRecords() {
@@ -417,5 +441,51 @@ class Template extends DataObject implements PermissionProvider {
         return [
             'TEMPLATE_VIEW_TEMPLATE' => "1",
         ];
+    }
+
+    public function removeCacheWhereNeeded() {
+        foreach ($this->TemplateMetaFields() as $templateMetaField) {
+            $templateMetaField->removeCacheWhereNeeded();
+        }
+    }
+
+    public function getSteps($contextualRepoItem = null) {
+        $templateSteps = [];
+
+        foreach (TemplateStep::get() as $templateStep) {
+            $templateSections = [];
+            foreach ($templateStep->TemplateSections() as $templateSection) {
+
+                $fieldsInSection = [];
+                foreach ($this->TemplateMetaFields()->filter(['IsRemoved' => 0, 'IsEnabled' => 1, 'TemplateSectionID' => $templateSection->ID]) as $templateMetaField) {
+                    $fieldsInSection[] = $templateMetaField->getJsonAPIDescription($contextualRepoItem);
+                }
+                if (count($fieldsInSection)) {
+                    $templateSections[] = [
+                        'sortOrder' => $templateSection->SortOrder,
+                        'titleNL' => $templateSection->Title_NL,
+                        'titleEN' => $templateSection->Title_EN,
+                        'id' => DataObjectJsonApiEncoder::getJSONAPIID($templateSection),
+                        'subtitleNL' => $templateSection->Subtitle_NL,
+                        'subtitleEN' => $templateSection->Subtitle_EN,
+                        'iconKey' => $templateSection->IconKey,
+                        'isUsedForSelection' => $templateSection->IsUsedForSelection,
+                        'icon' => $templateSection->Icon,
+                        'fields' => $fieldsInSection
+                    ];
+                }
+            }
+            $templateSteps[] = [
+                'id' => $templateStep->Uuid,
+                'titleNL' => $templateStep->Title_NL,
+                'titleEN' => $templateStep->Title_EN,
+                'subtitleNL' => $templateStep->Subtitle_NL,
+                'subtitleEN' => $templateStep->Subtitle_EN,
+                'sortOrder' => $templateStep->SortOrder,
+                'templateSections' => $templateSections
+            ];
+        }
+
+        return $templateSteps;
     }
 }

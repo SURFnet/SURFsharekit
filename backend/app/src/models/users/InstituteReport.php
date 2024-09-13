@@ -102,11 +102,13 @@ class InstituteReport extends Institute {
         $publicationRecordCount = $repoItems->filter(['RepoType' => 'PublicationRecord'])->count();
         $learningObjectCount = $repoItems->filter(['RepoType' => 'LearningObject'])->count();
         $researchObjectsCount = $repoItems->filter(['RepoType' => 'ResearchObject'])->count();
+        $datasetsCount = $repoItems->filter(['RepoType' => 'Dataset'])->count();
         return [
-            'total' => ($publicationRecordCount + $learningObjectCount + $researchObjectsCount),
+            'total' => ($publicationRecordCount + $learningObjectCount + $researchObjectsCount + $datasetsCount),
             'publicationRecords' => $publicationRecordCount,
             'learningObjects' => $learningObjectCount,
-            'researchObjects' => $researchObjectsCount
+            'researchObjects' => $researchObjectsCount,
+            'datasets' => $datasetsCount
         ];
     }
 

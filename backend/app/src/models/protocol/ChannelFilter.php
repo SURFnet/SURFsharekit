@@ -48,6 +48,6 @@ class ChannelFilter extends DataObject {
          */
         $dropdown = $fields->dataFieldByName('RepoItemAttribute');
         $dropdown->setHasEmptyDefault(true);
-        return $fields;
+        return MetaField::ensureDropdownField($this, $fields);
     }
 }

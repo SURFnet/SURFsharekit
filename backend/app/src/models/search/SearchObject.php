@@ -3,6 +3,7 @@
 namespace SurfSharekit\Models;
 
 use SilverStripe\ORM\DataObject;
+use SurfSharekit\Models\Helper\Constants;
 
 class SearchObject extends DataObject {
     const SPLITTER = ' || ';
@@ -40,6 +41,8 @@ class SearchObject extends DataObject {
 
         foreach ($person->Groups() as $group){
             $searchables[] = $group->Title;
+            $searchables[] = $group->Label_NL;
+            $searchables[] = $group->Label_EN;
         }
 
         return implode(static::SPLITTER, $searchables);
@@ -54,6 +57,8 @@ class SearchObject extends DataObject {
     static function generateSearchTextForRepoItem(RepoItem $repoItem, $isBeingGeneratedForAnotherRepoItem = false) {
         $searchables = [];
         $searchables[] = $repoItem->Uuid;
+        $searchables[] = $repoItem->Title;
+        $searchables[] = $repoItem->Owner()->FullName;
 
         foreach ($repoItem->RepoItemMetaFields()->filter(['MetaField.MakesRepoItemFindable' => true]) as $searchableMetafield) {
             foreach ($searchableMetafield->RepoItemMetaFieldValues()->filter(['IsRemoved' => 0]) as $answer) {
@@ -95,7 +100,7 @@ class SearchObject extends DataObject {
     }
 
     public static function updateForRepoItem(RepoItem $repoItem) {
-        if (!in_array($repoItem->RepoType, ['PublicationRecord', 'LearningObject', 'ResearchObject'])) {
+        if (!in_array($repoItem->RepoType, Constants::MAIN_REPOTYPES)) {
             return;
         }
         $searchObject = SearchObject::get()->filter(['RepoItemID' => $repoItem->ID])->first();

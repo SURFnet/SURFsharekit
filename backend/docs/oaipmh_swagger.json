@@ -1,0 +1,631 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "OAI-PMH",
+    "description": "An OAI-PMH repository is available which allows you to harvest all repoitems in XML. Just like the Json:Api endpoints, requires you to be authorized using a Authorization Bearer Token.\n \n The Open Archives Initiative Protocol for Metadata Harvesting (OAI-PMH) is a low-barrier mechanism for repository interoperability. Data Providers are repositories that expose structured metadata via OAI-PMH. Service Providers then make OAI-PMH service requests to harvest that metadata. OAI-PMH is a set of six verbs or services that are invoked within HTTP.\n \n For more detailed information about the protocol please refer to http://www.openarchives.org/OAI/openarchivesprotocol.html\n\n # Resumption Token\n\n See: http://www.openarchives.org/OAI/openarchivesprotocol.html#Idempotency \n \n Repositories that implement resumptionTokens must do so in a manner that allows harvesters to resume a sequence of requests for incomplete lists by re-issuing a list request with the most recent resumptionToken. The purpose of this is to allow harvesters to recover from network or other errors that would otherwise mean that the list request sequence would have to be started again.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://url.nl"
+    }
+  ],
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "paths": {
+    "/{channel}?verb=ListRecords&metadataPrefix=didl_mods": {
+      "get": {
+        "summary": "Listing all the available 'sets' of repository items, each set represents an institute",
+        "tags": [
+          "DIDL-MODS"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "channel",
+            "required": true,
+            "description": "The desired channel to search for repoItems in",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "resumptionToken",
+            "required": false,
+            "description": "A token or identifier that allows a client to resume or continue a previous operation, typically retrieving a list of items, where the initial request might not have fetched all the available data in a single response.",
+            "schema": {
+              "type": "string",
+              "example": ";;10;1;didl_mods;"
+            }
+          },
+          {
+            "in": "query",
+            "name": "set",
+            "required": false,
+            "description": "Filter the results within a specific set.",
+            "schema": {
+              "type": "string",
+              "example": "5a287f57-c317-4aaa-9fc8-f1d0bab71f5f"
+            }
+          },
+          {
+            "in": "query",
+            "name": "purge",
+            "required": false,
+            "description": "Determines whether the cache is being used or not.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "identifier",
+            "required": false,
+            "description": "UUID of the repoitem to filter on",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "description": "Format: ",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "until",
+            "required": false,
+            "description": "Format:",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succesfull response \n\n\n ```<?xml version=\"1.0\"?>\n<OAI-PMH xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://www.openarchives.org/OAI/2.0/\" xsi:schemaLocation=\"http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd\">\n    <responseDate>2023-12-20T15:56:27Z</responseDate>\n    <request verb=\"ListRecords\" metadataPrefix=\"didl_mods\" set=\"214b3cba-a3ae-48c4-92e7-47a7768daee1\">https://api.acc.surfsharekit.nl/api/oaipmh/channel/v1/hbokennisbank</request>\n    <ListRecords>\n        <record xmlns:didl=\"urn:mpeg:mpeg21:2002:02-DIDL-NS\" xmlns:dii=\"urn:mpeg:mpeg21:2002:01-DII-NS\" xmlns:dcterms=\"http://purl.org/dc/terms/\" xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\" xmlns:mods=\"http://www.loc.gov/mods/v3\" xmlns:hbo=\"info:eu-repo/xmlns/hboMODSextension\" xmlns:wmp=\"http://www.surfgroepen.nl/werkgroepmetadataplus\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns:dai=\"info:eu-repo/dai\">\n            <header>\n                <identifier>oai:surfsharekit.nl:461d6c37-a7f1-451e-8c33-a75e8c91f9ba</identifier>\n                <datestamp>2017-04-25T09:33:49Z</datestamp>\n                <setSpec>214b3cba-a3ae-48c4-92e7-47a7768daee1</setSpec>\n            </header>\n            <metadata>\n                <didl:DIDL xmlns:didl=\"urn:mpeg:mpeg21:2002:02-DIDL-NS\" xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\n                    <didl:Item/>\n                    <didl:Item>\n                        <didl:Descriptor>\n                            <didl:Statement mimeType=\"application/xml\">\n                                <dii:Identifier xmlns:dii=\"urn:mpeg:mpeg21:2002:01-DII-NS\">urn:nbn:nl:hs:13-461d6c37-a7f1-451e-8c33-a75e8c91f9ba</dii:Identifier>\n                            </didl:Statement>\n                        </didl:Descriptor>\n                        <didl:Descriptor>\n                            <didl:Statement mimeType=\"application/xml\">\n                                <dcterms:modified xmlns:dcterms=\"http://purl.org/dc/terms/\">2017-04-25T09:33:49Z</dcterms:modified>\n                            </didl:Statement>\n                        </didl:Descriptor>\n                        <didl:Component>\n                            <didl:Resource mimeType=\"text/html\" ref=\"https://acc.surfsharekit.nl/public/461d6c37-a7f1-451e-8c33-a75e8c91f9ba\"/>\n                        </didl:Component>\n                        <didl:Item>\n                            <didl:Descriptor>\n                                <didl:Statement mimeType=\"application/xml\">\n                                    <rdf:type rdf:resource=\"info:eu-repo/semantics/descriptiveMetadata\"/>\n                                </didl:Statement>\n                            </didl:Descriptor>\n                            <didl:Component>\n                                <didl:Resource mimeType=\"application/xml\">\n                                    <mods:mods xmlns:mods=\"http://www.loc.gov/mods/v3\">\n                                        <mods:titleInfo>\n                                            <mods:title>Attributiestijlen</mods:title>\n                                            <mods:subTitle/>\n                                        </mods:titleInfo>\n                                        <mods:abstract>In deze scriptie wordt eerst beschreven wat de termen attributie, faalangst, zelfvertrouwen, zelfbeeld en motivatie inhouden (theoriedeel). Vanuit de theorie gezien, zou een positieve(re) attributiestijl invloed moeten hebben op faalangst, zelfvertrouwen, zelfbeeld en motivatie. Het praktijkdeel bevat een kwantitatief onderzoek, naar de relatie tussen attributiestijl en de vier genoemde termen. Door middel van lessen wordt er geprobeerd om de attributiestijl van kinderen (groep 4-5) aan te passen. Vervolgens wordt er gekeken of er ook verandering (vooruitgang) is te zien op de vier genoemde soorten problematiek. Doel: als deze attributietraining een positieve invloed heeft op de andere soorten problematiek, dan zou dit een methode kunnen zijn om op school te werken aan faalangst, weinig zelfvertrouwen, een laag zelfbeeld en weinig motivatie. Het onderzoek wordt uitgevoerd in het reguliere onderwijs en in het SBO.</mods:abstract>\n                                        <mods:subject>\n                                            <mods:topic>attributie</mods:topic>\n                                            <mods:topic>faalangst</mods:topic>\n                                            <mods:topic>zelfvertrouwen</mods:topic>\n                                            <mods:topic>motivatie</mods:topic>\n                                        </mods:subject>\n                                        <mods:classification authorityURI=\"urn:surf:hbo-kennisbank.nl/classification/hbo:theme\">3</mods:classification>\n                                        <mods:language>\n                                            <mods:languageTerm authority=\"rfc3066\">nl</mods:languageTerm>\n                                        </mods:language>\n                                        <mods:typeOfResource/>\n                                        <mods:genre>info:eu-repo/semantics/bachelorThesis</mods:genre>\n                                        <mods:name type=\"personal\" ID=\"_448ce1c8-b7b7-40aa-8083-cc07db580cf6\">\n                                            <mods:namePart type=\"family\">Vos</mods:namePart>\n                                            <mods:namePart type=\"given\">Hilde</mods:namePart>\n                                            <mods:displayForm>Hilde Vos</mods:displayForm>\n                                            <mods:role>\n                                                <mods:roleTerm type=\"code\" authority=\"marcrelator\">aut</mods:roleTerm>\n                                            </mods:role>\n                                            <mods:affiliation>Student</mods:affiliation>\n                                        </mods:name>\n                                        <mods:name type=\"corporate\">\n                                            <mods:namePart/>\n                                            <mods:role>\n                                                <mods:roleTerm type=\"code\" authority=\"marcrelator\">cli</mods:roleTerm>\n                                            </mods:role>\n                                        </mods:name>\n                                        <mods:typeOfResource>text</mods:typeOfResource>\n                                        <mods:originInfo>\n                                            <mods:dateIssued encoding=\"w3cdtf\">2014-02-25</mods:dateIssued>\n                                            <mods:dateOther type=\"approved\">2014-02-25</mods:dateOther>\n                                            <mods:publisher>Driestar Educatief</mods:publisher>\n                                            <mods:place>\n                                                <mods:placeTerm type=\"text\"/>\n                                            </mods:place>\n                                        </mods:originInfo>\n                                        <mods:extension>\n                                            <hbo:hbo xmlns:hbo=\"info:eu-repo/xmlns/hboMODSextension\">\n                                                <hbo:award>\n                                                    <hbo:description/>\n                                                </hbo:award>\n                                                <hbo:name type=\"corporate\">\n                                                    <hbo:namePart type=\"organisation\">Driestar Educatief</hbo:namePart>\n                                                    <mods:role>\n                                                        <mods:roleTerm type=\"code\" authority=\"marcrelator\">dgg</mods:roleTerm>\n                                                    </mods:role>\n                                                </hbo:name>\n                                                <wmp:rights xmlns:wmp=\"http://www.surfgroepen.nl/werkgroepmetadataplus\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\">\n                                                    <dc:rights>Alle rechten voorbehouden</dc:rights>\n                                                </wmp:rights>\n                                            </hbo:hbo>\n                                            <dai:daiList xmlns:dai=\"info:eu-repo/dai\"/>\n                                        </mods:extension>\n                                        <mods:relatedItem type=\"host\">\n                                            <mods:titleInfo/>\n                                            <mods:originInfo>\n                                                <mods:place/>\n                                            </mods:originInfo>\n                                            <mods:part>\n                                                <mods:extent unit=\"page\"/>\n                                            </mods:part>\n                                        </mods:relatedItem>\n                                    </mods:mods>\n                                </didl:Resource>\n                            </didl:Component>\n                        </didl:Item>\n                        <didl:Item>\n                            <didl:Descriptor>\n                                <didl:Statement mimeType=\"application/xml\">\n                                    <rdf:type rdf:resource=\"info:eu-repo/semantics/humanStartPage\"/>\n                                </didl:Statement>\n                            </didl:Descriptor>\n                            <didl:Component>\n                                <didl:Resource mimeType=\"text/html\" ref=\"https://acc.surfsharekit.nl/public/461d6c37-a7f1-451e-8c33-a75e8c91f9ba\"/>\n                            </didl:Component>\n                        </didl:Item>\n                        <didl:Item>\n                            <didl:Descriptor>\n                                <didl:Statement mimeType=\"application/xml\">\n                                    <rdf:type rdf:resource=\"info:eu-repo/semantics/objectFile\"/>\n                                </didl:Statement>\n                            </didl:Descriptor>\n                            <didl:Descriptor>\n                                <didl:Statement mimeType=\"application/xml\">\n                                    <dcterms:accessRights xmlns:dcterms=\"http://purl.org/dc/terms/\">http://purl.org/eprint/accessRights/OpenAccess</dcterms:accessRights>\n                                </didl:Statement>\n                            </didl:Descriptor>\n                            <didl:Component>\n                                <didl:Resource mimeType=\"application/pdf\" ref=\"https://acc.surfsharekit.nl/objectstore/a38ddce5-94ad-4bc2-9007-f0f8303dfc45\"/>\n                            </didl:Component>\n                        </didl:Item>\n                    </didl:Item>\n                </didl:DIDL>\n            </metadata>\n        </record>\n    </ListRecords>\n</OAI-PMH>\n\n---\nOR\n--- \n    \n<OAI-PMH xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://www.openarchives.org/OAI/2.0/\" xsi:schemaLocation=\"http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd\">\n    <responseDate>2024-02-10T02:01:12Z</responseDate>\n    <request verb=\"GetRecord\" identifier=\"oai:surfsharekit.nl:5e3c6576-b50c-4115-bbfe-3b571aa21f0d\" metadataPrefix=\"didl_mods\">http://localhost:8080/api/oaipmh/channel/v1/hbokennisbank</request>\n    <GetRecord>\n        <record>\n            <header status=\"deleted\">\n                <identifier>oai:surfsharekit.nl:5e3c6576-b50c-4115-bbfe-3b571aa21f0d</identifier>\n                <datestamp>2024-02-09T03:51:57Z</datestamp>\n                <setSpec>37f9d11b-0a73-45b2-9855-150b7f57efa0</setSpec>\n            </header>\n        </record>\n    </GetRecord>\n</OAI-PMH>\n"
+          }
+        }
+      }
+    },
+    "/{channel}?verb=GetRecord&metadataPrefix=didl_mods": {
+      "get": {
+        "summary": "Listing the specified repository item",
+        "tags": [
+          "DIDL-MODS"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "channel",
+            "required": true,
+            "description": "The desired channel to search for repoItems in",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "set",
+            "required": false,
+            "description": "Filter the results within a specific set.",
+            "schema": {
+              "type": "string",
+              "example": "5a287f57-c317-4aaa-9fc8-f1d0bab71f5f"
+            }
+          },
+          {
+            "in": "query",
+            "name": "purge",
+            "required": false,
+            "description": "Determines whether the cache is being used or not.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "identifier",
+            "required": true,
+            "description": "UUID of the repoitem to filter on",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "description": "Specifies a starting point or date from which the API should retrieve repoItems that have been uploaded from that date.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "until",
+            "required": false,
+            "description": "Specifies a starting point or date from which the API should retrieve repoItems that have been uploaded until that date.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succesfull response \n\n\n ```<?xml version=\"1.0\"?>\n<OAI-PMH xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://www.openarchives.org/OAI/2.0/\" xsi:schemaLocation=\"http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd\">\n    <responseDate>2023-12-21T11:15:13Z</responseDate>\n    <request verb=\"GetRecord\" identifier=\"oai:surfsharekit.nl:461d6c37-a7f1-451e-8c33-a75e8c91f9ba\" metadataPrefix=\"didl_mods\">https://api.acc.surfsharekit.nl/api/oaipmh/channel/v1/hbokennisbank</request>\n    <GetRecord>\n        <record xmlns:didl=\"urn:mpeg:mpeg21:2002:02-DIDL-NS\" xmlns:dii=\"urn:mpeg:mpeg21:2002:01-DII-NS\" xmlns:dcterms=\"http://purl.org/dc/terms/\" xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\" xmlns:mods=\"http://www.loc.gov/mods/v3\" xmlns:hbo=\"info:eu-repo/xmlns/hboMODSextension\" xmlns:wmp=\"http://www.surfgroepen.nl/werkgroepmetadataplus\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns:dai=\"info:eu-repo/dai\">\n            <header>\n                <identifier>oai:surfsharekit.nl:461d6c37-a7f1-451e-8c33-a75e8c91f9ba</identifier>\n                <datestamp>2017-04-25T09:33:49Z</datestamp>\n                <setSpec>214b3cba-a3ae-48c4-92e7-47a7768daee1</setSpec>\n            </header>\n            <metadata>\n                <didl:DIDL xmlns:didl=\"urn:mpeg:mpeg21:2002:02-DIDL-NS\" xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\n                    <didl:Item/>\n                    <didl:Item>\n                        <didl:Descriptor>\n                            <didl:Statement mimeType=\"application/xml\">\n                                <dii:Identifier xmlns:dii=\"urn:mpeg:mpeg21:2002:01-DII-NS\">urn:nbn:nl:hs:13-461d6c37-a7f1-451e-8c33-a75e8c91f9ba</dii:Identifier>\n                            </didl:Statement>\n                        </didl:Descriptor>\n                        <didl:Descriptor>\n                            <didl:Statement mimeType=\"application/xml\">\n                                <dcterms:modified xmlns:dcterms=\"http://purl.org/dc/terms/\">2017-04-25T09:33:49Z</dcterms:modified>\n                            </didl:Statement>\n                        </didl:Descriptor>\n                        <didl:Component>\n                            <didl:Resource mimeType=\"text/html\" ref=\"https://acc.surfsharekit.nl/public/461d6c37-a7f1-451e-8c33-a75e8c91f9ba\"/>\n                        </didl:Component>\n                        <didl:Item>\n                            <didl:Descriptor>\n                                <didl:Statement mimeType=\"application/xml\">\n                                    <rdf:type rdf:resource=\"info:eu-repo/semantics/descriptiveMetadata\"/>\n                                </didl:Statement>\n                            </didl:Descriptor>\n                            <didl:Component>\n                                <didl:Resource mimeType=\"application/xml\">\n                                    <mods:mods xmlns:mods=\"http://www.loc.gov/mods/v3\">\n                                        <mods:titleInfo>\n                                            <mods:title>Attributiestijlen</mods:title>\n                                            <mods:subTitle/>\n                                        </mods:titleInfo>\n                                        <mods:abstract>In deze scriptie wordt eerst beschreven wat de termen attributie, faalangst, zelfvertrouwen, zelfbeeld en motivatie inhouden (theoriedeel). Vanuit de theorie gezien, zou een positieve(re) attributiestijl invloed moeten hebben op faalangst, zelfvertrouwen, zelfbeeld en motivatie. Het praktijkdeel bevat een kwantitatief onderzoek, naar de relatie tussen attributiestijl en de vier genoemde termen. Door middel van lessen wordt er geprobeerd om de attributiestijl van kinderen (groep 4-5) aan te passen. Vervolgens wordt er gekeken of er ook verandering (vooruitgang) is te zien op de vier genoemde soorten problematiek. Doel: als deze attributietraining een positieve invloed heeft op de andere soorten problematiek, dan zou dit een methode kunnen zijn om op school te werken aan faalangst, weinig zelfvertrouwen, een laag zelfbeeld en weinig motivatie. Het onderzoek wordt uitgevoerd in het reguliere onderwijs en in het SBO.</mods:abstract>\n                                        <mods:subject>\n                                            <mods:topic>attributie</mods:topic>\n                                            <mods:topic>faalangst</mods:topic>\n                                            <mods:topic>zelfvertrouwen</mods:topic>\n                                            <mods:topic>motivatie</mods:topic>\n                                        </mods:subject>\n                                        <mods:classification authorityURI=\"urn:surf:hbo-kennisbank.nl/classification/hbo:theme\">3</mods:classification>\n                                        <mods:language>\n                                            <mods:languageTerm authority=\"rfc3066\">nl</mods:languageTerm>\n                                        </mods:language>\n                                        <mods:typeOfResource/>\n                                        <mods:genre>info:eu-repo/semantics/bachelorThesis</mods:genre>\n                                        <mods:name type=\"personal\" ID=\"_448ce1c8-b7b7-40aa-8083-cc07db580cf6\">\n                                            <mods:namePart type=\"family\">Vos</mods:namePart>\n                                            <mods:namePart type=\"given\">Hilde</mods:namePart>\n                                            <mods:displayForm>Hilde Vos</mods:displayForm>\n                                            <mods:role>\n                                                <mods:roleTerm type=\"code\" authority=\"marcrelator\">aut</mods:roleTerm>\n                                            </mods:role>\n                                            <mods:affiliation>Student</mods:affiliation>\n                                        </mods:name>\n                                        <mods:name type=\"corporate\">\n                                            <mods:namePart/>\n                                            <mods:role>\n                                                <mods:roleTerm type=\"code\" authority=\"marcrelator\">cli</mods:roleTerm>\n                                            </mods:role>\n                                        </mods:name>\n                                        <mods:typeOfResource>text</mods:typeOfResource>\n                                        <mods:originInfo>\n                                            <mods:dateIssued encoding=\"w3cdtf\">2014-02-25</mods:dateIssued>\n                                            <mods:dateOther type=\"approved\">2014-02-25</mods:dateOther>\n                                            <mods:publisher>Driestar Educatief</mods:publisher>\n                                            <mods:place>\n                                                <mods:placeTerm type=\"text\"/>\n                                            </mods:place>\n                                        </mods:originInfo>\n                                        <mods:extension>\n                                            <hbo:hbo xmlns:hbo=\"info:eu-repo/xmlns/hboMODSextension\">\n                                                <hbo:award>\n                                                    <hbo:description/>\n                                                </hbo:award>\n                                                <hbo:name type=\"corporate\">\n                                                    <hbo:namePart type=\"organisation\">Driestar Educatief</hbo:namePart>\n                                                    <mods:role>\n                                                        <mods:roleTerm type=\"code\" authority=\"marcrelator\">dgg</mods:roleTerm>\n                                                    </mods:role>\n                                                </hbo:name>\n                                                <wmp:rights xmlns:wmp=\"http://www.surfgroepen.nl/werkgroepmetadataplus\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\">\n                                                    <dc:rights>Alle rechten voorbehouden</dc:rights>\n                                                </wmp:rights>\n                                            </hbo:hbo>\n                                            <dai:daiList xmlns:dai=\"info:eu-repo/dai\"/>\n                                        </mods:extension>\n                                        <mods:relatedItem type=\"host\">\n                                            <mods:titleInfo/>\n                                            <mods:originInfo>\n                                                <mods:place/>\n                                            </mods:originInfo>\n                                            <mods:part>\n                                                <mods:extent unit=\"page\"/>\n                                            </mods:part>\n                                        </mods:relatedItem>\n                                    </mods:mods>\n                                </didl:Resource>\n                            </didl:Component>\n                        </didl:Item>\n                        <didl:Item>\n                            <didl:Descriptor>\n                                <didl:Statement mimeType=\"application/xml\">\n                                    <rdf:type rdf:resource=\"info:eu-repo/semantics/humanStartPage\"/>\n                                </didl:Statement>\n                            </didl:Descriptor>\n                            <didl:Component>\n                                <didl:Resource mimeType=\"text/html\" ref=\"https://acc.surfsharekit.nl/public/461d6c37-a7f1-451e-8c33-a75e8c91f9ba\"/>\n                            </didl:Component>\n                        </didl:Item>\n                        <didl:Item>\n                            <didl:Descriptor>\n                                <didl:Statement mimeType=\"application/xml\">\n                                    <rdf:type rdf:resource=\"info:eu-repo/semantics/objectFile\"/>\n                                </didl:Statement>\n                            </didl:Descriptor>\n                            <didl:Descriptor>\n                                <didl:Statement mimeType=\"application/xml\">\n                                    <dcterms:accessRights xmlns:dcterms=\"http://purl.org/dc/terms/\">http://purl.org/eprint/accessRights/OpenAccess</dcterms:accessRights>\n                                </didl:Statement>\n                            </didl:Descriptor>\n                            <didl:Component>\n                                <didl:Resource mimeType=\"application/pdf\" ref=\"https://acc.surfsharekit.nl/objectstore/a38ddce5-94ad-4bc2-9007-f0f8303dfc45\"/>\n                            </didl:Component>\n                        </didl:Item>\n                    </didl:Item>\n                </didl:DIDL>\n            </metadata>\n        </record>\n    </GetRecord>\n</OAI-PMH>\n\n---\nOR\n--- \n    \n<OAI-PMH xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://www.openarchives.org/OAI/2.0/\" xsi:schemaLocation=\"http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd\">\n    <responseDate>2024-02-10T02:01:12Z</responseDate>\n    <request verb=\"GetRecord\" identifier=\"oai:surfsharekit.nl:5e3c6576-b50c-4115-bbfe-3b571aa21f0d\" metadataPrefix=\"didl_mods\">http://localhost:8080/api/oaipmh/channel/v1/hbokennisbank</request>\n    <GetRecord>\n        <record>\n            <header status=\"deleted\">\n                <identifier>oai:surfsharekit.nl:5e3c6576-b50c-4115-bbfe-3b571aa21f0d</identifier>\n                <datestamp>2024-02-09T03:51:57Z</datestamp>\n                <setSpec>37f9d11b-0a73-45b2-9855-150b7f57efa0</setSpec>\n            </header>\n        </record>\n    </GetRecord>\n</OAI-PMH>"
+          }
+        }
+      }
+    },
+    "/{channel}?verb=ListIdentifier&metadataPrefix=didl_mods": {
+      "get": {
+        "summary": "Listing all the available identifiers, where each set represents an institute",
+        "tags": [
+          "DIDL-MODS"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "channel",
+            "required": true,
+            "description": "The desired channel to search for repoItems in",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "set",
+            "required": false,
+            "description": "Filter the results within a specific set.",
+            "schema": {
+              "type": "string",
+              "example": "5a287f57-c317-4aaa-9fc8-f1d0bab71f5f"
+            }
+          },
+          {
+            "in": "query",
+            "name": "purge",
+            "required": false,
+            "description": "Determines whether the cache is being used or not.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "identifier",
+            "required": false,
+            "description": "UUID of the repoitem to filter on",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "description": "Specifies a starting point or date from which the API should retrieve repoItems that have been uploaded from that date.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "until",
+            "required": false,
+            "description": "Specifies a starting point or date from which the API should retrieve repoItems that have been uploaded until that date.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "\"Succesfull response \n\n\n ```<?xml version=\"1.0\"?>\n<OAI-PMH xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://www.openarchives.org/OAI/2.0/\" xsi:schemaLocation=\"http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd\">\n    <responseDate>2023-12-21T11:16:19Z</responseDate>\n    <request verb=\"ListIdentifiers\" metadataPrefix=\"didl_mods\">https://api.acc.surfsharekit.nl/api/oaipmh/channel/v1/hbokennisbank</request>\n    <ListIdentifiers>\n        <header>\n            <identifier>oai:surfsharekit.nl:c8a634d1-29e6-4a5d-a701-0f1574ee3c14</identifier>\n            <datestamp>2020-03-23T13:16:28Z</datestamp>\n            <setSpec>37f9d11b-0a73-45b2-9855-150b7f57efa0</setSpec>\n        </header>\n        <resumptionToken cursor=\"100\" completeListSize=\"53213\">;;100;1;didl_mods;</resumptionToken>\n    </ListIdentifiers>\n</OAI-PMH>"
+          }
+        }
+      }
+    },
+    "/{channel}?verb=ListSets&metadataPrefix=didl_mods": {
+      "get": {
+        "summary": "Listing all the available 'sets'",
+        "tags": [
+          "DIDL-MODS"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "channel",
+            "required": true,
+            "description": "The desired channel to search for repoItems in",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "set",
+            "required": false,
+            "description": "Filter the results within a specific set.",
+            "schema": {
+              "type": "string",
+              "example": "5a287f57-c317-4aaa-9fc8-f1d0bab71f5f"
+            }
+          },
+          {
+            "in": "query",
+            "name": "purge",
+            "required": false,
+            "description": "Determines whether the cache is being used or not.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "identifier",
+            "required": false,
+            "description": "UUID of the repoitem to filter on",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "description": "Specifies a starting point or date from which the API should retrieve repoItems that have been uploaded from that date.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "until",
+            "required": false,
+            "description": "Specifies a starting point or date from which the API should retrieve repoItems that have been uploaded until that date.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succesfull response \n\n\n ```<?xml version=\"1.0\"?>\n<OAI-PMH xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://www.openarchives.org/OAI/2.0/\" xsi:schemaLocation=\"http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd\">\n    <responseDate>2023-12-21T11:20:17Z</responseDate>\n    <request verb=\"ListSets\" metadataPrefix=\"didl_mods\">https://api.acc.surfsharekit.nl/api/oaipmh/channel/v1/hbokennisbank</request>\n    <ListSets>\n        <set>\n            <setSpec>1182b099-53c5-465a-9505-c852d31b1a6e</setSpec>\n            <setName>Zuyd Hogeschool</setName>\n        </set>\n    </ListSets>\n</OAI-PMH>"
+          }
+        }
+      }
+    },
+    "/{channel}?verb=ListRecords&metadataPrefix=LOMv1.0": {
+      "get": {
+        "summary": "Listing all the available 'sets' of repository items, each set represents an institute",
+        "tags": [
+          "LOM"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "channel",
+            "required": true,
+            "description": "The desired channel to search for repoItems in",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "resumptionToken",
+            "required": false,
+            "description": "A token or identifier that allows a client to resume or continue a previous operation, typically retrieving a list of items, where the initial request might not have fetched all the available data in a single response.",
+            "schema": {
+              "type": "string",
+              "example": ";;10;1;didl_mods;"
+            }
+          },
+          {
+            "in": "query",
+            "name": "set",
+            "required": false,
+            "description": "Filter the results within a specific set.",
+            "schema": {
+              "type": "string",
+              "example": "5a287f57-c317-4aaa-9fc8-f1d0bab71f5f"
+            }
+          },
+          {
+            "in": "query",
+            "name": "purge",
+            "required": false,
+            "description": "Determines whether the cache is being used or not.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "identifier",
+            "required": false,
+            "description": "UUID of the repoitem to filter on",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "description": "Specifies a starting point or date from which the API should retrieve repoItems that have been uploaded from that date.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "until",
+            "required": false,
+            "description": "Specifies a starting point or date from which the API should retrieve repoItems that have been uploaded until that date.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succesfull response \n\n\n ``` <?xml version=\"1.0\"?>\n<OAI-PMH xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://www.openarchives.org/OAI/2.0/\" xsi:schemaLocation=\"http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd\">\n    <responseDate>2023-12-21T11:40:59Z</responseDate>\n    <request verb=\"ListRecords\" metadataPrefix=\"LOMv1.0\">https://api.acc.surfsharekit.nl/api/oaipmh/channel/v1/edurep</request>\n    <ListRecords>\n        <record xmlns:lom=\"http://ltsc.ieee.org/xsd/LOM\">\n            <header>\n                <identifier>oai:surfsharekit.nl:e8a79ba9-c023-4b26-b2ca-e1ec0710da71</identifier>\n                <datestamp>2020-03-24T14:47:15Z</datestamp>\n                <setSpec>497ef655-718d-41b9-b202-d07323aed83b</setSpec>\n            </header>\n            <metadata>\n                <lom:lom xmlns:lom=\"http://ltsc.ieee.org/xsd/LOM\">\n                    <lom:classification>\n                        <lom:purpose>\n                            <lom:value>discipline</lom:value>\n                            <lom:source>LOMv1.0</lom:source>\n                        </lom:purpose>\n                    </lom:classification>\n                    <lom:general>\n                        <lom:title>\n                            <lom:string language=\"en\">&#x2018;It can never be as perfect as home&#x2019;: An explorative study into the fostering experiences of unaccompanied refugee children, their foster carers and social workers</lom:string>\n                        </lom:title>\n                        <lom:identifier>\n                            <lom:catalog>UUID</lom:catalog>\n                            <lom:entry>urn:uuid:e8a79ba9-c023-4b26-b2ca-e1ec0710da71</lom:entry>\n                        </lom:identifier>\n                        <lom:language>en</lom:language>\n                        <lom:description>\n                            <lom:string language=\"en\">Research shows that highly supportive living arrangements, such as foster care, can provide an environment that meets the needs of unaccompanied children (i.e. fewer internalizing problems, higher quality of the child-rearing environment). However, there is limited research into the experiences of these children in (cultural) foster care. The aim of this study is to explore the experiences of former unaccompanied refugee children and unaccompanied refugee children, their carers and social workers with regard to the foster placement. This cross-sectional qualitative study combined semi-structured interviews with questionnaires. In general, participants were satisfied with the foster placement. However, some children also reported negative experiences during their foster placement or felt somewhat uncomfortable, but they still rated the placement as successful. Children and carers valued the cultural similarity of the foster placement. Former unaccompanied children appreciated cultural similarity less. Overall, participants valued similarity of language the most. Several children did not feel at home in their foster placement. In most foster families, the pedagogical climate offered to children seemed adequate.</lom:string>\n                        </lom:description>\n                        <lom:keyword>\n                            <lom:string language=\"x-none\">Unaccompanied refugee children</lom:string>\n                        </lom:keyword>\n                        <lom:keyword>\n                            <lom:string language=\"x-none\">Foster care</lom:string>\n                        </lom:keyword>\n                        <lom:keyword>\n                            <lom:string language=\"x-none\">Qualitative study</lom:string>\n                        </lom:keyword>\n                        <lom:keyword>\n                            <lom:string language=\"x-none\">Cultural placement</lom:string>\n                        </lom:keyword>\n                        <lom:keyword>\n                            <lom:string language=\"x-none\">Successful placement</lom:string>\n                        </lom:keyword>\n                        <lom:aggregationLevel>\n                            <lom:source>LOMv1.0</lom:source>\n                            <lom:value>2</lom:value>\n                        </lom:aggregationLevel>\n                    </lom:general>\n                    <lom:classification>\n                        <lom:purpose>\n                            <lom:value>discipline</lom:value>\n                            <lom:source>LOMv1.0</lom:source>\n                        </lom:purpose>\n                    </lom:classification>\n                    <lom:metaMetadata>\n                        <lom:metadataSchema>LOMv1.0</lom:metadataSchema>\n                        <lom:metadataSchema>nl_lom_v1p0</lom:metadataSchema>\n                        <lom:identifier>\n                            <lom:catalog>UUID</lom:catalog>\n                            <lom:entry>urn:uuid:e8a79ba9-c023-4b26-b2ca-e1ec0710da71</lom:entry>\n                        </lom:identifier>\n                    </lom:metaMetadata>\n                    <lom:educational>\n                        <lom:intendedEndUserRole>\n                            <lom:source>LOMv1.0</lom:source>\n                            <lom:value>learner</lom:value>\n                        </lom:intendedEndUserRole>\n                        <lom:learningResourceType>\n                            <lom:source>http://purl.edustandaard.nl/vdex_learningresourcetype_lomv1p0_20060628.xml</lom:source>\n                            <lom:value/>\n                        </lom:learningResourceType>\n                        <lom:typicalAgeRange>\n                            <lom:string language=\"x-none\">16-90</lom:string>\n                        </lom:typicalAgeRange>\n                    </lom:educational>\n                    <lom:rights>\n                        <lom:cost>\n                            <lom:source>LOMv1.0</lom:source>\n                            <lom:value>no</lom:value>\n                        </lom:cost>\n                        <lom:copyrightAndOtherRestrictions>\n                            <lom:source>https://purl.edustandaard.nl/copyrightsandotherrestrictions_nllom_20180530</lom:source>\n                            <lom:value>cc-by-nc-nd-40</lom:value>\n                        </lom:copyrightAndOtherRestrictions>\n                        <lom:description>\n                            <lom:string language=\"x-none\">https://creativecommons.org/licenses/by-nc-nd/4.0/</lom:string>\n                        </lom:description>\n                    </lom:rights>\n                    <lom:lifeCycle>\n                        <lom:contribute>\n                            <lom:role>\n                                <lom:source>LOMv1.0</lom:source>\n                                <lom:value>author</lom:value>\n                            </lom:role>\n                        </lom:contribute>\n                        <lom:contribute>\n                            <lom:date>\n                                <lom:dateTime>2020</lom:dateTime>\n                            </lom:date>\n                            <lom:role>\n                                <lom:source>LOMv1.0</lom:source>\n                                <lom:value>publisher</lom:value>\n                            </lom:role>\n                            <lom:entity>BEGIN:VCARD\n                                VERSION:3.0\n                                FN:Rijksuniversiteit Groningen\n                                N:Rijksuniversiteit Groningen;;;;\n                                ORG:Rijksuniversiteit Groningen\n                                END:VCARD\n                            </lom:entity>\n                        </lom:contribute>\n                        <lom:contribute>\n                            <lom:role>\n                                <lom:source>LOMv1.0</lom:source>\n                                <lom:value>educational validator</lom:value>\n                            </lom:role>\n                        </lom:contribute>\n                    </lom:lifeCycle>\n                    <lom:classification>\n                        <lom:purpose>\n                            <lom:source>http://purl.edustandaard.nl/classification_purpose_nllom_20180530</lom:source>\n                            <lom:value>access rights</lom:value>\n                        </lom:purpose>\n                        <lom:taxonPath>\n                            <lom:source>\n                                <lom:string language=\"x-none\">http://purl.edustandaard.nl/classification_accessrights_nllom_20180530</lom:string>\n                            </lom:source>\n                            <lom:taxon>\n                                <lom:id>OpenAccess</lom:id>\n                                <lom:entry>\n                                    <lom:string language=\"x-none\">open toegang</lom:string>\n                                </lom:entry>\n                            </lom:taxon>\n                        </lom:taxonPath>\n                    </lom:classification>\n                    <lom:classification>\n                        <lom:purpose>\n                            <lom:value>discipline</lom:value>\n                            <lom:source>LOMv1.0</lom:source>\n                        </lom:purpose>\n                    </lom:classification>\n                </lom:lom>\n            </metadata>\n        </record>\n        <resumptionToken cursor=\"10\" completeListSize=\"2571\">;;10;1;LOMv1.0;</resumptionToken>\n    </ListRecords>\n</OAI-PMH>\n\n---\nOR\n--- \n    \n<?xml version=\"1.0\"?>\n<OAI-PMH xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://www.openarchives.org/OAI/2.0/\" xsi:schemaLocation=\"http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd\">\n    <responseDate>2024-02-10T03:02:42Z</responseDate>\n    <request verb=\"ListRecords\" metadataPrefix=\"LOMv1.0\">http://localhost:8080/api/oaipmh/channel/v1/tudelft_oai</request>\n    <ListRecords>\n        <record>\n            <header status=\"deleted\">\n                <identifier>oai:surfsharekit.nl:385bdf5d-3d1e-451f-ab64-99b394e9479c</identifier>\n                <datestamp>2024-02-10T03:02:39Z</datestamp>\n                <setSpec>6bfd7354-895b-4f17-b96f-78abbf515bd9</setSpec>\n            </header>\n        </record>\n    </ListRecords>\n</OAI-PMH>"
+          }
+        }
+      }
+    },
+    "/{channel}?verb=GetRecord&metadataPrefix=LOMv1.0": {
+      "get": {
+        "summary": "Listing the specified repository item",
+        "tags": [
+          "LOM"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "channel",
+            "required": true,
+            "description": "The desired channel to search for repoItems in",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "set",
+            "required": false,
+            "description": "Filter the results within a specific set.",
+            "schema": {
+              "type": "string",
+              "example": "5a287f57-c317-4aaa-9fc8-f1d0bab71f5f"
+            }
+          },
+          {
+            "in": "query",
+            "name": "purge",
+            "required": false,
+            "description": "Determines whether the cache is being used or not.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "identifier",
+            "required": true,
+            "description": "UUID of the repoitem to filter on",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "description": "Specifies a starting point or date from which the API should retrieve repoItems that have been uploaded from that date.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "until",
+            "required": false,
+            "description": "Specifies a starting point or date from which the API should retrieve repoItems that have been uploaded until that date.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succesfull response \n\n\n ``` <?xml version=\"1.0\"?>\n<OAI-PMH xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://www.openarchives.org/OAI/2.0/\" xsi:schemaLocation=\"http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd\">\n    <responseDate>2023-12-21T11:44:29Z</responseDate>\n    <request verb=\"GetRecord\" identifier=\"oai:surfsharekit.nl:e8a79ba9-c023-4b26-b2ca-e1ec0710da71\" metadataPrefix=\"LOMv1.0\">https://api.acc.surfsharekit.nl/api/oaipmh/channel/v1/edurep</request>\n    <GetRecord>\n        <record xmlns:lom=\"http://ltsc.ieee.org/xsd/LOM\">\n            <header>\n                <identifier>oai:surfsharekit.nl:e8a79ba9-c023-4b26-b2ca-e1ec0710da71</identifier>\n                <datestamp>2020-03-24T14:47:15Z</datestamp>\n                <setSpec>497ef655-718d-41b9-b202-d07323aed83b</setSpec>\n            </header>\n            <metadata>\n                <lom:lom xmlns:lom=\"http://ltsc.ieee.org/xsd/LOM\">\n                    <lom:classification>\n                        <lom:purpose>\n                            <lom:value>discipline</lom:value>\n                            <lom:source>LOMv1.0</lom:source>\n                        </lom:purpose>\n                    </lom:classification>\n                    <lom:general>\n                        <lom:title>\n                            <lom:string language=\"en\">&#x2018;It can never be as perfect as home&#x2019;: An explorative study into the fostering experiences of unaccompanied refugee children, their foster carers and social workers</lom:string>\n                        </lom:title>\n                        <lom:identifier>\n                            <lom:catalog>UUID</lom:catalog>\n                            <lom:entry>urn:uuid:e8a79ba9-c023-4b26-b2ca-e1ec0710da71</lom:entry>\n                        </lom:identifier>\n                        <lom:language>en</lom:language>\n                        <lom:description>\n                            <lom:string language=\"en\">Research shows that highly supportive living arrangements, such as foster care, can provide an environment that meets the needs of unaccompanied children (i.e. fewer internalizing problems, higher quality of the child-rearing environment). However, there is limited research into the experiences of these children in (cultural) foster care. The aim of this study is to explore the experiences of former unaccompanied refugee children and unaccompanied refugee children, their carers and social workers with regard to the foster placement. This cross-sectional qualitative study combined semi-structured interviews with questionnaires. In general, participants were satisfied with the foster placement. However, some children also reported negative experiences during their foster placement or felt somewhat uncomfortable, but they still rated the placement as successful. Children and carers valued the cultural similarity of the foster placement. Former unaccompanied children appreciated cultural similarity less. Overall, participants valued similarity of language the most. Several children did not feel at home in their foster placement. In most foster families, the pedagogical climate offered to children seemed adequate.</lom:string>\n                        </lom:description>\n                        <lom:keyword>\n                            <lom:string language=\"x-none\">Unaccompanied refugee children</lom:string>\n                        </lom:keyword>\n                        <lom:keyword>\n                            <lom:string language=\"x-none\">Foster care</lom:string>\n                        </lom:keyword>\n                        <lom:keyword>\n                            <lom:string language=\"x-none\">Qualitative study</lom:string>\n                        </lom:keyword>\n                        <lom:keyword>\n                            <lom:string language=\"x-none\">Cultural placement</lom:string>\n                        </lom:keyword>\n                        <lom:keyword>\n                            <lom:string language=\"x-none\">Successful placement</lom:string>\n                        </lom:keyword>\n                        <lom:aggregationLevel>\n                            <lom:source>LOMv1.0</lom:source>\n                            <lom:value>2</lom:value>\n                        </lom:aggregationLevel>\n                    </lom:general>\n                    <lom:classification>\n                        <lom:purpose>\n                            <lom:value>discipline</lom:value>\n                            <lom:source>LOMv1.0</lom:source>\n                        </lom:purpose>\n                    </lom:classification>\n                    <lom:metaMetadata>\n                        <lom:metadataSchema>LOMv1.0</lom:metadataSchema>\n                        <lom:metadataSchema>nl_lom_v1p0</lom:metadataSchema>\n                        <lom:identifier>\n                            <lom:catalog>UUID</lom:catalog>\n                            <lom:entry>urn:uuid:e8a79ba9-c023-4b26-b2ca-e1ec0710da71</lom:entry>\n                        </lom:identifier>\n                    </lom:metaMetadata>\n                    <lom:educational>\n                        <lom:intendedEndUserRole>\n                            <lom:source>LOMv1.0</lom:source>\n                            <lom:value>learner</lom:value>\n                        </lom:intendedEndUserRole>\n                        <lom:learningResourceType>\n                            <lom:source>http://purl.edustandaard.nl/vdex_learningresourcetype_lomv1p0_20060628.xml</lom:source>\n                            <lom:value/>\n                        </lom:learningResourceType>\n                        <lom:typicalAgeRange>\n                            <lom:string language=\"x-none\">16-90</lom:string>\n                        </lom:typicalAgeRange>\n                    </lom:educational>\n                    <lom:rights>\n                        <lom:cost>\n                            <lom:source>LOMv1.0</lom:source>\n                            <lom:value>no</lom:value>\n                        </lom:cost>\n                        <lom:copyrightAndOtherRestrictions>\n                            <lom:source>https://purl.edustandaard.nl/copyrightsandotherrestrictions_nllom_20180530</lom:source>\n                            <lom:value>cc-by-nc-nd-40</lom:value>\n                        </lom:copyrightAndOtherRestrictions>\n                        <lom:description>\n                            <lom:string language=\"x-none\">https://creativecommons.org/licenses/by-nc-nd/4.0/</lom:string>\n                        </lom:description>\n                    </lom:rights>\n                    <lom:lifeCycle>\n                        <lom:contribute>\n                            <lom:role>\n                                <lom:source>LOMv1.0</lom:source>\n                                <lom:value>author</lom:value>\n                            </lom:role>\n                        </lom:contribute>\n                        <lom:contribute>\n                            <lom:date>\n                                <lom:dateTime>2020</lom:dateTime>\n                            </lom:date>\n                            <lom:role>\n                                <lom:source>LOMv1.0</lom:source>\n                                <lom:value>publisher</lom:value>\n                            </lom:role>\n                            <lom:entity>BEGIN:VCARD\nVERSION:3.0\nFN:Rijksuniversiteit Groningen\nN:Rijksuniversiteit Groningen;;;;\nORG:Rijksuniversiteit Groningen\nEND:VCARD\n</lom:entity>\n                        </lom:contribute>\n                        <lom:contribute>\n                            <lom:role>\n                                <lom:source>LOMv1.0</lom:source>\n                                <lom:value>educational validator</lom:value>\n                            </lom:role>\n                        </lom:contribute>\n                    </lom:lifeCycle>\n                    <lom:classification>\n                        <lom:purpose>\n                            <lom:source>http://purl.edustandaard.nl/classification_purpose_nllom_20180530</lom:source>\n                            <lom:value>access rights</lom:value>\n                        </lom:purpose>\n                        <lom:taxonPath>\n                            <lom:source>\n                                <lom:string language=\"x-none\">http://purl.edustandaard.nl/classification_accessrights_nllom_20180530</lom:string>\n                            </lom:source>\n                            <lom:taxon>\n                                <lom:id>OpenAccess</lom:id>\n                                <lom:entry>\n                                    <lom:string language=\"x-none\">open toegang</lom:string>\n                                </lom:entry>\n                            </lom:taxon>\n                        </lom:taxonPath>\n                    </lom:classification>\n                    <lom:classification>\n                        <lom:purpose>\n                            <lom:value>discipline</lom:value>\n                            <lom:source>LOMv1.0</lom:source>\n                        </lom:purpose>\n                    </lom:classification>\n                </lom:lom>\n            </metadata>\n        </record>\n    </GetRecord>\n</OAI-PMH>\n\n\n---\nOR\n--- \n    \n<?xml version=\"1.0\"?>\n<OAI-PMH xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://www.openarchives.org/OAI/2.0/\" xsi:schemaLocation=\"http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd\">\n    <responseDate>2024-02-10T03:02:42Z</responseDate>\n    <request verb=\"ListRecords\" metadataPrefix=\"LOMv1.0\">http://localhost:8080/api/oaipmh/channel/v1/tudelft_oai</request>\n    <ListRecords>\n        <record>\n            <header status=\"deleted\">\n                <identifier>oai:surfsharekit.nl:385bdf5d-3d1e-451f-ab64-99b394e9479c</identifier>\n                <datestamp>2024-02-10T03:02:39Z</datestamp>\n                <setSpec>6bfd7354-895b-4f17-b96f-78abbf515bd9</setSpec>\n            </header>\n        </record>\n    </ListRecords>\n</OAI-PMH>"
+          }
+        }
+      }
+    },
+    "/{channel}?verb=ListIdentifier&metadataPrefix=LOMv1.0": {
+      "get": {
+        "summary": "Listing all the available identifiers, where each set represents an institute",
+        "tags": [
+          "LOM"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "channel",
+            "required": true,
+            "description": "The desired channel to search for repoItems in",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "set",
+            "required": false,
+            "description": "Filter the results within a specific set.",
+            "schema": {
+              "type": "string",
+              "example": "5a287f57-c317-4aaa-9fc8-f1d0bab71f5f"
+            }
+          },
+          {
+            "in": "query",
+            "name": "purge",
+            "required": false,
+            "description": "Determines whether the cache is being used or not.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "identifier",
+            "required": false,
+            "description": "UUID of the repoitem to filter on",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "description": "Specifies a starting point or date from which the API should retrieve repoItems that have been uploaded from that date.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "until",
+            "required": false,
+            "description": "Specifies a starting point or date from which the API should retrieve repoItems that have been uploaded until that date.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succesfull response \n\n\n ``` <?xml version=\"1.0\"?>\n<OAI-PMH xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://www.openarchives.org/OAI/2.0/\" xsi:schemaLocation=\"http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd\">\n    <responseDate>2023-12-21T11:45:15Z</responseDate>\n    <request verb=\"ListIdentifiers\" metadataPrefix=\"LOMv1.0\">https://api.acc.surfsharekit.nl/api/oaipmh/channel/v1/edurep</request>\n    <ListIdentifiers>\n        <header>\n            <identifier>oai:surfsharekit.nl:e8a79ba9-c023-4b26-b2ca-e1ec0710da71</identifier>\n            <datestamp>2020-03-24T14:47:15Z</datestamp>\n            <setSpec>497ef655-718d-41b9-b202-d07323aed83b</setSpec>\n        </header>\n        <resumptionToken cursor=\"100\" completeListSize=\"2571\">;;100;1;LOMv1.0;</resumptionToken>\n    </ListIdentifiers>\n</OAI-PMH>"
+          }
+        }
+      }
+    },
+    "/{channel}?verb=ListSets&metadataPrefix=LOMv1.0": {
+      "get": {
+        "summary": "Listing all the available 'sets'",
+        "tags": [
+          "LOM"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "channel",
+            "required": true,
+            "description": "The desired channel to search for repoItems in",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "set",
+            "required": false,
+            "description": "Filter the results within a specific set.",
+            "schema": {
+              "type": "string",
+              "example": "5a287f57-c317-4aaa-9fc8-f1d0bab71f5f"
+            }
+          },
+          {
+            "in": "query",
+            "name": "purge",
+            "required": false,
+            "description": "Determines whether the cache is being used or not.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "identifier",
+            "required": false,
+            "description": "UUID of the repoitem to filter on",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "description": "Specifies a starting point or date from which the API should retrieve repoItems that have been uploaded from that date.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "until",
+            "required": false,
+            "description": "Specifies a starting point or date from which the API should retrieve repoItems that have been uploaded until that date.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succesfull response \n\n\n ``` <?xml version=\"1.0\"?>\n<OAI-PMH xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://www.openarchives.org/OAI/2.0/\" xsi:schemaLocation=\"http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd\">\n    <responseDate>2023-12-21T11:46:33Z</responseDate>\n    <request verb=\"ListSets\" metadataPrefix=\"LOMv1.0\">https://api.acc.surfsharekit.nl/api/oaipmh/channel/v1/edurep</request>\n    <ListSets>\n        <set>\n            <setSpec>1182b099-53c5-465a-9505-c852d31b1a6e</setSpec>\n            <setName>Zuyd Hogeschool</setName>\n        </set>\n    </ListSets>\n</OAI-PMH>"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "400": {
+        "type": "object",
+        "description": "Missing required fields",
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "{error message description}"
+          }
+        }
+      },
+      "401": {
+        "type": "string",
+        "description": "Missing authorization to execute the call",
+        "example": "Incorrect token"
+      },
+      "405": {
+        "type": "string",
+        "description": "When try to access through a channel you don't have access to",
+        "example": "channelNotAllowed"
+      }
+    }
+  }
+}

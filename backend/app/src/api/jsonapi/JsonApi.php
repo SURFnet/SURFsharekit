@@ -28,6 +28,8 @@ class JsonApi {
     public const TAG_RELATIONSHIPS = 'relationships';
 
     public const TAG_INCLUDED = 'included';
+
+    public const TAG_FILTERS = 'filters';
 }
 
 class JsonApiOperations {

@@ -7,6 +7,7 @@ use League\Flysystem\Exception;
 use mysqli;
 use Ramsey\Uuid\Uuid;
 use SilverStripe\Core\Environment;
+use SurfSharekit\constants\RoleConstant;
 use SurfSharekit\Models\Helper\Constants;
 use SurfSharekit\Models\Helper\Logger;
 use SurfSharekit\Models\Institute;
@@ -58,7 +59,7 @@ class MigrationHelper
             throw new Exception("Institute is not a root institute");
         }
 
-        $defaultMemberGroupOfInstitute = $institute->Groups()->filter(['Roles.Title' => Constants::TITLE_OF_MEMBER_ROLE])->first();
+        $defaultMemberGroupOfInstitute = $institute->Groups()->filter(['Roles.Title' => RoleConstant::MEMBER])->first();
         if (!$defaultMemberGroupOfInstitute || !$defaultMemberGroupOfInstitute->exists()) {
             throw new Exception("Institute doesn't have a default member group");
         }

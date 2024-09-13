@@ -1,5 +1,6 @@
 <?php
 
+use SilverStripe\Assets\Image;
 use SilverStripe\ORM\DataList;
 
 class MetaFieldOptionJsonApiDescription extends DataObjectJsonApiDescription {
@@ -17,7 +18,10 @@ class MetaFieldOptionJsonApiDescription extends DataObjectJsonApiDescription {
         'IsRemoved' => 'isRemoved',
         'MetaFieldOptionUuid' => 'parentOption',
         'CoalescedLabel_EN' => 'coalescedLabelEN',
-        'CoalescedLabel_NL' => 'coalescedLabelNL'
+        'CoalescedLabel_NL' => 'coalescedLabelNL',
+        'HasChildren' => 'hasChildren',
+        'Icon' => 'icon',
+        'MetaFieldOptionCategory' => 'metafieldOptionCategory'
     ];
 
     public $hasOneToRelationMap = [
@@ -60,21 +64,24 @@ class MetaFieldOptionJsonApiDescription extends DataObjectJsonApiDescription {
             }
         };
 
-        $modeMap = ['EQ' => '=',
+        $modeMap = [
+            'EQ' => '=',
             'NEQ' => '!=',
             'LIKE' => 'LIKE',
             'LIKE BINARY' => 'LIKE BINARY',
+            'NOT LIKE' => 'NOT LIKE',
             'LT' => '<',
             'LE' => '<=',
             'GT' => '>',
-            'GE' => '>='];
+            'GE' => '>='
+        ];
 
         if (is_array($value)) {
             foreach ($value as $mode => $modeValue) {
                 if (isset($modeMap[$mode])) {
                     $joinedQuery = $whereFunction($joinedQuery, $modeValue, $modeMap[$mode]);
                 } else {
-                    throw new Exception("$mode is an invalid filter modifier, use on of: [EQ, NEQ, LIKE, LIKE BINARY, LT, LE, GT, GE]");
+                    throw new Exception("$mode is an invalid filter modifier, use on of: [EQ, NEQ, LIKE, LIKE BINARY, NOT LIKE, LT, LE, GT, GE]");
                 }
             }
 

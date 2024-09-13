@@ -24,11 +24,11 @@ class MemberHelper {
     static function getPersonFullName(Person $member) {
 
         $nameValues = [];
-        if(!empty($initials = trim($member->getField('Initials')))){
-            $nameValues[] = $initials;
-        }
-        elseif(!empty($firstName = trim($member->getField('FirstName')))){
+        if(!empty($firstName = trim($member->getField('FirstName')))){
             $nameValues[] = $firstName;
+        }
+        elseif(!empty($initials = trim($member->getField('Initials')))){
+            $nameValues[] = $initials;
         }
         if(!empty($surnamePrefix = trim($member->getField('SurnamePrefix')))){
             $nameValues[] = $surnamePrefix;

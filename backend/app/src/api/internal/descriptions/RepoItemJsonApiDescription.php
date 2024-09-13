@@ -1,12 +1,15 @@
 <?php
 
+use SilverStripe\Core\Environment;
 use SilverStripe\ORM\DataList;
 use SurfSharekit\Api\InstituteScoper;
 use SurfSharekit\Api\PermissionFilter;
 use SurfSharekit\Api\SearchApiController;
+use SurfSharekit\Models\Helper\Constants;
 use SurfSharekit\Models\Institute;
 use SurfSharekit\Models\Person;
 use SurfSharekit\Models\RepoItem;
+use SurfSharekit\Models\Task;
 
 class RepoItemJsonApiDescription extends DataObjectJsonApiDescription {
     public $type_singular = 'repoItem';
@@ -19,20 +22,22 @@ class RepoItemJsonApiDescription extends DataObjectJsonApiDescription {
         'LastEdited' => 'lastEdited',
         'CreatedLocal' => 'createdLocal',
         'LastEditedLocal' => 'lastEditedLocal',
-        'TemplateFields' => 'sections',
+        'TemplateSteps' => 'steps',
         'AnswersForJsonAPI' => 'answers',
         'RepoType' => 'repoType',
         'IsRemoved' => 'isRemoved',
         'Status' => 'status',
         'DeclineReason' => 'declineReason',
         'IsHistoricallyPublished' => 'isHistoricallyPublished',
+        'NeedsToBeFinished' => 'needsToBeFinished',
+        'UploadedFromApi' => 'uploadedFromApi',
         'Title' => 'title',
         'IsArchived' => 'isArchived',
         'LoggedInUserPermissions' => 'permissions',
         'Summary' => 'summary',
         'PublicationDate' => 'publicationDate',
         'LastEditorSummary' => 'lastEditor',
-        'CreatorSummary' => 'creator'
+        'CreatorSummary' => 'creator',
     ];
 
     public $hasOneToRelationMap = [
@@ -62,6 +67,10 @@ class RepoItemJsonApiDescription extends DataObjectJsonApiDescription {
             RELATIONSHIP_RELATED_OBJECT_CLASS => RepoItem::class,
             RELATIONSHIP_ADD_PERMISSION_METHOD => 'canAddChild',
             RELATIONSHIP_REMOVE_PERMISSION_METHOD => 'canRemoveChild'
+        ],
+        "tasks" => [
+            RELATIONSHIP_GET_RELATED_OBJECTS_METHOD => 'getUncompletedReviewTasks',
+            RELATIONSHIP_RELATED_OBJECT_CLASS => Task::class,
         ]
     ];
 
@@ -71,6 +80,8 @@ class RepoItemJsonApiDescription extends DataObjectJsonApiDescription {
         'answers' => 'AnswersFromAPI',
         'status' => 'Status',
         'declineReason' => 'DeclineReason',
+        'needsToBeFinished' => 'NeedsToBeFinished',
+        'uploadedFromApi' => 'UploadedFromApi',
         'isRemoved' => 'IsRemovedFromApi',
         'copyFrom' => 'CopyFrom'
     ];
@@ -87,21 +98,28 @@ class RepoItemJsonApiDescription extends DataObjectJsonApiDescription {
     }
 
     public function getFilterableAttributesToColumnMap(): array {
-        return ['status' => '`SurfSharekit_RepoItem`.`Status`',
+        return [
+            'status' => '`SurfSharekit_RepoItem`.`Status`',
             'repoType' => null,
             'scope' => null,
             'isRemoved' => '`SurfSharekit_RepoItem`.`IsRemoved`',
+            'isArchived' => '`SurfSharekit_RepoItem`.`IsArchived`',
             'search' => null,
             'lastEdited' => '`SurfSharekit_RepoItem`.`LastEdited`',
             'title' => '`SurfSharekit_RepoItem`.`Title`',
             'publicationDate' => '`SurfSharekit_RepoItem`.`PublicationDate`',
             'id' => '`SurfSharekit_RepoItem`.`Uuid`',
             'institute' => '`SurfSharekit_RepoItem`.`InstituteUuid`',
-            'authorID' => '`SurfSharekit_RepoItem`.`OwnerUuid`'];
+            'authorID' => '`SurfSharekit_RepoItem`.`OwnerUuid`'
+        ];
     }
 
     function applyGeneralFilter(DataList $objectsToDescribe): DataList {
-        return $objectsToDescribe->filter(['Status:not' => 'Migrated', 'RepoType' => ["PublicationRecord", "LearningObject", "ResearchObject"]]);
+        return $objectsToDescribe->filter([
+                'Status:not' => 'Migrated',
+                'RepoType' => Constants::MAIN_REPOTYPES,
+                'PendingForDestruction' => 0]
+        );
     }
 
     public function getFilterFunction(array $fieldsToSearchIn) {
@@ -111,12 +129,15 @@ class RepoItemJsonApiDescription extends DataObjectJsonApiDescription {
                     'REPOITEM_CREATE_LEARNINGOBJECT' => "SurfSharekit_RepoItem.RepoType = 'LearningObject'",
                     'REPOITEM_CREATE_PUBLICATIONRECORD' => "SurfSharekit_RepoItem.RepoType = 'PublicationRecord'",
                     'REPOITEM_CREATE_REPOITEMLEARNINGOBJECT' => "SurfSharekit_RepoItem.RepoType = 'RepoItemLearningObject'",
+                    'REPOITEM_CREATE_DATASET' => "SurfSharekit_RepoItem.RepoType = 'Dataset'",
+                    'REPOITEM_CREATE_PROJECT' => "SurfSharekit_RepoItem.RepoType = 'Project'",
                     'REPOITEM_CREATE_REPOITEMLINK' => "SurfSharekit_RepoItem.RepoType = 'RepoItemLink'",
                     'REPOITEM_CREATE_REPOITEMPERSON' => "SurfSharekit_RepoItem.RepoType = 'RepoItemPerson'",
                     'REPOITEM_CREATE_REPOITEMREPOITEMFILE' => "SurfSharekit_RepoItem.RepoType = 'RepoItemRepoItemFile'",
-                    'REPOITEM_CREATE_RESEARCHOBJECT' => "SurfSharekit_RepoItem.RepoType = 'ResearchObject'"
+                    'REPOITEM_CREATE_RESEARCHOBJECT' => "SurfSharekit_RepoItem.RepoType = 'ResearchObject'",
+                    'REPOITEM_CREATE_REPOITEMRESEARCHOBJECT' => "SurfSharekit_RepoItem.RepoType = 'RepoItemResearchObject'"
                 ];
-                $scopedRepoItems = PermissionFilter::leftJoinOnPermissions(RepoItem::get(), $canCopyClauses);
+                $scopedRepoItems = PermissionFilter::leftJoinOnUserPermissions(RepoItem::get(), $canCopyClauses);
                 $scopedRepoItems = PermissionFilter::filterOnClauses($scopedRepoItems, $canCopyClauses);
                 $datalist = $datalist->innerJoin('(' . $scopedRepoItems->sql() . ')', 'ri.ID = SurfSharekit_RepoItem.ID', 'ri');
                 return $datalist;
@@ -179,11 +200,15 @@ class RepoItemJsonApiDescription extends DataObjectJsonApiDescription {
                     ->leftJoin('SurfSharekit_MetaFieldOption', "answero.ID = ftsRimfv.MetaFieldOptionID", 'answero')
                     ->leftJoin('SurfSharekit_MetaField', "tagField.ID = answero.MetaFieldID AND tagField.SystemKey = 'Tags'", 'tagField');
 
-
                 foreach ($searchTagsWithoutPlus as $tag) {
+                    if(stripos($tag, '-') !== false){
+                        $matchTag =  '"' . $tag . '"';
+                    }else{
+                        $matchTag =  $tag . '*';
+                    }
                     $datalist = $datalist->whereAny(
-                        ["(MATCH(SurfSharekit_RepoItem.Title,SurfSharekit_RepoItem.Subtitle) AGAINST (? IN Boolean MODE) AND (SurfSharekit_RepoItem.Title like ? OR SurfSharekit_RepoItem.Subtitle like ?))" => ['+' . $tag . '*','%' . $tag . '%','%' . $tag . '%'],
-                            "(MATCH(connectedRepoItem.Title) AGAINST (? IN Boolean MODE) AND (connectedRepoItem.Title like ?))" => ['+' . $tag . '*','%' . $tag . '%']]);
+                        ["(MATCH(SurfSharekit_RepoItem.Title,SurfSharekit_RepoItem.Subtitle) AGAINST (? IN Boolean MODE) AND (SurfSharekit_RepoItem.Title like ? OR SurfSharekit_RepoItem.Subtitle like ?))" => ['+' . $matchTag, '%' . $tag . '%', '%' . $tag . '%'],
+                            "(MATCH(connectedRepoItem.Title) AGAINST (? IN Boolean MODE) AND (connectedRepoItem.Title like ?))" => ['+' . $matchTag, '%' . $tag . '%']]);
                 }
                 return $datalist;
             };

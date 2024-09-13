@@ -8,8 +8,8 @@ services:
       SS_DATABASE_CLASS: MySQLDatabase
       SS_DATABASE_NAME: silverstripe
       SS_DATABASE_SERVER: database
-      SS_DATABASE_USERNAME: ${SS_DATABASE_USERNAME}
-      SS_DATABASE_PASSWORD: ${SS_DATABASE_PASSWORD}
+      SS_DATABASE_USERNAME: root
+      SS_DATABASE_PASSWORD: silverstripe
       SS_DEFAULT_ADMIN_USERNAME: ${SS_DEFAULT_ADMIN_USERNAME}
       SS_DEFAULT_ADMIN_PASSWORD: ${SS_DEFAULT_ADMIN_PASSWORD}
       SS_ENVIRONMENT_TYPE: dev
@@ -22,6 +22,16 @@ services:
       - 8080:80
     volumes:
       - .:/var/www/html
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: 'rabbitmq'
+    ports:
+      - 5672:5672
+      - 15672:15672
+    volumes:
+      - ~/.docker-conf/rabbitmq/data/:/var/lib/rabbitmq/
+      - ~/.docker-conf/rabbitmq/log/:/var/log/rabbitmq
 
   database:
     image: mariadb:10

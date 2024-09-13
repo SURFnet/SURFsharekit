@@ -1,0 +1,31 @@
+SilverStripe\Core\Injector\Injector:
+  SilverStripe\Security\Security:
+    class: SurfSharekit\Extensions\Security
+  Bigfork\SilverStripeOAuth\Client\Factory\ProviderFactory:
+    properties:
+      providers:
+        'SurfConext': '%$SurfConextProvider'
+  SurfConextProvider:
+    class: 'SurfSharekit\Extensions\SurfConextOAuthProvider'
+    constructor:
+      Options:
+        clientId: '`CMS_CONEXT_CLIENT_ID`'
+        clientSecret: '`CMS_CONEXT_CLIENT_SECRET`'
+Bigfork\SilverStripeOAuth\Client\Authenticator\Authenticator:
+  providers:
+    'SurfConext':
+      name: 'SURFconext'
+      scopes: ['email', 'openid']
+---
+After:
+  '#oauthcontroller'
+---
+Bigfork\SilverStripeOAuth\Client\Control\Controller:
+  token_handlers:
+    loginhandler:
+      priority: 1
+      context: login
+      class: SurfSharekit\Extensions\SurfConextLoginTokenHandler
+
+SilverStripe\SessionManager\Models\LoginSession:
+  default_session_lifetime: 79200 # 22 hours

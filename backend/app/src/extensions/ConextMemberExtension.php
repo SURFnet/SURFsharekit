@@ -5,16 +5,18 @@ namespace SurfSharekit\Api;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\TextField;
 use SilverStripe\ORM\DataExtension;
+use SurfSharekit\constants\RoleConstant;
 use SurfSharekit\Models\Helper\Constants;
 
 /**
  * Class ConextMemberExtension
  * @package SurfSharekit\Api
- * Extension to Silverstripe Member DataObject to add a databasefield for the members ConextCode
+ * Extension to Silverstripe Member DataObject to add a databasefield for the members ConextCode and SramCode
  */
 class ConextMemberExtension extends DataExtension {
 
     private static $db = [
+        'SramCode' => 'Varchar(255)',
         'ConextCode' => 'Varchar(255)',
         'ConextRoles' => 'Varchar(255)',
         'SurnamePrefix' => 'Varchar(255)',
@@ -30,7 +32,9 @@ class ConextMemberExtension extends DataExtension {
             'type' => 'fulltext',
             'columns' => ['FirstName', 'Surname']
         ],
-        'ConextCode' => true
+        'ConextCode' => true,
+        'SramCode' => true,
+        'IsRemoved' => true
     ];
 
     private static $searchable_fields = [
@@ -88,7 +92,7 @@ class ConextMemberExtension extends DataExtension {
 
     public function isWorksAdmin() {
         if (!isset($GLOBALS['MemberIsWorksAdmin'])){
-            $GLOBALS['MemberIsWorksAdmin'] = $this->owner->Groups()->filter('Roles.Title', Constants::TITLE_OF_WORKSADMIN_ROLE)->exists();
+            $GLOBALS['MemberIsWorksAdmin'] = $this->owner->Groups()->filter('Roles.Title', RoleConstant::WORKSADMIN)->exists();
         }
         return $GLOBALS['MemberIsWorksAdmin'];
     }

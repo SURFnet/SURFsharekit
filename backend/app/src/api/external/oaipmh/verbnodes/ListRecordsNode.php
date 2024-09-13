@@ -17,9 +17,13 @@ class ListRecordsNode extends RepoItemDescribingNode {
     static function createNodeFrom($repoItemSummary, $channel, $metadataPrefix, $purgeCache = false) {
         Logger::debugLog($repoItemSummary);
         $partOfChannel = boolean_value($repoItemSummary['PartOfChannel']);
-        $isCached = boolean_value($repoItemSummary['Cached']);
+        $isCached = boolean_value(array_key_exists('Cached', $repoItemSummary)?$repoItemSummary['Cached']:false);
         $headerNode = new IdentifierNode($repoItemSummary['Uuid'], $repoItemSummary['LastEdited'], $repoItemSummary['InstituteUuid'], $isCached && !$partOfChannel);
-        $protocol = Protocol::get()->filter(['Prefix' => $metadataPrefix])->filter(['SystemKey' => 'OAI-PMH'])->first();
+        if ($channel && $channel->exists()) {
+            $protocol = Protocol::get()->filter(['Prefix' => $metadataPrefix, 'ID' => $channel->ProtocolID, 'SystemKey' => 'OAI-PMH'])->first();
+        } else {
+            $protocol = Protocol::get()->filter(['Prefix' => $metadataPrefix, 'SystemKey' => 'OAI-PMH'])->first();
+        }
         $repoItem = UuidExtension::getByUuid(RepoItem::class, $repoItemSummary['Uuid']);
         return new RecordNode($headerNode, $protocol->ProtocolNodes()->filter('ParentNodeID', 0)->toArray(), $repoItem, $channel, $protocol, $purgeCache, $isCached && !$partOfChannel);
     }

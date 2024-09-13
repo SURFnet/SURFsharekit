@@ -5,12 +5,14 @@ namespace SurfSharekit\Models;
 use DataObjectJsonApiEncoder;
 use Exception;
 use SilverStripe\Forms\DropdownField;
+use SilverStripe\Forms\NumericField;
 use SilverStripe\Forms\RequiredFields;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\DB;
 use SilverStripe\Security\Member;
 use SilverStripe\Security\Security;
 use SilverStripe\Versioned\Versioned;
+use SurfSharekit\Api\InstituteScoper;
 use SurfSharekit\Models\Helper\Logger;
 
 /**
@@ -54,12 +56,13 @@ class TemplateMetaField extends DataObject {
         'IsReadOnly' => 'Int(0)',
         'IsHidden' => 'Int(0)',
         'IsCopyable' => 'Int(0)',
-        'Label_EN' => 'Varchar(255)',
-        'Label_NL' => 'Varchar(255)',
+        'IsReplicatable' => 'Int(0)',
+        'Label_EN' => 'Varchar(1024)',
+        'Label_NL' => 'Varchar(1024)',
         'Description_EN' => 'Text',
         'Description_NL' => 'Text',
-        'InfoText_EN' => 'Varchar(255)',
-        'InfoText_NL' => 'Varchar(255)'
+        'InfoText_EN' => 'Varchar(1024)',
+        'InfoText_NL' => 'Varchar(1024)'
     ];
 
     private static $has_one = [
@@ -80,7 +83,8 @@ class TemplateMetaField extends DataObject {
         'UniqueMetaField' => [
             'type' => 'unique',
             'columns' => ['TemplateID', 'MetaFieldID']
-        ]
+        ],
+        'IsRemoved' => true
     ];
 
     private static $summary_fields = ['MetaField.Title', 'Label_NL', 'Label_EN', 'TemplateSection.Title'];
@@ -102,7 +106,7 @@ class TemplateMetaField extends DataObject {
         'IsHidden' => 'IsHidden'
     ];
 
-    static $alwaysInheritedProperties = ["SortOrder", "TemplateSectionID", "IsRemoved", "IsSmallField", "IsLocked", "IsCopyable"];
+    static $alwaysInheritedProperties = ["SortOrder", "TemplateSectionID", "IsRemoved", "IsSmallField", "IsLocked", "IsCopyable", "IsReplicatable"];
 
     public function getCMSValidator() {
         return new RequiredFields([
@@ -117,8 +121,8 @@ class TemplateMetaField extends DataObject {
     public function getCMSFields() {
         $cmsFields = parent::getCMSFields();
 
-        $cmsFields->dataFieldByName('InfoText_EN')->setDescription('Max. 255 tekens');
-        $cmsFields->dataFieldByName('InfoText_NL')->setDescription('Max. 255 tekens');
+        $cmsFields->dataFieldByName('InfoText_EN')->setDescription('Max. 1024 tekens');
+        $cmsFields->dataFieldByName('InfoText_NL')->setDescription('Max. 1024 tekens');
 
         if ($this->Template()->InstituteID > 0) {
             // if not default template, disable always inherited properties
@@ -132,14 +136,20 @@ class TemplateMetaField extends DataObject {
                 }
             }
         }
+
+        // On acceptance, it default to numericfield, which gives an error on ->setSource
+        // 3-5-2021 not a problem on live due to the amount of metafields not reaching the silvertripe dropdown limit
+        $cmsFields = MetaField::ensureDropdownField($this, $cmsFields);
+        $metaFieldField = $cmsFields->dataFieldByName('MetaFieldID');
+
         /** @var DropdownField $metaFieldField */
         if ($this->isInDB()) {
-            $metaFieldField = $cmsFields->dataFieldByName('MetaFieldID')->setDisabled(true);
+            $metaFieldField->setDisabled(true);
             if ($this->Template()->InstituteID > 0) {
                 $metaFieldField->setDescription('Inherited');
             }
+            $metaFieldField->setSource(MetaField::get()->map('ID', 'Title'));
         } else {
-            $metaFieldField = $cmsFields->dataFieldByName('MetaFieldID');
             $sourceList = MetaField::get()->filter(['ID:not' => array_merge([0], $this->Template()->TemplateMetaFields()->column('MetaFieldID'))])->map('ID', 'Title');
             $metaFieldField->setSource($sourceList);
         }
@@ -166,24 +176,35 @@ class TemplateMetaField extends DataObject {
         return $this->Template()->canEdit($member);
     }
 
-    /**x
+    /**
+     * This method uses SimpleCacheItem to cache fields that do not changed based on the repoitem that retrieves it
      * @param $contextualRepoItem RepoItem to filter options for
      * @return array a JsonApi Description of this TemplateMetaField with its type, and all available preexisting options
      * @throws Exception
      */
     function getJsonAPIDescription($contextualRepoItem = null) {
-        $startMs = microtime(true);
+        if ($cachedItem = SimpleCacheItem::getFor($this, 'Description')) {
+            return $cachedItem->Value;
+        }
         $options = [];
         $metaFieldType = $this->MetaField()->MetaFieldType();
         if (!$metaFieldType || !$metaFieldType->Exists()) {
             throw new Exception($this->Title . ' has no type');
         }
-        if (in_array($metaFieldType->Key, ['Tag', 'MultiSelectDropdown', 'Tree-MultiSelect'])) {
+        $cacheItem = true;
+
+        if (in_array($metaFieldType->Key, ['DropdownTag', 'Tag', 'MultiSelectDropdown', 'Tree-MultiSelect'])) {
+            $cacheItem = false;
             if ($contextualRepoItem) {
                 $selectedOptions = MetaFieldOption::get()
                     ->innerJoin('SurfSharekit_RepoItemMetaFieldValue', 'rimfv.MetaFieldOptionID = SurfSharekit_MetaFieldOption.ID', 'rimfv')
                     ->innerJoin('SurfSharekit_RepoItemMetaField', 'rimfv.RepoItemMetaFieldID = rimf.ID', 'rimf')
                     ->where(["rimf.RepoItemID = $contextualRepoItem->ID", 'rimfv.IsRemoved = 0']);
+
+                if ($this->MetaField()->RetainOptionOrder){
+                    $selectedOptions = $selectedOptions->sort('SortOrder');
+                }
+
                 foreach ($selectedOptions as $option) {
                     $options[] = [
                         "key" => DataObjectJsonApiEncoder::getJSONAPIID($option),
@@ -193,12 +214,34 @@ class TemplateMetaField extends DataObject {
                         "coalescedLabelEN" => $option->CoalescedLabel_EN,
                         "coalescedLabelNL" => $option->CoalescedLabel_NL,
                         "isRemoved" => $option->IsRemoved,
-                        "description" => $option->Description
+                        "description" => $option->Description,
+                        "icon" => $option->Icon,
+                        "metafieldOptionCategory" => $option->MetaFieldOptionCategory()->exists() ? $option->MetaFieldOptionCategory()->Title : null
                     ];
                 }
             }
         } else {
-            foreach ($this->MetaField()->MetaFieldOptions() as $option) {
+            $optionList = $this->MetaField()->MetaFieldOptions();
+            if ($this->MetaField()->RetainOptionOrder){
+                $optionList = $optionList->sort('SortOrder');
+            }
+
+            // Custom sorting function based on MetaFieldOptionCategory->Sort value
+            $optionList = $optionList->sort(function ($a, $b) {
+                $categoryA = $a->MetaFieldOptionCategory();
+                $categoryB = $b->MetaFieldOptionCategory();
+
+                if ($categoryA->Sort == $categoryB->Sort) {
+                    return 0;
+                }
+
+                return ($categoryA->Sort < $categoryB->Sort) ? -1 : 1;
+            });
+
+            // Now loop through the sorted $optionList
+            foreach ($optionList as $option) {
+                $cacheItem = false;
+
                 if ($option->IsRemoved) {
                     if ($contextualRepoItem) {
                         $repoItemValueWhichUsesOption = $contextualRepoItem->RepoItemMetaFields()
@@ -211,6 +254,7 @@ class TemplateMetaField extends DataObject {
                         continue;
                     }
                 }
+
                 $options[] = [
                     "key" => DataObjectJsonApiEncoder::getJSONAPIID($option),
                     "value" => $option->Value,
@@ -219,13 +263,27 @@ class TemplateMetaField extends DataObject {
                     "coalescedLabelEN" => $option->CoalescedLabel_EN,
                     "coalescedLabelNL" => $option->CoalescedLabel_NL,
                     "isRemoved" => $option->IsRemoved,
-                    "description" => $option->Description
+                    "description" => $option->Description,
+                    "icon" => $option->Icon,
+                    "metafieldOptionCategory" => $option->MetaFieldOptionCategory()->exists() ? $option->MetaFieldOptionCategory()->Title : null,
+                    "categorySort" => $option->MetaFieldOptionCategory()->exists() ? $option->MetaFieldOptionCategory()->Sort : null
                 ];
             }
+
         }
 
         $metaField = $this->MetaField();
-        return [
+
+        $overideReadOnly = false;
+        if ($contextualRepoItem && ($contextualRepoItem->RepoType == 'LearningObject' && $metaField->SystemKey == 'ContainsParents')) {
+            $cacheItem = false;
+            $overideReadOnly = $this->getOverrideReadOnly($contextualRepoItem);
+        }
+        if ($metaFieldType->Title == 'DOI') {
+            $cacheItem = false;
+        }
+
+        $jsonArray = [
             "key" => DataObjectJsonApiEncoder::getJSONAPIID($metaField),
             "fieldType" => $metaField->MetaFieldType()->Key,
             "titleEN" => $this->Label_EN,
@@ -238,27 +296,23 @@ class TemplateMetaField extends DataObject {
             "descriptionNL" => $this->Description_NL,
             "locked" => $this->IsLocked,
             "enabled" => $this->IsEnabled,
-            'readOnly' => $this->IsReadOnly || $this->getOverrideReadOnly($contextualRepoItem),
+            'readOnly' => $this->IsReadOnly || $overideReadOnly,
             'hidden' => $this->IsHidden ? 1 : 0,
             'copyable' => $this->IsCopyable,
+            'replicatable' => $this->IsReplicatable,
             "attributeKey" => $metaField->AttributeKey,
             "options" => $options,
             "validationRegex" => $metaFieldType->ValidationRegex,
             "required" => $this->IsRequired,
+            "retainOrder" => $metaField->RetainOptionOrder ? 1 : 0,
         ];
+        if ($cacheItem) {
+            SimpleCacheItem::cacheFor($this, 'Description', $jsonArray);
+        }
+        return $jsonArray;
     }
 
     function getOverrideReadOnly($repoItem) {
-        if (!$repoItem) {
-            return false;
-        }
-
-        if ($this->MetaField()->SystemKey == 'ContainsParents' &&
-            $repoItem &&
-            $repoItem->RepoType == 'LearningObject') {
-            return true;
-        }
-
         if ($this->MetaField()->MetaFieldType()->Title === 'DOI') {
             $repoItemAnswer = $repoItem->RepoItemMetaFields()->filter(['MetaFieldID' => $this->MetaFieldID])->first();
             if ($repoItemAnswer && $repoItemAnswer->exists()) {
@@ -313,6 +367,7 @@ class TemplateMetaField extends DataObject {
         if ($this->isInDB() && !$this->SkipPropagation) {
             $this->downPropagateFast();
         }
+        $this->removeCacheWhereNeeded();
     }
 
     /***
@@ -351,6 +406,7 @@ class TemplateMetaField extends DataObject {
             $currentMetaField->IsRequired,
             $currentMetaField->IsLocked,
             $currentMetaField->IsCopyable,
+            $currentMetaField->IsReplicatable,
             $currentMetaField->IsEnabled,
             $currentMetaField->IsReadOnly,
             $currentMetaField->IsHidden,
@@ -386,6 +442,7 @@ SortOrder,
 IsRequired,
 IsLocked,
 IsCopyable,
+IsReplicatable,
 IsEnabled,
 IsReadOnly,
 IsHidden,
@@ -424,6 +481,7 @@ t.UUID as TemplateUuid,
 ? AS IsRequired,
 ? as IsLocked,
 ? AS IsCopyable,
+? AS IsReplicatable,
 ? as IsEnabled,
 ? as IsReadOnly,
 ? as IsHidden,
@@ -485,6 +543,7 @@ AND t.InstituteID in
                 $currentMetaField->IsRequired,
                 $currentMetaField->IsLocked,
                 $currentMetaField->IsCopyable,
+                $currentMetaField->IsReplicatable,
                 $currentMetaField->IsEnabled,
                 $currentMetaField->IsReadOnly,
                 $currentMetaField->IsHidden,
@@ -519,6 +578,7 @@ SortOrder = ?,
 IsRequired = ?,
 IsLocked = ?,
 IsCopyable = ?,
+IsReplicatable = ?,
 IsEnabled = ?,
 IsReadOnly = ?,
 IsHidden = ?,
@@ -601,6 +661,7 @@ AND t.InstituteID in
                 $currentMetaField->SortOrder,
                 $currentMetaField->IsLocked,
                 $currentMetaField->IsCopyable,
+                $currentMetaField->IsReplicatable,
                 $currentMetaField->MetaFieldID,
                 $template->RepoType,
                 $template->InstituteID
@@ -616,7 +677,8 @@ IsRemoved = ?,
 IsSmallField = ?,
 SortOrder = ?,
 IsLocked = ?,
-IsCopyable = ?
+IsCopyable = ?,
+IsReplicatable = ?
 WHERE
 tm.MetaFieldID = ?
 AND
@@ -662,9 +724,8 @@ AND t.InstituteID in
         }
     }
 
-    public function getDefaultJsonApiAnswerDescription($repoItem) {
+    public function getDefaultJsonApiAnswerDescription() {
         $defaultAnswers = [];
-
         if ($defaults = $this->MetaField()->getDefaultValuesFor(Security::getCurrentUser(), $this->Template())) {
             foreach ($defaults as $answer) {
 
@@ -695,5 +756,20 @@ AND t.InstituteID in
             "fieldKey" => DataObjectJsonApiEncoder::getJSONAPIID($this->MetaField()),
             'values' => $defaultAnswers
         ];
+    }
+
+    public function removeCacheWhereNeeded() {
+        $instituteScopeID = $this->Template()->InstituteID;
+        if (!$instituteScopeID) {
+            $instituteIDList = Institute::get()->filter(["InstituteID" => 0])->getIDList();
+        } else {
+            $instituteIDList = [$instituteScopeID];
+        }
+        $items = InstituteScoper::getDataListScopedTo(SimpleCacheItem::class, $instituteIDList)
+            ->innerJoin('SurfSharekit_TemplateMetaField', 'SurfSharekit_TemplateMetaField.ID = SurfSharekit_SimpleCacheItem.DataObjectID')
+            ->filter(['Key' => 'Description', 'DataObjectClass' => "SurfSharekit\\Models\\TemplateMetaField"])
+            ->where(['SurfSharekit_TemplateMetaField.MetaFieldID' => $this->MetaFieldID]);
+        Logger::debugLog("removed items: " . $items->count());
+        $items->removeAll();
     }
 }

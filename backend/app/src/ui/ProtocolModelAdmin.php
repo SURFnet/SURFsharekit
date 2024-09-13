@@ -7,8 +7,18 @@ use SilverStripe\Forms\GridField\GridFieldDeleteAction;
 use SilverStripe\Forms\GridField\GridFieldExportButton;
 use SilverStripe\Forms\GridField\GridFieldImportButton;
 use SilverStripe\Forms\GridField\GridFieldPrintButton;
+use SurfSharekit\extensions\Gridfield\Copy\CopyRecursiveRelation;
+use SurfSharekit\extensions\Gridfield\Copy\CopyRelation;
+use SurfSharekit\extensions\Gridfield\Copy\GridFieldCopyAction;
+use SurfSharekit\Models\Cache_RecordNode;
+use SurfSharekit\Models\CacheClearRequest;
 use SurfSharekit\Models\Channel;
 use SurfSharekit\Models\Protocol;
+use SurfSharekit\Models\ProtocolFilter;
+use SurfSharekit\Models\ProtocolNode;
+use SurfSharekit\Models\ProtocolNodeAttribute;
+use SurfSharekit\Models\ProtocolNodeMapping;
+use SurfSharekit\Models\ProtocolNodeNamespace;
 
 class ProtocolModelAdmin extends ModelAdmin {
     private static $url_segment = "external-api";
@@ -18,7 +28,9 @@ class ProtocolModelAdmin extends ModelAdmin {
 
     private static $managed_models = [
         Channel::class,
-        Protocol::class
+        Protocol::class,
+        CacheClearRequest::class,
+        Cache_RecordNode::class
     ];
 
     public function getEditForm($id = null, $fields = null) {
@@ -34,6 +46,21 @@ class ProtocolModelAdmin extends ModelAdmin {
             new GridFieldImportButton(),
             new GridFieldDeleteAction()
         ));
+
+        if ($this->modelClass=== Protocol::class) {
+            $gridFieldConfig->addComponent(new GridFieldCopyAction([
+                (new CopyRelation(ProtocolNode::class, 'ProtocolNodes', 'ProtocolID', [
+                    new CopyRelation(ProtocolNodeAttribute::class, 'NodeAttributes', 'ProtocolNodeID'),
+                    new CopyRelation(ProtocolNodeNamespace::class, 'NodeNamespaces', 'ProtocolNodeID'),
+                    new CopyRelation(ProtocolNodeMapping::class, 'Mapping', 'ProtocolNodeID'),
+
+                ], function ($item) {
+                    $item->ProtocolID = 0;
+                    $item->ParentProtocolID = 0;
+                }))->recursive('ChildrenNodes', 'ParentNodeID'),
+                new CopyRelation(ProtocolFilter::class, 'ProtocolFilters', 'ProtocolID', []),
+            ]));
+        }
 
         return $form;
     }

@@ -50,7 +50,10 @@ class PersonSummary extends DataObject {
             "isni" => $person->ISNI,
             "hasLoggedIn" => $person->HasLoggedIn,
             "position" => $person->Position,
-            "groupTitles" => $person->GroupTitles
+            "groupTitles" => $person->GroupTitles,
+            "groupLabelsNL" => $person->GroupLabelsNL,
+            "groupLabelsEN" => $person->GroupLabelsEN,
+            "groupTitlesWithoutMembers" => $person->GroupTitlesWithoutMembers
         ];
 
         return $summaryValues;

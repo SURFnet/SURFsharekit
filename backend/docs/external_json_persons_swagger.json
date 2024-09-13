@@ -1,0 +1,290 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "External JSON:API",
+    "description": "This document describes how to access the 'SURFsharekit' database using different API's. An Authorization Bearer Token header is needed to access this API. To gain one, please contact info@zooma.nl \n\n Fetches comprehensive information about all individuals within the system.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://url.nl"
+    }
+  ],
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "paths": {
+    "/{channel}/persons": {
+      "get": {
+        "tags": [
+          "Persons"
+        ],
+        "summary" : "This endpoint allows you to retrieve all persons you're authorized for and all subsequent sub-institutes. If the user identified by the Authorization Bearer Token header cannot be found, a 401 error is returned.",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "channel",
+            "description" : "Select the desired channel to retrieve persons from",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "page[size]",
+            "description" : "Set the total amount of items for that page",
+            "required" : false,
+            "schema" : {
+              "type": "integer"
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "page[number]",
+            "description" : "Set the page number",
+            "required" : false,
+            "schema" : {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json" : {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "totalCount": {
+                          "type": "integer",
+                          "example": 1242
+                        }
+                      }
+                    },
+                    "filters": {
+                      "type": "array",
+                      "items": {}
+                    },
+                    "links": {
+                      "type": "object",
+                      "properties": {
+                        "first": {
+                          "type": "string",
+                          "example" : "/api/jsonapi/channel/v1/edusources/persons?page[size]=2&page[number]=1"
+                        },
+                        "self": {
+                          "type": "string",
+                          "example" : "/api/jsonapi/channel/v1/edusources/persons?page[size]=2&page[number]=1"
+                        },
+                        "next": {
+                          "type": "string",
+                          "example" : "/api/jsonapi/channel/v1/edusources/persons?page[size]=2&page[number]=2"
+                        },
+                        "last": {
+                          "type": "string",
+                          "example" : "/api/jsonapi/channel/v1/edusources/persons?page[size]=2&page[number]=1112"
+                        }
+                      }
+                    },
+                    "data": {
+                      "type" : "array",
+                      "items": {
+                        "$ref" : "#/components/schemas/personObject"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/401"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/405"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{channel}/persons/{id}": {
+      "get": {
+        "tags": [
+          "Persons"
+        ],
+        "summary" : "This endpoint allows you to retrieve a specific person you're authorized for and all subsequent sub-institutes. If the user identified by the Authorization Bearer Token header cannot be found, a 401 error is returned.",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "channel",
+            "description" : "Select the desired channel to retrieve a specific person from",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
+          },
+          {
+            "in" : "path",
+            "name" : "id",
+            "description" : "The UUID of a person",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "page[size]",
+            "description" : "Set the total amount of items for that page",
+            "required" : false,
+            "schema" : {
+              "type": "integer"
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "page[number]",
+            "description" : "Set the page number",
+            "required" : false,
+            "schema" : {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses" : {
+          "200": {
+            "description" : "Succesfull response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref" : "#/components/schemas/personObject"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/401"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/405"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes" : {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat" : "JWT"
+      }
+    },
+    "schemas": {
+      "400": {
+        "type": "object",
+        "description": "Missing required fields",
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "{error message description}"
+          }
+        }
+      },
+      "401": {
+        "type": "string",
+        "description": "Missing authorization to execute the call",
+        "example": "Incorrect token"
+      },
+      "405": {
+        "type": "string",
+        "description": "When try to access through a channel you don't have access to",
+        "example": "channelNotAllowed"
+      },
+      "personObject": {
+        "type" : "object",
+        "properties" : {
+          "attributes": {
+            "type" : "object",
+            "properties" : {
+              "email": { "example" : "johndoe@example.com" },
+              "firstName": { "example" : "John" },
+              "surname": { "example" : "Doe" },
+              "surnamePrefix": { "example" : "van der" },
+              "initials": { "example" : "J" },
+              "formOfAddress": { "example" : "Prof." },
+              "academicTitle": { "example" : "MSc" },
+              "position": { "example" : "member-lectureship" },
+              "orcid": { "example" : "0000-0001-5109-3700" },
+              "isni": { "example" : "ISNI 0000 0001 2149 1740" },
+              "dai": { "example" : "info:eu-repo/dai/nl/123456785" },
+              "twitterUrl": { "example" : "https://twitter.com/JohnDoe" },
+              "linkedinUrl": { "example" : "https://www.linkedin.com/in/john-doe-1234b567/" },
+              "researchGateUrl": { "example" : "https://www.researchgate.net/profile/John_Doe" }
+            }
+          },
+          "type": {
+            "example": "person"
+          },
+          "id": {
+            "example": "5a868379-9dbf-4b05-ad26-213d997df76f"
+          }
+        }
+      }
+    }
+  }
+}

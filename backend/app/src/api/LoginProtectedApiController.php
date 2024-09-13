@@ -6,6 +6,7 @@ use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Core\Environment;
 use SilverStripe\Security\Member;
 use SilverStripe\Security\Security;
+use SurfSharekit\Models\Helper\Logger;
 
 /**
  * Class LoginProtectedApiController
@@ -16,7 +17,13 @@ use SilverStripe\Security\Security;
  */
 abstract class LoginProtectedApiController extends CORSController {
     const ALLOW_APITOKEN_VERIFICATION_WITHOUT_HASH = true;
-    const IGNORE_TOKEN_EXPIRATION = true;
+    const IGNORE_TOKEN_EXPIRATION = false;
+
+    private $statusRedirectsTo;
+
+    public function __construct() {
+        parent::__construct();
+    }
 
     /**
      * @param HTTPRequest $request
@@ -64,6 +71,26 @@ abstract class LoginProtectedApiController extends CORSController {
     }
 
     protected function setUserFromRequest(HTTPRequest $request) {
+        $requestedUrl = $_SERVER['REQUEST_URI'];
+        $possiblePaths = [
+            "repoitemupload",
+            "jsonapi",
+            "oaipmh"
+        ];
+
+        foreach ($possiblePaths as $possiblePath){
+            if (
+                $requestedUrl === "/api/$possiblePath/v1/docs" ||
+                $requestedUrl === "/api/$possiblePath/v1/docs?json=1" ||
+                $requestedUrl === "/api/$possiblePath/repoItems/v1/docs" ||
+                $requestedUrl === "/api/$possiblePath/repoItems/v1/docs?json=1" ||
+                $requestedUrl === "/api/$possiblePath/persons/v1/docs" ||
+                $requestedUrl === "/api/$possiblePath/persons/v1/docs?json=1"
+            ){
+                return;
+            }
+        }
+
         $authorizationToken = $request->getHeader('Authorization');
         if (!$authorizationToken) {
             $this->getResponse()->setStatusCode(401);
@@ -120,16 +147,48 @@ abstract class LoginProtectedApiController extends CORSController {
         return false;
     }
 
+    function setStatusRedirectsTo(int $status, string $location, array $queryParams = [], $isFile = false) {
+        $this->statusRedirectsTo[$status] = [
+            'isFile' => $isFile,
+            'location' => $location,
+            'queryParams' => $queryParams
+        ];
+    }
+
+    function getStatusRedirectsTo(int $status) {
+        return $this->statusRedirectsTo[$status] ?? null;
+    }
+
     protected function afterHandleRequest() {
         $response = $this->getResponse();
-        if ($this->isRedirectToLoginEnabled()) {
-            $code = $response->getStatusCode();
-            if ($code === 403 || $code === 401) {
+        $code = $response->getStatusCode();
+        if ($code === 403 || $code === 401) {
+        if (null !== $redirectTo = $this->getStatusRedirectsTo($code)) {
                 $this->response->setStatusCode(302);
+
+                $requestUrl = Environment::getEnv('SS_BASE_URL') . '/' . $this->request->getURL(true);
+
+                $queryParamsArray = [
+                    "redirectPrivate" => 1
+                ];
+
+                $queryParamsArray = array_merge($queryParamsArray, $redirectTo['queryParams']);
+
+                // redirect always last
+                $queryParamsArray['redirect'] = $requestUrl;
+
+                $queryParams = [];
+                foreach ($queryParamsArray as $key => $value) {
+                    $queryParams[] = "$key=$value";
+                }
+
+                $redirectUrl = $redirectTo['location'] . '?' . implode('&', $queryParams);
+                if ($redirectTo["isFile"]) {
+                    $redirectUrl = $redirectUrl . "&fileId=" . $this->request->param("ID");
+                }
+
+                $response->addHeader('Location', $redirectUrl);
             }
-            $loginUrl = Environment::getEnv('FRONTEND_BASE_URL');
-            $requestUrl = Environment::getEnv('SS_BASE_URL') . '/' . $this->request->getURL(true);
-            $response->addHeader('Location', $loginUrl . '/login' . '?redirectPrivate=1&redirect=' . $requestUrl);
         }
         parent::afterHandleRequest();
     }

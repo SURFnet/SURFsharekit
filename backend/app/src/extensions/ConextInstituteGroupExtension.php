@@ -9,6 +9,7 @@ use SilverStripe\ORM\DataExtension;
 use SilverStripe\Security\Group;
 use SilverStripe\Security\Permission;
 use SilverStripe\Security\Security;
+use SurfSharekit\constants\RoleConstant;
 use SurfSharekit\Models\Helper\Logger;
 
 /**
@@ -47,17 +48,11 @@ class InstituteGroupExtension extends DataExtension {
             $fields->removeByName('ParentID');
         }
         $instituteField = new DropdownField('InstituteID', 'Institute', Institute::get()->map(), $this->owner->InstituteID);
+        $instituteField->setHasEmptyDefault(true);
         if ($this->owner->InstituteID) {
             $instituteField->setDisabled(true);
         }
         $fields->insertBefore('Title', $instituteField);
-    }
-
-    public function onAfterWrite() {
-        parent::onAfterWrite();
-        if (!$this->owner->isChanged('ID')) {
-            $this->ensureGroupsExists();
-        }
     }
 
     /**
@@ -82,16 +77,6 @@ class InstituteGroupExtension extends DataExtension {
         if (!$institute) {
             throw new Exception("Please connect this group to an Institute");
         }
-
-        if ($this->owner->isInDB()) {
-            $this->ensureGroupsExists();
-//            $membersWithoutGroup = Person::get()->leftJoin('Group_Members', 'MemberID = Member.ID')->where('GroupID IS NULL');
-//            //filter admin
-//            $membersWithoutGroup = $membersWithoutGroup->where('Member.ID != 1')->filter('HasLoggedIn', 1);
-//            if ($membersWithoutGroup->count() > 0) {
-//                throw new Exception('Cannot have a member without a group');
-//            }
-        }
     }
 
     public function getAmountOfPersons() {
@@ -99,26 +84,7 @@ class InstituteGroupExtension extends DataExtension {
     }
 
     public function getRoleCode() {
-        foreach ($this->owner->Roles() as $role) {
-            return $role->Title;
-        }
-        return null;
-    }
-
-    private function ensureGroupsExists() {
-        //check if another group of this institute already had a conext role attributed to it
-        $rolesAttributedToThisGroup = $this->getOwner()->Roles();
-        foreach (Group::get()->filter('InstituteID', $this->owner->InstituteID)->toArray() as $otherGroup) {
-            if ($otherGroup->ID != $this->getOwner()->ID) {
-                foreach ($rolesAttributedToThisGroup as $roleOfThisGroup) {
-                    foreach ($otherGroup->Roles() as $rolesOfOtherGroup) {
-                        if ($rolesOfOtherGroup->ID == $roleOfThisGroup->ID) {
-                            Logger::debugLog($rolesOfOtherGroup->ID . ',' . $roleOfThisGroup->ID);
-                            throw new Exception("Institute already has a group for this role ( " . $otherGroup->Title . " & " . $this->owner->Title . ")");
-                        }
-                    }
-                }
-            }
-        }
+        $mainRole = $this->owner->Roles()->filter(["Key" => RoleConstant::MAIN_ROLES])->first();
+        return $mainRole ? $mainRole->Key : RoleConstant::MEMBER;
     }
 }

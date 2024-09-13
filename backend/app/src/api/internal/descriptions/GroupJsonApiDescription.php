@@ -12,6 +12,8 @@ class GroupJsonApiDescription extends DataObjectJsonApiDescription {
     //GET information
     public $fieldToAttributeMap = [
         'Title' => 'title',
+        'Label_NL' => 'labelNL',
+        'Label_EN' => 'labelEN',
         'LastEdited' => 'lastEdited',
         'Permissions' => 'permissions',
         'LoggedInUserPermissions' => 'userPermissions',
@@ -52,7 +54,11 @@ class GroupJsonApiDescription extends DataObjectJsonApiDescription {
         return [
             'title' => '`Group`.Title',
             'institute' => '`Group`.InstituteUUID',
-            'search' => null
+            'level' => null,
+            'search' => null,
+            'roleCode' => null,
+            'labelNL' => '`Group`.Label_NL',
+            'labelEN' => '`Group`.Label_EN',
         ];
     }
 
@@ -70,11 +76,49 @@ class GroupJsonApiDescription extends DataObjectJsonApiDescription {
                 $searchTagsWithoutPlus = SearchApiController::getSearchTagsFromSearch($filterValue);
 
                 foreach ($searchTagsWithoutPlus as $tag) {
-                    $datalist = $datalist->where(["(MATCH(`Group`.Title) AGAINST(? IN BOOLEAN MODE) AND `Group`.Title like ?)" =>  ['+' . $tag . '*','%' . $tag . '%']]);
+                    if(stripos($tag, '-') !== false){
+                        $matchTag =  '"' . $tag . '"';
+                    }else{
+                        $matchTag =  $tag . '*';
+                    }
+                    $datalist = $datalist->where(["(MATCH(`Group`.Title) AGAINST(? IN BOOLEAN MODE) AND `Group`.Title like ?)" =>  ['+' . $matchTag,'%' . $tag . '%']]);
                 }
                 return $datalist;
             };
         }
+
+        if (in_array('roleCode', $fieldsToSearchIn)) {
+
+            return function (DataList $datalist, $filterValue, $modifier) {
+                return $datalist->innerJoin('Group_Roles', '`Group_Roles`.GroupID = `Group`.ID')
+                    ->innerJoin('PermissionRole', '`PermissionRole`.ID = `Group_Roles`.PermissionRoleID')
+                    ->where(['`PermissionRole`.Title' . ' ' . $modifier . ' ?' => $filterValue]);
+            };
+        }
+
+        if (in_array('level', $fieldsToSearchIn)) {
+
+            if (count($fieldsToSearchIn) > 1) {
+                throw new Exception('Cannot mix level filter with another filter');
+            }
+
+            return function (DataList $datalist, $filterValue, $modifier) {
+                if (!($modifier == '=')) {
+                    throw new Exception('Only ?filter[level][EQ] supported');
+                }
+                $instituteLevels = explode(',', $filterValue);
+                $filteredList =  $datalist->innerJoin('SurfSharekit_Institute', '`SurfSharekit_Institute`.ID = `Group`.InstituteID');
+                $searchStatements = [];
+                foreach($instituteLevels as $instituteLevel){
+                    $searchStatements[] = ['`SurfSharekit_Institute`.Level = ?' => $instituteLevel];
+                }
+                if(count($searchStatements)){
+                    return  $filteredList->whereAny($searchStatements);
+                }
+                return $datalist;
+            };
+        }
+
 
         return parent::getFilterFunction($fieldsToSearchIn);
     }

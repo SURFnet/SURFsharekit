@@ -9,6 +9,7 @@ use SurfSharekit\Models\DefaultMetaFieldOptionPart;
 use SurfSharekit\Models\Institute;
 use SurfSharekit\Models\Person;
 use SurfSharekit\Models\RepoItem;
+use SurfSharekit\Models\RepoItemFile;
 use SurfSharekit\Models\RepoItemMetaField;
 use SurfSharekit\Models\RepoItemMetaFieldValue;
 use SurfSharekit\Models\Template;
@@ -52,6 +53,8 @@ trait PermissionProviderTrait {
             return $obj->TemplateMetaField->Template->Institute;
         } else if ($obj instanceof RepoItem) {
             return $obj->Institute;
+        } else if ($obj instanceof RepoItemFile) {
+            return $obj->RepoItem()->Institute;
         } else if ($obj instanceof RepoItemMetaField) {
             return $obj->RepoItem->Institute;
         } else if ($obj instanceof RepoItemMetaFieldValue) {

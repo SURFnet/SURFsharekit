@@ -126,23 +126,6 @@ class CSVJsonApiController extends JsonApiController {
         }
 
         $requestVars = $request->getVars();
-        if ($requestVars && isset($requestVars['fields'])) {
-            $sparseFieldsPerType = $requestVars['fields'];
-            if (!is_array($sparseFieldsPerType)) {
-                return $this->createJsonApiBodyResponseFrom(static::invalidSparseFieldsJsonApiBodyError(), 400);
-            }
-            $this->sparseFields = $sparseFieldsPerType;
-        }
-
-        if ($requestVars && isset($requestVars['sort'])) {
-            foreach (explode(',', $requestVars['sort']) as $sortString) {
-                if (strpos($sortString, '-') === 0) {
-                    $this->sorts[substr($sortString, 1, strlen($sortString) - 1)] = 'DESC';
-                } else {
-                    $this->sorts[$sortString] = 'ASC';
-                }
-            }
-        }
 
         if ($requestVars && isset($requestVars['purge'])) {
             $purgeCache = true;
@@ -150,32 +133,6 @@ class CSVJsonApiController extends JsonApiController {
         } else {
             $purgeCache = false;
             set_time_limit(600);
-        }
-
-        if ($requestVars && isset($requestVars['filter'])) {
-            $filtersPerAttribute = $requestVars['filter'];
-            if (!is_array($filtersPerAttribute)) {
-                return $this->createJsonApiBodyResponseFrom(static::invalidFiltersJsonApiBodyError(), 400);
-            }
-            $this->filters = $filtersPerAttribute;
-        }
-
-        if ($requestVars && isset($requestVars['page'])) {
-            if (!is_array($requestVars['page'])) {
-                return $this->createJsonApiBodyResponseFrom(static::invalidPaginationJsonApiBodyError(), 400);
-            }
-            $paginationQuery = $requestVars['page'];
-
-            if (isset($paginationQuery['number'])) {
-                $this->pageNumber = $paginationQuery['number'];
-            }
-            if (isset($paginationQuery['size'])) {
-                $this->pageSize = $paginationQuery['size'];
-            }
-
-            if (!$this->pageNumber || !$this->pageSize) {
-                return $this->createJsonApiBodyResponseFrom(static::invalidPaginationJsonApiBodyError(), 400);
-            }
         }
 
         if ($requestVars && isset($requestVars['reportType'])) {

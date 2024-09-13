@@ -4,19 +4,29 @@ namespace SurfSharekit\Models;
 
 use DataObjectJsonApiEncoder;
 use Exception;
+use ExternalRepoItemChannelJsonApiDescription;
+use GuzzleHttp\Client;
+use GuzzleHttp\Promise;
+use GuzzleHttp\RequestOptions;
+use LogicException;
 use NathanCox\HasOneAutocompleteField\Forms\HasOneAutocompleteField;
+use PhpAmqpLib\Connection\AMQPStreamConnection;
+use PhpAmqpLib\Message\AMQPMessage;
 use Ramsey\Uuid\Uuid;
 use RelationaryPermissionProviderTrait;
 use RepoItemModelAdmin;
+use SilverStripe\Assets\File;
 use SilverStripe\Control\Controller;
 use SilverStripe\Core\Environment;
+use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\Forms\GridField\GridFieldAddExistingAutocompleter;
-use SilverStripe\Forms\HeaderField;
 use SilverStripe\Forms\ReadonlyField;
+use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\DB;
 use SilverStripe\ORM\HasManyList;
+use SilverStripe\ORM\Queries\SQLDelete;
 use SilverStripe\ORM\ValidationException;
 use SilverStripe\Security\Group;
 use SilverStripe\Security\Member;
@@ -24,36 +34,67 @@ use SilverStripe\Security\Permission;
 use SilverStripe\Security\PermissionProvider;
 use SilverStripe\Security\Security;
 use SilverStripe\Versioned\Versioned;
+use SimpleXMLElement;
 use SurfSharekit\Api\DoiCreator;
+use SurfSharekit\Api\GetRecordNode;
 use SurfSharekit\Api\InstituteScoper;
+use SurfSharekit\Api\JsonApi;
+use SurfSharekit\Api\PermissionFilter;
+use SurfSharekit\Api\RepoItemUploadApiController;
+use SurfSharekit\Models\Helper\Constants;
 use SurfSharekit\Models\Helper\DateHelper;
 use SurfSharekit\Models\Helper\Logger;
 use SurfSharekit\Models\Helper\MemberHelper;
+use SurfSharekit\Models\Helper\NotificationEventCreator;
+use SurfSharekit\models\tasks\TaskRemover;
 use UuidExtension;
 
 /**
  * Class RepoItem
  * @package SurfSharekit\Models
- * @method HasManyList RepoItemMetaFields
+ * @property string RepoType
+ * @property string Status
+ * @property string DeclineReason
+ * @property string Title
+ * @property string Alias
+ * @property string SubType
+ * @property string Subtitle
+ * @property string Language
+ * @property boolean IsRemoved
+ * @property boolean PendingForDestruction
+ * @property boolean IsArchived
+ * @property boolean IsPublic
+ * @property boolean IsHistoricallyPublished
+ * @property boolean UploadedFromApi
+ * @property string EmbargoDate
+ * @property string PublicationDate
+ * @property string AccessRight
+ * @property Int OwnerID
+ * @property Int InstituteID
+ * @method Person Owner
+ * @method Institute Institute
+ * @method HasManyList<RepoItemMetaField> RepoItemMetaFields
  * DataObject representing the collections of answers on a @see Template (i.e. a collection of MetaData)
  */
 class RepoItem extends DataObject implements PermissionProvider {
     use RelationaryPermissionProviderTrait;
 
     const RELATION_ARCHIVED = 'Archived';
+
     private static $extensions = [
         Versioned::class . '.versioned',
     ];
 
     const RELATION_AUTHOR = 'Author';
     const RELATION_REPORT = 'REPORT';
+    const RELATION_ALL = "ALL";
 
     private static $table_name = 'SurfSharekit_RepoItem';
     private static $default_sort = 'LastEdited DESC';
 
     private static $db = [
-        'RepoType' => 'Enum(array("PublicationRecord", "LearningObject", "ResearchObject", "RepoItemRepoItemFile", "RepoItemLearningObject", "RepoItemLink", "RepoItemPerson"))',
-        'Status' => 'Enum(array("Draft", "Published", "Submitted", "Approved", "Declined", "Embargo", "Migrated"), "Draft")',
+        'RepoType' => 'Enum(array("PublicationRecord", "LearningObject", "ResearchObject", "Dataset", "Project", "RepoItemRepoItemFile", "RepoItemLearningObject", "RepoItemLink", "RepoItemPerson", "RepoItemResearchObject"))',
+        'Status' => 'Enum(array("Draft", "Published", "Submitted", "Approved", "Declined", "Revising", "Embargo", "Migrated"), "Draft")',
         'DeclineReason' => 'Text',
         'Title' => 'Varchar(255)',
         'Alias' => 'Varchar(255)',
@@ -61,11 +102,15 @@ class RepoItem extends DataObject implements PermissionProvider {
         'Subtitle' => 'Varchar(255)',
         'Language' => 'Varchar(255)',
         'IsRemoved' => 'Boolean(0)',
+        'PendingForDestruction' => 'Boolean(0)',
         'IsArchived' => 'Boolean(0)',
         'IsPublic' => 'Boolean(0)',
         'IsHistoricallyPublished' => 'Boolean(0)',
+        'NeedsToBeFinished' => 'Boolean(0)',
+        'UploadedFromApi' => 'Boolean(0)',
         'EmbargoDate' => 'Datetime',
-        'PublicationDate' => 'Datetime'
+        'PublicationDate' => 'Datetime',
+        'AccessRight' => 'Varchar(255)'
     ];
 
     private static $has_one = [
@@ -74,7 +119,8 @@ class RepoItem extends DataObject implements PermissionProvider {
     ];
 
     private static $has_many = [
-        'RepoItemMetaFields' => RepoItemMetaField::class
+        'RepoItemMetaFields' => RepoItemMetaField::class,
+        "Tasks" => Task::class
     ];
 
     private static $cascade_deletes = [
@@ -183,53 +229,37 @@ class RepoItem extends DataObject implements PermissionProvider {
      * @return array
      * Utility method to list all TemplateMetaField this RepoItem should be based on
      */
-    function getTemplateFields() {
-        $templateSections = [];
-
-        foreach (TemplateSection::get() as $templateSection) {
-            $fieldsInSection = [];
-            /** @var TemplateMetaField $templateMetaField */
-            foreach ($this->Template()->TemplateMetaFields()->filter(['IsRemoved' => 0, 'IsEnabled' => 1, 'TemplateSectionID' => $templateSection->ID]) as $templateMetaField) {
-                $fieldsInSection[] = $templateMetaField->getJsonAPIDescription($this);
-            }
-            if (count($fieldsInSection) > 0) {
-                $templateSections[] = [
-                    'sortOrder' => $templateSection->SortOrder,
-                    'titleNL' => $templateSection->Title_NL,
-                    'titleEN' => $templateSection->Title_EN,
-                    'id' => DataObjectJsonApiEncoder::getJSONAPIID($templateSection),
-                    'subtitleNL' => $templateSection->Subtitle_NL,
-                    'subtitleEN' => $templateSection->Subtitle_EN,
-                    'iconKey' => $templateSection->IconKey,
-                    'isUsedForSelection' => $templateSection->IsUsedForSelection,
-                    'fields' => $fieldsInSection
-                ];
-            }
-        }
-        return $templateSections;
+    function getTemplateSteps() {
+        return $this->Template()->getSteps($this);
     }
 
-    /**F
+    /**
      * @return array
      * Utility Method to describe each @see RepoItemMetaFieldValue of this RepoItem
      */
     function getAnswersForJsonAPI() {
         $answers = [];
-        foreach ($this->Template()->TemplateMetaFields() as $templateMetaField) {
-            $repoItemMetaField = $this->RepoItemMetaFields()->filter(['MetaFieldID' => $templateMetaField->MetaFieldID])->first();
-            if ($repoItemMetaField && $repoItemMetaField->exists()) {
-                $answersForMetaField = $repoItemMetaField->getJsonAPIDescription($this);
-                if (count($answersForMetaField['values'])) {
-                    $answers[] = $answersForMetaField;
-                }
-            } else {
-                $answersForMetaField = $templateMetaField->getDefaultJsonApiAnswerDescription($this);
-                if (count($answersForMetaField['values'])) {
-                    $answers[] = $answersForMetaField;
+        $repoItemMetaFields = $this->RepoItemMetaFields()->toArray();
+        $getRepoItemMetaField = function ($metaFieldID) use ($repoItemMetaFields) {
+            foreach ($repoItemMetaFields as $repoItemMetaField) {
+                if ($repoItemMetaField->MetaFieldID == $metaFieldID) {
+                    return $repoItemMetaField;
                 }
             }
-        }
+            return null;
+        };
 
+        foreach ($this->Template()->TemplateMetaFields() as $templateMetaField) {
+            $repoItemMetaField = $getRepoItemMetaField($templateMetaField->MetaFieldID);
+            if ($repoItemMetaField && $repoItemMetaField->exists()) {
+                $answersForMetaField = $repoItemMetaField->getJsonAPIDescription($this);
+            } else {
+                $answersForMetaField = $templateMetaField->getDefaultJsonApiAnswerDescription($this);
+            }
+            if (count($answersForMetaField['values'])) {
+                $answers[] = $answersForMetaField;
+            }
+        }
         return $answers;
     }
 
@@ -293,7 +323,7 @@ class RepoItem extends DataObject implements PermissionProvider {
                     if (!is_null($metaFieldOption) && $metaFieldOption->exists()) {
                         $repoItemMetaFieldValue->setField('MetaFieldOptionID', $metaFieldOption->ID);
                     } else {
-                        if ($metaField->MetaFieldType()->getField('Title') == 'Tag') {
+                        if (in_array(strtolower($metaField->MetaFieldType()->getField('Title')), ['tag', 'dropdowntag'])) {
                             // tag field, so add option
                             $metaFieldOption = MetaFieldOption::create();
                             $metaFieldOption->MetaFieldID = $metaField->ID;
@@ -414,6 +444,7 @@ class RepoItem extends DataObject implements PermissionProvider {
                 if (isset($answerValueObject['optionKey']) && $optionKey = $answerValueObject['optionKey']) {
                     $option = UuidExtension::getByUuid(MetaFieldOption::class, $optionKey);
                     if (!($option && $option->Exists() && $option->MetaFieldID == $metaField->ID)) {
+                        Logger::debugLog($metaField->Title);
                         throw new Exception('Wrong optionKey given as answer for field ' . $answerObject['fieldKey']);
                     }
                     if ($option->IsRemoved) {
@@ -422,7 +453,7 @@ class RepoItem extends DataObject implements PermissionProvider {
                     $repoItemMetaFieldValue->MetaFieldOptionID = $option->ID;
                 } else if (isset($answerValueObject['labelEN']) && $answerValueObject['labelNL']) {
                     $caseSensitive = '';
-                    if ($metaField->MetaFieldType()->Title == 'Tag') {
+                    if (in_array(strtolower($metaField->MetaFieldType()->getField('Title')), ['tag', 'dropdowntag'])) {
                         $caseSensitive = ':ExactMatch:case';
                     }
 
@@ -467,7 +498,13 @@ class RepoItem extends DataObject implements PermissionProvider {
                 }
 
                 if (!$metaField->isValidMetaFieldValue($repoItemMetaFieldValue)) {
-                    throw new Exception("No valid answer given for '$templateMetaField->Label_NL'");
+                    $metaFieldType = $metaField->MetaFieldType();
+                    $errorMessage = "No valid answer given for '$templateMetaField->Label_NL'";
+                    $errorMessageAddition = "";
+                    if($metaFieldType->ValidationRegexErrorMessage) {
+                        $errorMessageAddition = ": $metaFieldType->ValidationRegexErrorMessage";
+                    }
+                    throw new Exception("$errorMessage$errorMessageAddition");
                 }
 
                 $preexistingRepoItemMetaFieldValue = null;
@@ -519,6 +556,7 @@ class RepoItem extends DataObject implements PermissionProvider {
         $this->EmbargoDate = null;
         $this->SubType = null;
         $this->PublicationDate = null;
+        $this->AccessRight = null;
 
         $allRepoItemValues = RepoItemMetaFieldValue::get()
             ->innerJoin('SurfSharekit_RepoItemMetaField', 'SurfSharekit_RepoItemMetaField.ID = SurfSharekit_RepoItemMetaFieldValue.RepoItemMetaFieldID')
@@ -536,10 +574,43 @@ class RepoItem extends DataObject implements PermissionProvider {
 
     protected function onAfterWrite() {
         parent::onAfterWrite();
+        // Task & Notification logic
+        if ($this->isChanged('Status')) {
+             if($this->REPO_ITEM_STATUS_CHANGED_EVENT == false) {
+                 NotificationEventCreator::getInstance()->create(Constants::REPO_ITEM_STATUS_CHANGED_EVENT, $this);
+
+                 $oldStatus = $this->getChangedFields()['Status']['before'] ?? null;
+
+                 if ($this->Status == 'Submitted' && $oldStatus !== 'Revising') {
+                     TaskCreator::getInstance()->createReviewTasks($this);
+                 }
+
+                 $this->REPO_ITEM_STATUS_CHANGED_EVENT = true;
+             }
+        }
+
+        // If existing repoItem got removed, delete all uncompleted review tasks linked to this RepoItem
+        if ($this->isChanged("IsRemoved") && $this->IsRemoved) {
+            TaskRemover::getInstance()->deleteUncompletedTasksByType($this, Constants::TASK_TYPE_REVIEW);
+        }
+
+        // Create fill Tasks when a RepoItem is created through the UploadAPI, only generate once
+        if ($this->UploadedFromApi && $this->shouldCreateFillTask) {
+            TaskCreator::getInstance()->createFillTasks($this);
+        }
 
         if ($this->isChanged('OwnerID') || $this->isChanged('InstituteID')) {
             ScopeCache::removeCachedViewable(RepoItem::class);
             ScopeCache::removeCachedDataList(RepoItem::class);
+        }
+
+        if ($this->RepoType === "RepoItemRepoItemFile") {
+            if ($this->Status != 'Embargo' && strtotime($this->EmbargoDate) > time()) {
+                $this->setField('Status', 'Embargo');
+                $this->forceChange();
+                $this->write();
+                return;
+            }
         }
 
         if ($this->Status == 'Approved') {
@@ -557,12 +628,211 @@ class RepoItem extends DataObject implements PermissionProvider {
             $this->updateArchiveState();
         }
 
-        $this->updateChildrenToIncludeParent();
+        $this->updateChildrenToIncludeParent($this);
         RepoItemSummary::updateFor($this);
         SearchObject::updateForRepoItem($this);
 
         if (in_array($this->Status, ['Published']) && $this->IsPublic && DoiCreator::hasDoi($this)) {
             DoiCreator::enrichDoiFor($this);
+        }
+
+        if (!(count($this->getChangedFields(true, 2)) == 1 && $this->isChanged('Version')) &&
+            ($this->isChanged('Status') || $this->isChanged('IsRemoved'))) {
+            // Only push changed item to client when version is not the only changed field
+            $this->pushRepoItemToSubscribedClients();
+        }
+    }
+
+    /**
+     * This is an override of the DataObject delete() function. This override doesn't throw an error when parent::onBeforeDelete
+     * is not called. Instead, the delete logic is simply not executed when the delete is broken with the exception of onBeforeDelete().
+     */
+    public function delete() {
+        $this->brokenOnDelete = true;
+        $this->onBeforeDelete();
+        if (!$this->brokenOnDelete) {
+            // Deleting a record without an ID shouldn't do anything
+            if (!$this->ID) {
+                throw new LogicException("DataObject::delete() called on a DataObject without an ID");
+            }
+
+            $srcQuery = DataList::create(static::class)
+                ->filter('ID', $this->ID)
+                ->dataQuery()
+                ->query();
+            $queriedTables = $srcQuery->queriedTables();
+            $this->extend('updateDeleteTables', $queriedTables, $srcQuery);
+            foreach ($queriedTables as $table) {
+                $delete = SQLDelete::create("\"$table\"", ['"ID"' => $this->ID]);
+                $this->extend('updateDeleteTable', $delete, $table, $queriedTables, $srcQuery);
+                $delete->execute();
+            }
+            // Remove this item out of any caches
+            $this->flushCache();
+
+            $this->onAfterDelete();
+
+            $this->OldID = $this->ID;
+            $this->ID = 0;
+        }
+    }
+
+    protected function onBeforeDelete() {
+        Logger::debugLog("Entered onBeforeDelete() of RepoItem: " . $this->Uuid);
+        if ($this->IndirectDelete || $this->canDestroyFromTrash(Security::getCurrentUser())) {
+            // RepoItemMetaFields and RepoItemMetaFieldValues are deleted on cascade
+            if (in_array($this->RepoType, Constants::SECONDARY_REPOTYPES)) {
+                if ($this->RepoType == 'RepoItemRepoItemFile') {
+                    $this->deleteFile($this);
+                }
+                $this->deleteRepoItemSubRepoItems();
+                parent::onBeforeDelete();
+            } else {
+                $this->deleteRepoItemSubRepoItems();
+                $this->deleteRepoItemContent();
+            }
+
+            // Remove RepoItemSummary
+            DB::query("
+                DELETE FROM SurfSharekit_RepoItemSummary
+                WHERE SurfSharekit_RepoItemSummary.RepoItemID = '$this->ID'
+            ");
+        } else {
+            throw new Exception("You do not have permission to permanently delete this item");
+        }
+
+    }
+
+    private function deleteFile($repoItemRepoItemFile) {
+        Logger::debugLog("deleting file");
+        if (Environment::getenv('APPLICATION_ENVIRONMENT') != 'acc') {
+
+            $links = RepoItemMetaFieldValue::get()->filter(['RepoItemID' => $repoItemRepoItemFile->ID, 'IsRemoved' => false]);
+            if ($links->count() > 1) {
+                Logger::debugLog("more than 1 active link to this repoitemrepoitemfile");
+                // If there's more than 1 active link, do NOT delete file associated with this RepoItem
+                return;
+            }
+
+            $repoItemMetaField = $repoItemRepoItemFile->RepoItemMetaFields()
+                ->innerJoin('SurfSharekit_RepoItemMetaFieldValue', 'SurfSharekit_RepoItemMetaField.ID = SurfSharekit_RepoItemMetaFieldValue.RepoItemMetaFieldID')
+                ->where(["SurfSharekit_RepoItemMetaFieldValue.RepoItemFileID != '0'"])->first();
+
+            $repoItemMetaFieldValues = $repoItemMetaField->RepoItemMetaFieldValues();
+
+            if ($repoItemMetaFieldValues) {
+                foreach ($repoItemMetaFieldValues as $repoItemMetaFieldValue) {
+                    Logger::debugLog("repoitemmetafieldvalue is not null");
+                    Logger::debugLog("repoitemmetafieldvalue ID: " . $repoItemMetaFieldValue->ID);
+                    Logger::debugLog("repoitemmetafieldvalue fileID: " . $repoItemMetaFieldValue->RepoItemFileID);
+                    $file = RepoItemFile::get()->byID($repoItemMetaFieldValue->RepoItemFileID);
+                    if ($file) {
+                        Logger::debugLog("Removing file with id: {$file->ID} from File table and object store.");
+                        $folderID = $file->ParentID;
+                        $folder = File::get()->byID($folderID);
+                        if ($folder) {
+                            $folder->delete();
+                        }
+                        $file->delete();
+                        if ($file->Link) {
+                            $s3Client = Injector::inst()->create('Aws\\S3\\S3Client');
+                            $bucketKey = [
+                                'Bucket' => Environment::getEnv("AWS_BUCKET_NAME"),
+                                'Key' => $file->S3Key
+                            ];
+                            $s3Client->deleteObject($bucketKey);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private function deleteRepoItemContent() {
+        // Overwrite delete by manually deleting RepoItemMetaFields and RepoItemMetaFieldValues.
+        // This way the removed RepoItem can still be harvested as a delete.
+        $repoItemMetaFieldIDs = $this->RepoItemMetaFields()->getIDList();
+        foreach ($repoItemMetaFieldIDs as $repoItemMetaFieldID) {
+            $this->deleteRepoItemMetaFieldValue($repoItemMetaFieldID);
+        }
+        $this->deleteRepoItemMetaFields($repoItemMetaFieldIDs);
+        $this->PendingForDestruction = true;
+        $this->write();
+    }
+
+    private function deleteRepoItemMetaFieldValue($repoItemMetaFieldID) {
+        DB::query("
+                    DELETE FROM SurfSharekit_RepoItemMetaFieldValue
+                    WHERE SurfSharekit_RepoItemMetaFieldValue.RepoItemMetaFieldID = '$repoItemMetaFieldID'
+                ");
+    }
+
+    private function deleteRepoItemMetaFields($repoItemMetaFieldIDs) {
+        $queryString = $repoItemMetaFieldIDs ? ('' . implode(',', $repoItemMetaFieldIDs)) : '-1';
+        DB::query("
+                    DELETE FROM SurfSharekit_RepoItemMetaField
+                    WHERE SurfSharekit_RepoItemMetaField.ID IN ($queryString)
+                ");
+    }
+
+    private function deleteRepoItemSubRepoItems() {
+        $links = RepoItemMetaFieldValue::get()->filter(['RepoItemID' => $this->ID]);
+
+        // Loop through all the RepoItemMetaFieldValues (answers) referencing $this RepoItem.
+        // These are called links and should be removed because $this is about to be removed.
+        foreach ($links as $link) {
+            $link->IsRemoved = 1;
+            $link->DisableForceWriteRepoItem = true; // disable ForceWriteRepoItem, as this is not needed for a RepoItem that is about to be deleted
+            $link->write();
+
+            $repoItemOfLink = $link->RepoItemMetaField()->RepoItem();
+            if ($repoItemOfLink && $repoItemOfLink->exists()) {
+                $repoType = $repoItemOfLink->RepoType;
+                $isSubRepoItem = in_array($repoType, Constants::SECONDARY_REPOTYPES);
+
+                if ($isSubRepoItem) {
+                    // if the RepoItem that contains the link is a subRepoItem it can be deleted as this is just a container for the removed link
+                    $repoItemOfLink->IndirectDelete = true;
+                    $repoItemOfLink->delete();
+                } else {
+                    // If the RepoItem that contains the link is a main RepoItem it means that $this was a subRepoItem
+                    // So now all RepoItemMetaFieldValues referencing this subRepoItem are set to IsRemoved = true
+                    $repoItemValuesReferencingRepoItemOfLink = RepoItemMetaFieldValue::get()->filter(['RepoItemID' => $repoItemOfLink->ID]);
+                    foreach ($repoItemValuesReferencingRepoItemOfLink as $repoItemValue) {
+                        $repoItemValue->IsRemoved = true;
+                        $repoItemValue->DisableForceWriteRepoItem = true;
+                        $repoItemValue->write();
+                    }
+                }
+            }
+        }
+
+        if (in_array($this->RepoType, Constants::MAIN_REPOTYPES)) {
+            $linkedRepoItemIds = $this->RepoItemMetaFields()
+                ->innerJoin('SurfSharekit_RepoItemMetaFieldValue', 'SurfSharekit_RepoItemMetaField.ID = SurfSharekit_RepoItemMetaFieldValue.RepoItemMetaFieldID')
+                ->where(["SurfSharekit_RepoItemMetaFieldValue.RepoItemID != '0'"])->column('SurfSharekit_RepoItemMetaFieldValue.RepoItemID');
+            if ($linkedRepoItemIds) {
+                $linkedRepoItems = RepoItem::get()->filter(["ID" => $linkedRepoItemIds]);
+
+                foreach ($linkedRepoItems as $linkedRepoItem) {
+                    $repoType = $linkedRepoItem->RepoType;
+                    $isSubRepoItem = in_array($repoType, Constants::SECONDARY_REPOTYPES);
+
+                    if ($isSubRepoItem) {
+                        $links = RepoItemMetaFieldValue::get()->filter(['RepoItemID' => $linkedRepoItem->ID, 'IsRemoved' => false]);
+                        if ($links->count() > 1) {
+                            // If there's more than 1 active link, do NOT delete
+                            continue;
+                        }
+                        if ($linkedRepoItem->RepoType == 'RepoItemRepoItemFile') {
+                            $linkedRepoItem->IndirectDelete = true;
+                            $this->deleteFile($linkedRepoItem);
+                        }
+                        $linkedRepoItem->IndirectDelete = true;
+                        $linkedRepoItem->delete();
+                    }
+                }
+            }
         }
     }
 
@@ -580,6 +850,10 @@ class RepoItem extends DataObject implements PermissionProvider {
      * Method to ensure all required @see TemplateMetaField have been answered on
      */
     private function validateRequiredFields() {
+        if ($this->SkipValidation) {
+            return;
+        }
+
         foreach ($this->Template()->TemplateMetaFields()->filter(['IsRemoved' => 0, 'IsEnabled' => 1]) as $templateField) {
             if ($templateField && $templateField->Exists()) {
                 if ($templateField->IsRequired) { //need an answer for this templateMetaField
@@ -594,7 +868,8 @@ class RepoItem extends DataObject implements PermissionProvider {
         }
     }
 
-    private function validateChannels() {
+    private
+    function validateChannels() {
         $isPrivateEnabled = $this->isChannelTypeEnabled('PrivateChannel');
         $isPublicEnabled = $this->isChannelTypeEnabled('PublicChannel');
         $isArchiveEnabled = $this->isChannelTypeEnabled('Archive');
@@ -613,7 +888,8 @@ class RepoItem extends DataObject implements PermissionProvider {
         return true;
     }
 
-    private function isChannelTypeEnabled($channelType) {
+    private
+    function isChannelTypeEnabled($channelType) {
         $amountOfEnabledChannels = RepoItemMetaFieldValue::get()
             ->innerJoin('SurfSharekit_RepoItemMetaField', 'SurfSharekit_RepoItemMetaField.ID = SurfSharekit_RepoItemMetaFieldValue.RepoItemMetaFieldID')
             ->innerJoin('SurfSharekit_MetaField', 'SurfSharekit_MetaField.ID = SurfSharekit_RepoItemMetaField.MetaFieldID')
@@ -627,9 +903,10 @@ class RepoItem extends DataObject implements PermissionProvider {
      * @return bool
      * Utility method to checked if a @see RepoItemMetaField has at least one value
      */
-    private function repoItemMetaFieldContainsValues($repoItemMetaField) {
+    private
+    function repoItemMetaFieldContainsValues($repoItemMetaField) {
         foreach (RepoItemMetaFieldValue::get()->filter('RepoItemMetaFieldID', $repoItemMetaField->ID)->filter(['IsRemoved' => false]) as $answerPart) {
-            if ($answerPart->Value || $answerPart->MetaFieldOptionID || $answerPart->RepoItemID || $answerPart->PersonID || $answerPart->InstituteID) {
+            if ($answerPart->Value || $answerPart->MetaFieldOptionID || $answerPart->RepoItemID || $answerPart->PersonID || $answerPart->InstituteID || $answerPart->RepoItemFileID) {
                 return true;
             }
             if ($answerPart->MetaFieldOptionID && !$answerPart->MetaFieldOption()->IsRemoved) {
@@ -643,13 +920,17 @@ class RepoItem extends DataObject implements PermissionProvider {
      * @param $value
      * @throws Exception
      * Method to ensure only legitimate enum-values are set for the Status column in the database, as well as to differentiate between 'Status = Publish' and 'Status = Draft'
-     * Sends an email to to the author when used to publish RepoItem
+     * Sends an email to the author when used to publish RepoItem
      */
     function setStatus($value) {
-        $states = ["Draft", "Published", "Submitted", "Approved", "Declined", "Embargo", "Migrated"];
+        $states = ["Draft", "Published", "Submitted", "Approved", "Declined", "Revising", "Embargo", "Migrated"];
 
         if (!in_array($value, $states)) {
             throw new Exception('Setting incorrect Status, can only be one of: ' . json_encode($states));
+        }
+
+        if ($this->ignoreSetStatusCheck === true) {
+            $this->setField('Status', $value);
         }
 
         $stateMap = [
@@ -663,7 +944,8 @@ class RepoItem extends DataObject implements PermissionProvider {
                 'Submitted' => 'canEdit',
                 'Approved' => 'canPublish',
                 'Declined' => 'canPublish',
-                'Draft' => 'canEdit'
+                'Draft' => 'canEdit',
+                'Revising' => 'canEdit'
             ],
             'Approved' => [
                 'Published' => 'canPublish',
@@ -673,6 +955,10 @@ class RepoItem extends DataObject implements PermissionProvider {
                 'Submitted' => 'canEdit',
                 'Draft' => 'canEdit',
                 'Approved' => 'canPublish'
+            ],
+            'Revising' => [
+                'Submitted' => 'canEdit',
+                'Revising' => 'canEdit'
             ],
             'Published' => [
                 'Draft' => 'canPublish',
@@ -715,7 +1001,8 @@ class RepoItem extends DataObject implements PermissionProvider {
         $this->setField('Status', $value);
     }
 
-    public function canGenerateDoi($member = null, $context = []) {
+    public
+    function canGenerateDoi($member = null, $context = []) {
         if (Permission::check('ADMIN', 'any', $member)) {
             return true;
         }
@@ -723,11 +1010,11 @@ class RepoItem extends DataObject implements PermissionProvider {
             return false;
         }
 
-        foreach ($member->Groups() as $group) {
+        foreach ($member->ScopedGroups($this->dataObj()->getRelatedInstitute()->ID) as $group) {
             if ($this->checkRelationPermission(RepoItem::RELATION_AUTHOR, 'GENERATE DOI', $member, [Group::class => $group])) {
                 return true;
             }
-            $repoTypes = ["PublicationRecord", "LearningObject", "ResearchObject"];
+            $repoTypes = Constants::MAIN_REPOTYPES;
             foreach ($repoTypes as $repoType) {
                 if ($this->checkRelationPermission($repoType, 'GENERATE DOI', $member, [Group::class => $group])) {
                     return true;
@@ -738,7 +1025,8 @@ class RepoItem extends DataObject implements PermissionProvider {
         return false;
     }
 
-    public function canPublish($member = null, $context = []) {
+    public
+    function canPublish($member = null, $context = []) {
         if (Permission::check('ADMIN', 'any', $member)) {
             return true;
         }
@@ -751,15 +1039,32 @@ class RepoItem extends DataObject implements PermissionProvider {
             return true;
         }
 
-        foreach ($member->Groups() as $group) {
+        foreach ($member->ScopedGroups($this->dataObj()->getRelatedInstitute()->ID) as $group) {
             if ($this->checkRelationPermission(RepoItem::RELATION_AUTHOR, 'PUBLISH', $member, [Group::class => $group])) {
                 return true;
             }
-            $repoTypes = ["PublicationRecord", "LearningObject", "ResearchObject", "RepoItemRepoItemFile", "RepoItemLearningObject", "RepoItemLink", "RepoItemPerson"];
+            $repoTypes = Constants::ALL_REPOTYPES;
             foreach ($repoTypes as $repoType) {
                 if ($this->checkRelationPermission($repoType, 'PUBLISH', $member, [Group::class => $group])) {
                     return true;
                 }
+            }
+        }
+
+        return false;
+    }
+
+    public function canDestroyFromTrash($member = null, $context = []) {
+        if (is_null($member)) {
+            return false;
+        }
+
+        foreach ($member->ScopedGroups($this->dataObj()->getRelatedInstitute()->ID) as $group) {
+            if ($this->checkRelationPermission(RepoItem::RELATION_AUTHOR, 'DESTROY', $member, [Group::class => $group])) {
+                return true;
+            }
+            if ($this->checkRelationPermission("TRASH", 'DESTROY', $member, [Group::class => $group])) {
+                return true;
             }
         }
 
@@ -780,16 +1085,17 @@ class RepoItem extends DataObject implements PermissionProvider {
         parent::setField('RepoType', $value);
     }
 
-    public function providePermissions() {
+    public
+    function providePermissions() {
         $actionsOnExistingObject = ['VIEW', 'DELETE', 'PUBLISH', 'EDIT', 'GENERATE DOI'];
 
-        $repoTypes = ["PublicationRecord", "LearningObject", "ResearchObject", "RepoItemRepoItemFile", "RepoItemLearningObject", "RepoItemLink", "RepoItemPerson"];
+        $repoTypes = Constants::ALL_REPOTYPES;
         $permissionsForAll = [];
         foreach ($repoTypes as $repoType) {
             $permissionsForAll = array_merge($permissionsForAll, $this->provideRelationaryPermissions($repoType, "a $repoType RepoItem", ['CREATE']));
             $permissionsForAll = array_merge($permissionsForAll, $this->provideRelationaryPermissions($repoType, "all $repoType RepoItems", ['DELETE', 'PUBLISH', 'EDIT']));
         }
-        $baseRepoTypes = ["PublicationRecord", "LearningObject", "ResearchObject"];
+        $baseRepoTypes = Constants::MAIN_REPOTYPES;
         foreach ($baseRepoTypes as $baseRepoType) {
             $permissionsForAll = array_merge($permissionsForAll, $this->provideRelationaryPermissions($baseRepoType, "for all $baseRepoType RepoItems", ['GENERATE DOI']));
         }
@@ -799,15 +1105,19 @@ class RepoItem extends DataObject implements PermissionProvider {
             $permissionsForAll = array_merge($permissionsForAll, $this->provideRelationaryPermissions($status, "all $status RepoItems", ['VIEW']));
         }
         $permissionsForAll = array_merge($permissionsForAll, $this->provideRelationaryPermissions(RepoItem::RELATION_ARCHIVED, "all archived RepoItems", ['VIEW']));
+        $permissionsForAll = array_merge($permissionsForAll, $this->provideRelationaryPermissions("TRASH", "all RepoItems in trash", ['DESTROY']));
 
         $permissionsForOwn = $this->provideRelationaryPermissions(RepoItem::RELATION_AUTHOR, 'their own RepoItems', $actionsOnExistingObject);
 
         $reportPermission = $this->provideRelationaryPermissions(RepoItem::RELATION_REPORT, 'reports of RepoItems', ['VIEW']);
 
-        return array_merge(/*$normalPermissions, $scopedPermissions, */ $permissionsForAll, $permissionsForOwn, $reportPermission);
+        $sanitizePermission = $this->provideRelationaryPermissions(RepoItem::RELATION_ALL, 'all RepoItems', ['SANITIZE']);
+
+        return array_merge(/*$normalPermissions, $scopedPermissions, */ $permissionsForAll, $permissionsForOwn, $reportPermission, $sanitizePermission);
     }
 
-    public function canCreate($member = null, $context = []) {
+    public
+    function canCreate($member = null, $context = []) {
         if (parent::canCreate($member)) {
             return true;
         }
@@ -823,7 +1133,7 @@ class RepoItem extends DataObject implements PermissionProvider {
         }
 
         if (is_string($this->RepoType)) {
-            foreach ($member->Groups() as $group) {
+            foreach ($member->ScopedGroups($this->dataObj()->getRelatedInstitute()->ID) as $group) {
                 if ($this->checkRelationPermission($this->RepoType, 'CREATE', $member, [Group::class => $group]) &&
                     (in_array(InstituteScoper::getScopeLevel($group->InstituteID, $this->InstituteID), [InstituteScoper::SAME_LEVEL, InstituteScoper::LOWER_LEVEL]))) {
                     return true;
@@ -845,7 +1155,7 @@ class RepoItem extends DataObject implements PermissionProvider {
             return false;
         }
 
-        if ($this->Status == 'Published') {
+        if (!$this->disablePublishedCheckOnDelete && $this->Status == 'Published') {
             return false;
         }
 
@@ -853,7 +1163,7 @@ class RepoItem extends DataObject implements PermissionProvider {
             return true;
         }
 
-        foreach ($member->Groups() as $group) {
+        foreach ($member->ScopedGroups($this->dataObj()->getRelatedInstitute()->ID) as $group) {
             if ($this->checkRelationPermission(RepoItem::RELATION_AUTHOR, 'DELETE', $member, [Group::class => $group]) ||
                 $this->checkRelationPermission($this->RepoType, 'DELETE', $member, [Group::class => $group])) {
                 return true;
@@ -873,7 +1183,9 @@ class RepoItem extends DataObject implements PermissionProvider {
         if ($member->isWorksAdmin()) {
             return true;
         }
-        return ScopeCache::isViewableFromCache($this);
+        $canView = PermissionFilter::filterThroughCanViewPermissions(InstituteScoper::getAll(RepoItem::class))->filter(['ID' => $this->dataObj()->ID])->exists();
+
+        return $canView;
     }
 
     public function canReport($member = null, $context = []) {
@@ -884,7 +1196,7 @@ class RepoItem extends DataObject implements PermissionProvider {
             return false;
         }
 
-        foreach ($member->Groups() as $group) {
+        foreach ($member->ScopedGroups($this->dataObj()->getRelatedInstitute()->ID) as $group) {
             if ($this->checkRelationPermission(RepoItem::RELATION_REPORT, 'VIEW', $member, [Group::class => $group])) {
                 return true;
             }
@@ -920,7 +1232,8 @@ class RepoItem extends DataObject implements PermissionProvider {
             return true;
         }
 
-        foreach ($member->Groups() as $group) {
+
+        foreach ($member->ScopedGroups($this->dataObj()->getRelatedInstitute()->ID) as $group) {
             if ($this->checkRelationPermission(RepoItem::RELATION_AUTHOR, 'EDIT', $member, [Group::class => $group]) ||
                 $this->checkRelationPermission($this->RepoType, 'EDIT', $member, [Group::class => $group])) {
                 return true;
@@ -935,6 +1248,7 @@ class RepoItem extends DataObject implements PermissionProvider {
      * Automatically connects Template of Insitute based on RepoItemType
      */
     protected function onBeforeWrite() {
+        Logger::debugLog("Entered onBeforeWrite() of RepoItem: " . $this->Uuid);
         // prevent validation when migrating or when editing in the cms
         if ($this->Status == 'Migrated' || Controller::curr() == RepoItemModelAdmin::class) {
             parent::onBeforeWrite();
@@ -956,24 +1270,32 @@ class RepoItem extends DataObject implements PermissionProvider {
         }
 
         $canCreate = false;
-        if (Permission::check('ADMIN', 'any', $member) || $member->isWorksAdmin()) {
+        if (Controller::curr() instanceof RepoItemUploadApiController) {
+            $canCreate = true;
+        } else if (Permission::check('ADMIN', 'any', $member) || $member->isWorksAdmin()) {
             $canCreate = true;
         } else {
-            foreach ($member->Groups() as $group) {
+            foreach ($member->ScopedGroups($this->dataObj()->getRelatedInstitute()->ID) as $group) {
                 if ($this->checkRelationPermission($this->RepoType, 'CREATE', $member, [Group::class => $group])) {
                     $canCreate = true;
                 }
             }
         }
+
         if (!$canCreate && $this->ID == 0) {
             throw new Exception("Cannot create a Repoitem without CREATE permissions for " . $this->RepoType);
         }
 
         // Check if validation needs to be done
-        if (in_array($this->Status, ['Published', 'Approved', 'Submitted', 'Embargo'])) {
+        if (in_array($this->Status, ['Published', 'Approved', 'Submitted', 'Embargo']) && $this->IsRemoved == 0 && !$this->SkipValidation) {
+            Logger::debugLog("Performing validation for RepoItem: " . $this->Uuid . "; isRemoved: " . $this->IsRemoved . "; skipValidation: " . $this->SkipValidation . ";");
             $this->validateRequiredFields();
-            if (!$this->validateChannels()) {
-                throw new Exception('Cannot publish with this combination of channels');
+
+            // ignore RepoItemRepoItemFiles because it now has actual statuses instead of draft
+            if ($this->RepoType !== "RepoItemRepoItemFile") {
+                if (!$this->validateChannels()) {
+                    throw new Exception('Cannot publish with this combination of channels');
+                }
             }
 
 //            if (!$this->isChanged('Status')) {
@@ -984,7 +1306,9 @@ class RepoItem extends DataObject implements PermissionProvider {
             }
         }
 
-        if ($this->exists()) {
+        $this->IsPublic = false;
+
+        if ($this->exists() && $this->Status == 'Published') {
             $amountOfPublicChannels = RepoItemMetaFieldValue::get()
                 ->innerJoin('SurfSharekit_RepoItemMetaField', 'SurfSharekit_RepoItemMetaField.ID = SurfSharekit_RepoItemMetaFieldValue.RepoItemMetaFieldID')
                 ->innerJoin('SurfSharekit_MetaField', 'SurfSharekit_MetaField.ID = SurfSharekit_RepoItemMetaField.MetaFieldID')
@@ -1007,7 +1331,8 @@ class RepoItem extends DataObject implements PermissionProvider {
      * @param Member $member
      * @return bool
      */
-    private function isPublicationRecord(Member $member) {
+    private
+    function isPublicationRecord(Member $member) {
         return $this->RepoType == 'PublicationRecord';
     }
 
@@ -1015,7 +1340,26 @@ class RepoItem extends DataObject implements PermissionProvider {
      * @param Member $member
      * @return bool
      */
-    private function isResearchObject(Member $member) {
+    private
+    function isDataset(Member $member) {
+        return $this->RepoType == 'Dataset';
+    }
+
+    /**
+     * @param Member $member
+     * @return bool
+     */
+    private
+    function isProject(Member $member) {
+        return $this->RepoType == 'Project';
+    }
+
+    /**
+     * @param Member $member
+     * @return bool
+     */
+    private
+    function isResearchObject(Member $member) {
         return $this->RepoType == 'ResearchObject';
     }
 
@@ -1023,7 +1367,8 @@ class RepoItem extends DataObject implements PermissionProvider {
      * @param Member $member
      * @return bool
      */
-    private function isLearningObject(Member $member) {
+    private
+    function isLearningObject(Member $member) {
         return $this->RepoType == 'LearningObject';
     }
 
@@ -1031,7 +1376,8 @@ class RepoItem extends DataObject implements PermissionProvider {
      * @param Member $member
      * @return bool
      */
-    private function isRepoItemPerson(Member $member) {
+    private
+    function isRepoItemPerson(Member $member) {
         return $this->RepoType == 'RepoItemPerson';
     }
 
@@ -1039,7 +1385,8 @@ class RepoItem extends DataObject implements PermissionProvider {
      * @param Member $member
      * @return bool
      */
-    private function isRepoItemLink(Member $member) {
+    private
+    function isRepoItemLink(Member $member) {
         return $this->RepoType == 'RepoItemLink';
     }
 
@@ -1047,7 +1394,8 @@ class RepoItem extends DataObject implements PermissionProvider {
      * @param Member $member
      * @return bool
      */
-    private function isRepoItemLearningObject(Member $member) {
+    private
+    function isRepoItemLearningObject(Member $member) {
         return $this->RepoType == 'RepoItemLearningObject';
     }
 
@@ -1055,7 +1403,17 @@ class RepoItem extends DataObject implements PermissionProvider {
      * @param Member $member
      * @return bool
      */
-    private function isRepoItemRepoItemFile(Member $member) {
+    private
+    function isRepoItemResearchObject(Member $member) {
+        return $this->RepoType == 'RepoItemResearchObject';
+    }
+
+    /**
+     * @param Member $member
+     * @return bool
+     */
+    private
+    function isRepoItemRepoItemFile(Member $member) {
         return $this->RepoType == 'RepoItemRepoItemFile';
     }
 
@@ -1063,7 +1421,8 @@ class RepoItem extends DataObject implements PermissionProvider {
      * @param Member $member
      * @return bool if $member is the author of this RepoItem
      */
-    private function isAuthor(Member $member) {
+    private
+    function isAuthor(Member $member) {
         return $this->OwnerID == $member->ID;
     }
 
@@ -1071,23 +1430,35 @@ class RepoItem extends DataObject implements PermissionProvider {
      * @param Member $member
      * @return bool if $member is the CoAuthor of this RepoItem
      */
-    private function isCoAuthor(Member $member) {
+    private
+    function isCoAuthor(Member $member) {
         return false;
     }
 
-    private function isEmbargo(Member $member) {
+    private
+    function isEmbargo(Member $member) {
         return $this->Status == 'Embargo';
     }
 
-    private function isArchived(Member $member) {
+    private
+    function isArchived(Member $member) {
         return $this->IsArchived;
+    }
+
+    private function isTrash(Member $member) {
+        return $this->IsRemoved;
+    }
+
+    private function isAll(Member $member) {
+        return true;
     }
 
     /**
      * @param $member
      * @return bool if the repoitem is part a lower scope of that of $member
      */
-    public function isLowerlevel($member, $context) {
+    public
+    function isLowerlevel($member, $context) {
         if (isset($context[Group::class]) && $group = $context[Group::class]) {
             return InstituteScoper::getScopeLevel($group->InstituteID, $this->InstituteID) == InstituteScoper::LOWER_LEVEL;
         }
@@ -1099,30 +1470,36 @@ class RepoItem extends DataObject implements PermissionProvider {
      * @return bool if the repoitem is part the same scope of that of $member
      */
 
-    public function isSameLevel($member, $context) {
+    public
+    function isSameLevel($member, $context) {
         if (isset($context[Group::class]) && $group = $context[Group::class]) {
             return InstituteScoper::getScopeLevel($group->InstituteID, $this->InstituteID) == InstituteScoper::SAME_LEVEL;
         }
         return false;
     }
 
-    public function isReport($member, $context) {
+    public
+    function isReport($member, $context) {
         return true;
     }
 
-    public function getMemberFullName() {
+    public
+    function getMemberFullName() {
         return MemberHelper::getMemberFullName($this->Owner());
     }
 
-    public function getAuthorName() {
+    public
+    function getAuthorName() {
         return $this->Owner()->Name;
     }
 
-    public function getPublicURL() {
+    public
+    function getPublicURL() {
         return Environment::getEnv('FRONTEND_BASE_URL') . '/public/' . $this->Uuid;
     }
 
-    public function getFrontEndURL() {
+    public
+    function getFrontEndURL() {
         return Environment::getEnv('FRONTEND_BASE_URL') . '/publications/' . $this->Uuid;
     }
 
@@ -1131,7 +1508,8 @@ class RepoItem extends DataObject implements PermissionProvider {
      * Can be used during creation to copy meta field values and such
      * @throws Exception
      */
-    public function setCopyFrom($value) {
+    public
+    function setCopyFrom($value) {
         if ($this->isInDB()) {
             throw new Exception('RepoItem already exists, cannot be based on another repoItem');
         }
@@ -1182,7 +1560,7 @@ class RepoItem extends DataObject implements PermissionProvider {
      */
     public function Template() {
         if (!$this->Institute()->exists()) {
-            throw new Exception('Cannot have a RepoItem without insitute');
+            throw new Exception('Cannot have a RepoItem without institute');
         }
         $template = $this->Institute()->Templates()->filter(['RepoType' => $this->RepoType])->first();
         if (!$template) {
@@ -1193,14 +1571,15 @@ class RepoItem extends DataObject implements PermissionProvider {
 
     function getLoggedInUserPermissions() {
         $loggedInMember = Security::getCurrentUser();
-        return [
+        $permission = [
             'canView' => $this->canView($loggedInMember),
             'canEdit' => $this->canEdit($loggedInMember),
             'canCopy' => $this->canCopy($loggedInMember),
             'canDelete' => $this->canDelete($loggedInMember),
             'canPublish' => $this->canPublish($loggedInMember),
-            'canGenerateDoi' => $this->canGenerateDoi($loggedInMember)
+            'canGenerateDoi' => $this->canGenerateDoi($loggedInMember),
         ];
+        return $permission;
     }
 
     function setIsRemovedFromApi($value) {
@@ -1217,27 +1596,33 @@ class RepoItem extends DataObject implements PermissionProvider {
         }
     }
 
-    public function canConnectToInstitute($institute) {
+    public
+    function canConnectToInstitute($institute) {
         return !$this->Institute()->exists();
     }
 
-    public function canAddChild($child) {
+    public
+    function canAddChild($child) {
         return false;
     }
 
-    public function canRemoveChild($child) {
+    public
+    function canRemoveChild($child) {
         return false;
     }
 
-    public function canAddParent($parent) {
+    public
+    function canAddParent($parent) {
         return false;
     }
 
-    public function canRemoveParent($parent) {
+    public
+    function canRemoveParent($parent) {
         return false;
     }
 
-    public function Parents() {
+    public
+    function Parents() {
         return RepoItem::get()
             ->innerJoin('SurfSharekit_RepoItemMetaFieldValue', 'SurfSharekit_RepoItemMetaFieldValue.RepoItemID = SurfSharekit_RepoItem.ID')
             ->innerJoin('SurfSharekit_RepoItemMetaField', 'SurfSharekit_RepoItemMetaFieldValue.RepoItemMetaFieldID = SurfSharekit_RepoItemMetaField.ID')
@@ -1247,7 +1632,8 @@ class RepoItem extends DataObject implements PermissionProvider {
             ->where("SurfSharekit_MetaField.SystemKey = 'ContainsParents'");
     }
 
-    public function Children() {
+    public
+    function Children() {
         $connectionRepoItemIds = RepoItem::get()
             ->innerJoin('SurfSharekit_RepoItemMetaFieldValue', 'SurfSharekit_RepoItemMetaFieldValue.RepoItemID = SurfSharekit_RepoItem.ID')
             ->innerJoin('SurfSharekit_RepoItemMetaField', 'SurfSharekit_RepoItemMetaFieldValue.RepoItemMetaFieldID = SurfSharekit_RepoItemMetaField.ID')
@@ -1272,7 +1658,8 @@ class RepoItem extends DataObject implements PermissionProvider {
         }
     }
 
-    public static function updateAttributeBasedOnMetafield($value, $repoItemMetaFieldValueWhereFilter) {
+    public
+    static function updateAttributeBasedOnMetafield($value, $repoItemMetaFieldValueWhereFilter) {
         $attributeKeyMap = [
             'Title' => 'Title',
             'Subtitle' => 'Subtitle',
@@ -1301,11 +1688,16 @@ class RepoItem extends DataObject implements PermissionProvider {
     }
 
     public function publish() {
+        if ($this->RepoType == "RepoItemRepoItemFile") {
+            $this->touchParent();
+        }
+
         $this->setField('Status', 'Published');
         $this->write();
     }
 
-    private function updateArchiveState() {
+    private
+    function updateArchiveState() {
         $archiveRepoItemMetaField = $this->RepoItemMetaFields()->filter(['MetaField.SystemKey' => 'Archive'])->first();
         if ($archiveRepoItemMetaField && $archiveRepoItemMetaField->exists()) {
             $archiveValueObj = $archiveRepoItemMetaField->RepoItemMetaFieldValues()->filter(['IsRemoved' => 0])->first();
@@ -1324,6 +1716,28 @@ class RepoItem extends DataObject implements PermissionProvider {
         }
     }
 
+    /**
+     * Function to retrieve all persons that can publish this RepoItem
+     * Only returns Persons with the following roles: Supporter, Siteadmin
+    */
+    function getSupportersAndSiteAdminsWhoCanPublish() : DataList {
+        if (in_array($this->RepoType, Constants::MAIN_REPOTYPES)) {
+            $permission = 'REPOITEM_PUBLISH_' . strtoupper($this->RepoType);
+        }
+        $permissionsChecks = "(Permission.Code = '$permission' OR PermissionRoleCode.Code = '$permission')";
+        $roleChecks = "(PermissionRole.Title = 'Supporter' OR PermissionRole.Title = 'Siteadmin')";
+        $persons= Person::get()
+            ->innerJoin('Group_Members', 'Group_Members.MemberID = SurfSharekit_Person.ID')
+            ->innerJoin('Group', 'Group_Members.GroupID = Group.ID')
+            ->innerJoin('(' . InstituteScoper::getInstitutesOfUpperScope([$this->InstituteID])->sql() . ')', 'gi.ID = Group.InstituteID', 'gi')
+            ->leftJoin('Group_Roles', 'Group_Roles.GroupID = Group.ID')
+            ->leftJoin('PermissionRoleCode', 'PermissionRoleCode.RoleID = Group_Roles.PermissionRoleID')
+            ->leftJoin('PermissionRole', 'PermissionRole.ID = Group_Roles.PermissionRoleID')
+            ->leftJoin('Permission', 'Permission.GroupID = Group_Roles.GroupID')
+            ->where($permissionsChecks . ' AND ' . $roleChecks);
+        return $persons;
+    }
+
     static function getPermissionCases() {
         $member = Security::getCurrentUser();
 
@@ -1334,7 +1748,7 @@ class RepoItem extends DataObject implements PermissionProvider {
             'REPOITEM_VIEW_EMBARGO' => "SurfSharekit_RepoItem.Status = 'Embargo'",
             'REPOITEM_VIEW_DECLINED' => "SurfSharekit_RepoItem.Status = 'Declined'",
             'REPOITEM_VIEW_APPROVED' => "SurfSharekit_RepoItem.Status = 'Approved'",
-            'REPOITEM_VIEW_SUBMITTED' => "SurfSharekit_RepoItem.Status = 'Submitted'",
+            'REPOITEM_VIEW_SUBMITTED' => "SurfSharekit_RepoItem.Status IN ('Submitted', 'Revising')",
             'REPOITEM_VIEW_DRAFT' => "SurfSharekit_RepoItem.Status = 'Draft'",
 
             'REPOITEM_VIEW_PUBLISHED' => "SurfSharekit_RepoItem.Status = 'Published' AND SurfSharekit_RepoItem.IsArchived = 0",
@@ -1342,7 +1756,7 @@ class RepoItem extends DataObject implements PermissionProvider {
         ];
     }
 
-    private function updateChildrenToIncludeParent() {
+    private function updateChildrenToIncludeParent($repoItem) {
         $repoItemMetaFieldChildren = $this->RepoItemMetaFields()->filter('MetaField.SystemKey', 'ContainsChildren')->first();
         if (!$repoItemMetaFieldChildren || !$repoItemMetaFieldChildren->exists()) {
             return;
@@ -1353,7 +1767,9 @@ class RepoItem extends DataObject implements PermissionProvider {
         foreach ($repoItemMetaFieldChildren->RepoItemMetaFieldValues()->filter('IsRemoved', 0) as $betweenRepoItemValues) {
             //Get the corresponding LearningObject behind the RepoItemLearningObject
             $childRepoItemValue = $betweenRepoItemValues->RepoItem()->RepoItemMetaFields()->filter('RepoItemMetaFieldValues.RepoItemID:not', null)->first();
-            $childRepoItemValue = $childRepoItemValue->RepoItemMetaFieldValues()->filter('IsRemoved', 0)->first();
+            if ($childRepoItemValue) {
+                $childRepoItemValue = $childRepoItemValue->RepoItemMetaFieldValues()->filter('IsRemoved', 0)->first();
+            }
 
             if (!$childRepoItemValue || !$childRepoItemValue->exists()) {
                 continue;
@@ -1366,10 +1782,16 @@ class RepoItem extends DataObject implements PermissionProvider {
 
             if (!$parentsMetaFieldInChild || !$parentsMetaFieldInChild->exists()) {
                 //Child doesn't have a list of parentconnections yet, create a new one (i.e. list of RepoItemLearningObjects)
+
                 $parentsMetaFieldInChild = new RepoItemMetaField();
                 $parentsMetaFieldInChild->setField('RepoItemID', $childRepoItem->ID);
-                $parentsMetaFieldInChild->setField('MetaFieldID', MetaField::get()->filter('SystemKey', 'ContainsParents')->first()->ID);
-                $parentsMetaFieldInChild->write();
+//                $parentsMetaFieldInChild->setField('MetaFieldID', MetaField::get()->filter('SystemKey', 'ContainsParents')->first()->ID);
+                $parentField = MetaField::get()->filter(['ParentRepoType' => $repoItem->RepoType, 'SystemKey' => 'ContainsParents']);
+                if ($parentField->count()) {
+                    $metaFieldID = $parentField->first()->ID;
+                    $parentsMetaFieldInChild->setField('MetaFieldID', $metaFieldID);
+                    $parentsMetaFieldInChild->write();
+                }
             }
 
             //Check whether the betweemRepoItem already has a connection to $this as parent
@@ -1380,12 +1802,10 @@ class RepoItem extends DataObject implements PermissionProvider {
                 $thisInChild->RepoItemID = $this->ID;
                 $thisInChild->RepoItemMetaFieldID = $parentsMetaFieldInChild->ID;
                 $thisInChild->IsRemoved = false;
-                $thisInChild->DisableForceWriteRepoItem = true;
                 $thisInChild->write();
-                $thisInChild->DisableForceWriteRepoItem = false;
             } else {
-                $thisInChild->IsRemoved = false;
                 $thisInChild->DisableForceWriteRepoItem = true;
+                $thisInChild->IsRemoved = false;
                 $thisInChild->write();
                 $thisInChild->DisableForceWriteRepoItem = false;
             }
@@ -1412,7 +1832,8 @@ class RepoItem extends DataObject implements PermissionProvider {
         return RepoItemSummary::generateSummaryFor($this);
     }
 
-    public function getPersonsInvolved() {
+    public
+    function getPersonsInvolved() {
         $authors = [];
         foreach ($this->RepoItemMetaFields()->filter('MetaField.MetaFieldType.Title', 'PersonInvolved') as $repoItemMetaField) {
             foreach ($repoItemMetaField->RepoItemMetaFieldValues() as $value) {
@@ -1425,5 +1846,215 @@ class RepoItem extends DataObject implements PermissionProvider {
             }
         }
         return $authors;
+    }
+
+    // Todo: Rewrite to make use of the Webhook DataObject instead -> These objects should be processed async
+    private function pushRepoItemToSubscribedClients()  {
+        $institute = $this->Institute();
+        if ($institute) {
+            $channels = Channel::get()->filter([
+                'PushEnabled' => true
+            ]);
+            if (count($channels) != 0) {
+                $listOfRequests = [];
+
+                foreach ($channels as $channel) {
+                    $channelInstitutes = $channel->Institutes()->getIDList();
+                    if ((count($channelInstitutes) && array_search($institute->ID, $channelInstitutes)) || !count($channelInstitutes)) {
+
+                        if ($isXML = $channel->Protocol()->SystemKey == 'OAI-PMH') {
+                            $responseDate = DateHelper::iso8601zFromString(date('Y-m-d H:i:s'));
+                            $rootNode = new SimpleXMLElement('<OAI-PMH></OAI-PMH>');
+                            $rootNode->addAttribute('xmlns', 'http://www.openarchives.org/OAI/2.0/');
+                            $rootNode->addChild('responseDate', $responseDate);
+                            GetRecordNode::addTo($rootNode, null, $channel, $this);
+
+                            $postData = $rootNode;
+
+                            $headers = [
+                                'content-type' => 'text/xml'
+                            ];
+
+                        } else {
+                            $description = new ExternalRepoItemChannelJsonApiDescription($channel);
+
+                            // Get all items that can get through this channel's filters (including cached items)
+                            $repoItemsExposedToChannel = $description->getAllItemsToDescribe(RepoItem::get(), true);
+                            $repoItem = $repoItemsExposedToChannel->filter(["ID" => $this->ID]);
+//                            Logger::debugLog($repoItem->sql(), true);
+                            if (!($repoItem && $repoItem->exists())) {
+                                continue; // Skip if RepoItem cannot get through channel filters and does not exist in cache
+                            }
+
+                            $dataDescription = [];
+                            $dataDescription[JsonApi::TAG_ATTRIBUTES] = $description->describeAttributesOfDataObject($this);
+                            $dataDescription[JsonApi::TAG_TYPE] = DataObjectJsonApiEncoder::describeTypeOfDataObject($description);
+                            if ($metaInformation = $description->describeMetaOfDataObject($this)) {
+                                $dataDescription[JsonApi::TAG_META] = $metaInformation;
+
+                                $cachedAttributesOfObject = Cache_RecordNode::get()->filter(['Endpoint' => 'JSON:API', 'ProtocolID' => $channel->ProtocolID, 'ChannelID' => $channel->ID, 'RepoItemID' => $this->ID])->first();
+                                if ($cachedAttributesOfObject) {
+                                    $array = json_decode("$cachedAttributesOfObject->Data", true);
+                                    if (array_key_exists('meta', $array)) {
+                                        if (array_key_exists('status', $array['meta']) && array_key_exists('status', $metaInformation)) {
+                                            if ($array['meta']['status'] == 'deleted' && $metaInformation['status'] == 'deleted') {
+                                                // repoItem has deleted status in cache,
+                                                // it's description also has status deleted,
+                                                // meaning the deleted push has already been send to this channel, continue...
+                                                continue;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            $dataDescription[JsonApi::TAG_ID] = DataObjectJsonApiEncoder::describeIdOfDataObject($this);
+                            $description->cache($this, $dataDescription);
+                            // Update/create cache if this is already cached or if this is an uncached item to describe
+
+                            $postData = $dataDescription;
+
+                            $headers = [
+                                'content-type' => 'application/vnd.api+json'
+                            ];
+
+                        }
+                        $client = new Client();
+
+                        $listOfRequests[] = $client->postAsync(
+                            $channel->CallbackUrl,
+                            [
+                                RequestOptions::HEADERS => $headers,
+                                RequestOptions::BODY => $isXML ? $postData->asXML() : json_encode($postData)
+                            ]
+                        );
+
+                    }
+                }
+
+                $responses = Promise\Utils::settle($listOfRequests)->wait();
+            }
+        }
+    }
+
+
+    public function memberHasRoleWithAssociatedInstitute(array $array): bool {
+        if (null === $member = Security::getCurrentUser()) {
+            return false;
+        }
+
+        if (null !== $institute = $this->Institute) {
+            /** @var Institute $institute */
+            $rootInstitute = $institute->getRootInstitute();
+            $groups = $rootInstitute->Groups()->filter('Roles.Title', $array);
+
+            $inGroup = false;
+            foreach ($groups as $group) {
+                /** @var Group $group */
+                $inGroup = $member->inGroup($group->ID);
+                if ($inGroup) {
+                    break;
+                }
+            }
+
+            return $inGroup;
+        }
+
+        return false;
+    }
+
+    /**
+     * @return DataList
+     */
+    public function getUncompletedReviewTasks(): DataList {
+        $member = Security::getCurrentUser();
+        if ($member) {
+            return $this->Tasks()->filter([
+                "Type" => "REVIEW",
+                "State" => "INITIAL",
+                "OwnerID" => $member->ID
+            ]);
+        }
+        return Task::get()->filter(["ID" => 0]);
+    }
+
+    public function getTranslatedType() {
+        $types = [
+            "PublicationRecord" => [
+                "nl" => "Afstudeerwerk of stageverslag",
+                "en" => "Thesis or internship report"
+            ],
+            "LearningObject" => [
+                "nl" => "Leermateriaal",
+                "en" => "Learning material"
+            ],
+            "ResearchObject" => [
+                "nl" => "Onderzoekspublicatie",
+                "en" => "Research publication"
+            ],
+            "Dataset" => [
+                "nl" => "Dataset",
+                "en" => "Dataset"
+            ],
+            "Project" => [
+                "nl" => "Project",
+                "en" => "Project"
+            ],
+            "RepoItemRepoItemFile" => [
+                "nl" => "Bestand",
+                "en" => "File"
+            ],
+            "RepoItemLearningObject" => [
+                "nl" => "Leermateriaal",
+                "en" => "Learning object"
+            ],
+            "RepoItemLink" => [
+                "nl" => "Link",
+                "en" => "Link"
+            ],
+            "RepoItemPerson" => [
+                "nl" => "Persoon",
+                "en" => "Person"
+            ],
+            "RepoItemResearchObject" => [
+                "nl" => "Onderzoekspublicatie",
+                "en" => "Research publication"
+            ]
+        ];
+
+        return $types[$this->RepoType] ?? "";
+    }
+
+    public function touchParent() {
+
+        if (null !== $parent = $this->getActiveParent()) {
+            $parent->touch();
+            $parent->touchParent();
+        }
+    }
+
+    public function touch() {
+        $this->LastEdited = (new \DateTime())->format('Y-m-d H:i:s');
+
+        $this->SkipValidation = true;
+        $this->write();
+    }
+
+    /**
+     * @param bool $excludeDeleted
+     * @return DataList
+     */
+    public function getAllRepoItemMetaFieldValues(bool $excludeDeleted = true): DataList {
+        $filter = [
+            "ri.ID" => $this->ID,
+        ];
+
+        if ($excludeDeleted) {
+            $filter["SurfSharekit_RepoItemMetaFieldValue.IsRemoved"] = false;
+        }
+
+        return RepoItemMetaFieldValue::get()
+            ->innerJoin("SurfSharekit_RepoItemMetaField", "SurfSharekit_RepoItemMetaFieldValue.RepoItemMetaFieldID = rimf.ID", "rimf")
+            ->innerJoin("SurfSharekit_RepoItem", "rimf.RepoItemID = ri.ID", "ri")
+            ->where($filter);
     }
 }

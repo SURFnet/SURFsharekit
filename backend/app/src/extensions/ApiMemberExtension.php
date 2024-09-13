@@ -10,6 +10,7 @@ use SilverStripe\Forms\FieldList;
 use SilverStripe\ORM\DataExtension;
 use SilverStripe\Security\Member;
 use SilverStripe\View\Requirements;
+use SurfSharekit\constants\RoleConstant;
 use SurfSharekit\Models\Helper\Constants;
 
 /**
@@ -18,7 +19,7 @@ use SurfSharekit\Models\Helper\Constants;
  * Extension to the SilverStripe Member class to add Api Features
  */
 class ApiMemberExtension extends DataExtension {
-    const TOKEN_EXPIRATIOM = '7 DAYS';
+    const TOKEN_EXPIRATION = '22 hours';
 
     private static $db = [
         'ApiToken' => 'Varchar(255)',
@@ -29,7 +30,8 @@ class ApiMemberExtension extends DataExtension {
 
     private static $indexes = [
         'ApiToken' => true,
-        'ApiTokenAcc' => true
+        'ApiTokenAcc' => true,
+        'Surname' => true
     ];
 
     var $institute = null;
@@ -64,7 +66,7 @@ class ApiMemberExtension extends DataExtension {
     public static function hasApiUserRole($member) {
         foreach ($member->Groups() as $group) {
             foreach ($group->Roles() as $role) {
-                if ($role->Title === Constants::TITLE_OF_APIUSER_ROLE) {
+                if ($role->Title === RoleConstant::APIUSER) {
                     return true;
                 }
             }
@@ -88,6 +90,7 @@ class ApiMemberExtension extends DataExtension {
         }
 
         $member->ApiTokenExpires = $tokenInfo['expires'];
+        $member->write();
         return $tokenInfo;
     }
 
@@ -107,7 +110,7 @@ class ApiMemberExtension extends DataExtension {
      */
     public static function generateAccessTokenInformation() {
         $expires = new DateTime('now');
-        $expires->modify('+ ' . self::TOKEN_EXPIRATIOM);
+        $expires->modify('+ ' . self::TOKEN_EXPIRATION);
 
         $salt1 = "79236fe9";
         $salt2 = "390a4ab759d8";

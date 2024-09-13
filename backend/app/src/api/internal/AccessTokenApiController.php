@@ -33,7 +33,7 @@ class AccessTokenApiController extends LoginProtectedApiController {
     }
 
     public static function generateAccessTokenForMember(Member $member) {
-        $apiToken = $member->ApiToken;
+        $apiToken = Environment::getEnv('APPLICATION_ENVIRONMENT') == 'live' ? $member->ApiToken : $member->ApiTokenAcc;
         $time = new DateTime();
         $timeString = $time->format('d-m-Y H:i:s');
         $dataToEncode = $apiToken . ';' . $timeString;
@@ -56,7 +56,11 @@ class AccessTokenApiController extends LoginProtectedApiController {
         if (count($decodedData) !== 2) {
             throw new Exception(static::$ACCESS_TOKEN_ERROR);
         }
-        $memberBehindAccessToken = Member::get()->filter(['ApiToken' => $decodedData[0]])->first();
+        if (Environment::getEnv('APPLICATION_ENVIRONMENT') == 'live') {
+            $memberBehindAccessToken = Member::get()->filter(['ApiToken' => $decodedData[0]])->first();
+        } else {
+            $memberBehindAccessToken = Member::get()->filter(['ApiTokenAcc' => $decodedData[0]])->first();
+        }
         if (!$memberBehindAccessToken || !$memberBehindAccessToken->exists()) {
             throw new Exception(static::$ACCESS_TOKEN_ERROR);
         }

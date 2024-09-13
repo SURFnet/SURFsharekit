@@ -20,12 +20,76 @@
         }
     ],
     "paths": {
+        "/repoItem/v1/upload": {
+          "post": {
+            "tags": [
+              "RepoItem"
+            ],
+            "summary": "Creates a repoItem through the Upload API",
+            "responses": {
+              "200": {
+                "description": "A RepoItem resource"
+              }
+            }
+          }
+        },
+        "/repoItem/v1/delete": {
+            "delete": {
+              "tags": [
+                "RepoItem"
+              ],
+              "summary": "Deletes a certain repoItem",
+              "responses": {
+                "200": {
+                  "description": "A RepoItem resource",
+                  "content": {
+                    "application/vnd.api+json": {
+                      "schema": {
+                        "type": "object",
+                        "properties" : {
+                          "repoItemID": {
+                            "type": "string",
+                            "example": "e38d3234-8f25-4049-89c4-e49d4401cbca"
+                          },
+                          "repoItemTitle": {
+                            "type": "string",
+                            "example": "Publicatie Titel"
+                          },
+                          "repoItemInstitute": {
+                            "type": "string",
+                            "example": "Hogeschool Test"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "requestBody": {
+                "description": "Create TemplateMetaField object",
+                "required": true,
+                "content": {
+                  "application/vnd.api+json": {
+                    "schema": {
+                      "type": "object",
+                      "properties" : {
+                        "repoItemID": {
+                          "type": "string",
+                          "example": "e38d3234-8f25-4049-89c4-e49d4401cbca"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+        },
         "/institutes": {
             "get": {
                 "tags": [
                     "Institute"
                 ],
-                "summary": "Returns a list of  Institutes",
+                "summary": "Returns a list of Institutes",
                 "responses": {
                     "200": {
                         "description": "A Institute resource"
@@ -238,65 +302,76 @@
     },
     "components": {
         "schemas": {
-            "Institute": {
-                "title": "JSON:API conform GET Institute model",
-                "description": "Institute model",
-                "properties": {
-                    "title": {
-                        "type": "string"
-                    }
-                },
-                "type": "object"
+          "RepoItem": {
+            "title": "JSON:API conform DELETE RepoItem model",
+            "description": "RepoItem model",
+            "properties": {
+              "repoItemID": {
+                "type": "string",
+                "example": "e38d3234-8f25-4049-89c4-e49d4401cbca"
+              }
             },
-            "Template": {
-                "title": "JSON:API conform GET Template model",
-                "description": "Template model",
-                "properties": {
-                    "title": {
-                        "type": "string"
-                    },
-                    "repoType": {
-                        "type": "string",
-                        "enum": [
-                            "Scriptie"
-                        ]
-                    }
-                },
-                "type": "object"
-            },
-            "TemplateMetaField": {
-                "title": "JSON:API conform GET TemplateMetaField model",
-                "description": "TemplateMetaField model",
-                "properties": {
-                    "sortOrder": {
-                        "type": "integer"
-                    }
-                },
-                "type": "object"
-            },
-            "MetaField": {
-                "title": "JSON:API conform GET MetaField model",
-                "description": "MetaField model",
-                "properties": {
-                    "title": {
-                        "type": "string"
-                    },
-                    "description": {
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
-            "MetaFieldType": {
-                "title": "JSON:API conform GET MetaFieldType model",
-                "description": "MetaFieldType model",
-                "properties": {
-                    "title": {
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            }
+            "type": "object"
+          },
+          "Institute": {
+              "title": "JSON:API conform GET Institute model",
+              "description": "Institute model",
+              "properties": {
+                  "title": {
+                      "type": "string"
+                  }
+              },
+              "type": "object"
+          },
+          "Template": {
+              "title": "JSON:API conform GET Template model",
+              "description": "Template model",
+              "properties": {
+                  "title": {
+                      "type": "string"
+                  },
+                  "repoType": {
+                      "type": "string",
+                      "enum": [
+                          "Scriptie"
+                      ]
+                  }
+              },
+              "type": "object"
+          },
+          "TemplateMetaField": {
+              "title": "JSON:API conform GET TemplateMetaField model",
+              "description": "TemplateMetaField model",
+              "properties": {
+                  "sortOrder": {
+                      "type": "integer"
+                  }
+              },
+              "type": "object"
+          },
+          "MetaField": {
+              "title": "JSON:API conform GET MetaField model",
+              "description": "MetaField model",
+              "properties": {
+                  "title": {
+                      "type": "string"
+                  },
+                  "description": {
+                      "type": "string"
+                  }
+              },
+              "type": "object"
+          },
+          "MetaFieldType": {
+              "title": "JSON:API conform GET MetaFieldType model",
+              "description": "MetaFieldType model",
+              "properties": {
+                  "title": {
+                      "type": "string"
+                  }
+              },
+              "type": "object"
+          }
         }
     }
 }

@@ -4,15 +4,22 @@ namespace SurfSharekit\Models;
 
 use Exception;
 use RelationaryPermissionProviderTrait;
+use SilverStripe\Forms\CheckboxField;
+use SilverStripe\Forms\FieldList;
+use SilverStripe\Forms\ReadonlyField;
+use SilverStripe\Forms\TextField;
 use SilverStripe\ORM\DataExtension;
 use SilverStripe\ORM\ValidationException;
+use SilverStripe\ORM\ValidationResult;
 use SilverStripe\Security\Group;
 use SilverStripe\Security\Permission;
 use SilverStripe\Security\PermissionProvider;
 use SilverStripe\Security\PermissionRole;
 use SilverStripe\Security\Security;
 use SurfSharekit\Api\InstituteScoper;
+use SurfSharekit\constants\RoleConstant;
 use SurfSharekit\Models\Helper\Constants;
+use SurfSharekit\Models\Helper\Logger;
 
 /**
  * Class GroupPermissionExtension
@@ -21,12 +28,30 @@ use SurfSharekit\Models\Helper\Constants;
  */
 class GroupPermissionExtension extends DataExtension implements PermissionProvider {
     private static $db = [
-        'IsRemoved' => 'Boolean(0)'
+        'IsRemoved' => 'Boolean(0)',
+        'Label_NL' => 'Varchar(255)',
+        'Label_EN' => 'Varchar(255)'
+    ];
+
+    private static $has_one = [
+        "DefaultRole" => PermissionRole::class
     ];
 
     const CMS_SECURITY_PERMISSION_CODE = 'CMS_ACCESS_SecurityAdmin';
     const OWN_GROUP = 'OWN';
     use RelationaryPermissionProviderTrait;
+
+    public function updateCMSFields(FieldList $fields) {
+        // Insert Labels after the 'Group name' field
+        $fields->insertAfter('Title', TextField::create('Label_EN', 'Label (EN)'));
+        $fields->insertAfter('Title', TextField::create('Label_NL', 'Label (NL)'));
+
+        $defaultRole = $this->owner->DefaultRole();
+        $fields->insertAfter("InstituteID", new ReadonlyField("DefaultRoleTitle", "Default role", $defaultRole ? $defaultRole->Title : "none"));
+
+        // Make Group name read only
+        $fields->dataFieldByName('Title')->setReadonly(true);
+    }
 
     public function requireDefaultRecords() {
         parent::requireDefaultRecords();
@@ -40,11 +65,11 @@ class GroupPermissionExtension extends DataExtension implements PermissionProvid
     public function providePermissions() {
         //View permissions
         $ownPermissions = $this->provideRelationaryPermissions(GroupPermissionExtension::OWN_GROUP, 'their own group', ['view']);
-        $roleGroupPermissions = $this->provideRelationaryPermissions(Constants::TITLE_OF_STUDENT_ROLE, 'groups of ' . Constants::TITLE_OF_STUDENT_ROLE . 's', ['view']);
-        $roleGroupPermissions = array_merge($roleGroupPermissions, $this->provideRelationaryPermissions(Constants::TITLE_OF_MEMBER_ROLE, 'groups of ' . Constants::TITLE_OF_MEMBER_ROLE . 's', ['view']));
-        $roleGroupPermissions = array_merge($roleGroupPermissions, $this->provideRelationaryPermissions(Constants::TITLE_OF_SUPPORTER_ROLE, 'groups of ' . Constants::TITLE_OF_SUPPORTER_ROLE . 's', ['view']));
-        $roleGroupPermissions = array_merge($roleGroupPermissions, $this->provideRelationaryPermissions(Constants::TITLE_OF_SITEADMIN_ROLE, 'groups of ' . Constants::TITLE_OF_SITEADMIN_ROLE . 's', ['view']));
-        $roleGroupPermissions = array_merge($roleGroupPermissions, $this->provideRelationaryPermissions(Constants::TITLE_OF_STAFF_ROLE, 'groups of ' . Constants::TITLE_OF_STAFF_ROLE . 's', ['view']));
+        $roleGroupPermissions = $this->provideRelationaryPermissions(RoleConstant::STUDENT, 'groups of ' . RoleConstant::STUDENT . 's', ['view']);
+        $roleGroupPermissions = array_merge($roleGroupPermissions, $this->provideRelationaryPermissions(RoleConstant::MEMBER, 'groups of ' . RoleConstant::MEMBER . 's', ['view']));
+        $roleGroupPermissions = array_merge($roleGroupPermissions, $this->provideRelationaryPermissions(RoleConstant::SUPPORTER, 'groups of ' . RoleConstant::SUPPORTER . 's', ['view']));
+        $roleGroupPermissions = array_merge($roleGroupPermissions, $this->provideRelationaryPermissions(RoleConstant::SITEADMIN, 'groups of ' . RoleConstant::SITEADMIN . 's', ['view']));
+        $roleGroupPermissions = array_merge($roleGroupPermissions, $this->provideRelationaryPermissions(RoleConstant::STAFF, 'groups of ' . RoleConstant::STAFF . 's', ['view']));
 
         //Edit etc permissions
         $normalPermissions = $this->provideRelationaryPermissions(Institute::SAME_LEVEL, 'groups of their own institute', ['DELETE', 'EDIT', 'CREATE']);
@@ -134,6 +159,20 @@ class GroupPermissionExtension extends DataExtension implements PermissionProvid
     }
 
     /**
+     * @return array list of the permissionCodes of this group
+     */
+    public function getPermissionsFromRoles() {
+        $codeList = [];
+        foreach ($this->owner->Roles() as $role) {
+            /** @var PermissionRole $role */
+            if ($role) {
+                $codeList = array_merge($codeList, $role->Codes()->columnUnique('Code'));
+            }
+        }
+        return array_unique($codeList);
+    }
+
+    /**
      * @throws \SilverStripe\ORM\ValidationException
      * Adds or remove CMS_ACCESS_Security permission to be SilverStripe CMS compliant
      */
@@ -161,6 +200,11 @@ class GroupPermissionExtension extends DataExtension implements PermissionProvid
                 }
             }
         }
+
+        if ($this->owner->isChanged("Label_NL")) {
+            $this->owner->Title = $this->owner->Label_NL;
+        }
+
         parent::onBeforeWrite();
     }
 
@@ -214,7 +258,7 @@ class GroupPermissionExtension extends DataExtension implements PermissionProvid
         $onlyWorksAdminCanEdit = false;
         $rolesInGroup = $this->owner->Roles();
         foreach ($rolesInGroup as $roleInGroup) {
-            if ($roleInGroup->Title == Constants::TITLE_OF_MEMBER_ROLE) {
+            if ($roleInGroup->Title == RoleConstant::MEMBER) {
                 $onlyWorksAdminCanEdit = true;
             }
         }
@@ -362,7 +406,7 @@ class GroupPermissionExtension extends DataExtension implements PermissionProvid
                 foreach ($member->Groups() as $group) {
                     if ($this->checkRelationPermission(Institute::LOWER_LEVEL, 'EDIT', Security::getCurrentUser(), [Group::class => $group]) ||
                         $this->checkRelationPermission(Institute::SAME_LEVEL, 'EDIT', Security::getCurrentUser(), [Group::class => $group])) {
-                        $permissionsUserMayEdit = array_merge($permissionsUserMayEdit, ScopeCache::getPermissionsFromCache($group));
+                        $permissionsUserMayEdit = array_merge($permissionsUserMayEdit, ScopeCache::getPermissionsFromRequestCache($group));
                     }
                 }
             }
@@ -397,11 +441,11 @@ class GroupPermissionExtension extends DataExtension implements PermissionProvid
 
         return [
             "GROUP_VIEW_OWN" => "`Group`.`ID` IN (SELECT `GroupID` FROM `Group_Members` WHERE `MemberID` = $member->ID)",
-            "GROUP_VIEW_SITEADMIN" => $rolePermissionCheck(Constants::TITLE_OF_SITEADMIN_ROLE),
-            "GROUP_VIEW_SUPPORTER" => $rolePermissionCheck(Constants::TITLE_OF_SUPPORTER_ROLE),
-            "GROUP_VIEW_DEFAULT MEMBER" => $rolePermissionCheck(Constants::TITLE_OF_MEMBER_ROLE),
-            "GROUP_VIEW_STAFF" => $rolePermissionCheck(Constants::TITLE_OF_STAFF_ROLE),
-            "GROUP_VIEW_STUDENT" => $rolePermissionCheck(Constants::TITLE_OF_STUDENT_ROLE)
+            "GROUP_VIEW_SITEADMIN" => $rolePermissionCheck(RoleConstant::SITEADMIN),
+            "GROUP_VIEW_SUPPORTER" => $rolePermissionCheck(RoleConstant::SUPPORTER),
+            "GROUP_VIEW_DEFAULT MEMBER" => $rolePermissionCheck(RoleConstant::MEMBER),
+            "GROUP_VIEW_STAFF" => $rolePermissionCheck(RoleConstant::STAFF),
+            "GROUP_VIEW_STUDENT" => $rolePermissionCheck(RoleConstant::STUDENT)
         ];
     }
 
@@ -413,6 +457,16 @@ class GroupPermissionExtension extends DataExtension implements PermissionProvid
             ScopeCache::removeAllCachedPermissions();
             ScopeCache::removeAllCachedViewables();
             ScopeCache::removeAllCachedDataLists();
+            $this->removeCachedPermissions();
+        }
+
+        if($this->owner->isChanged('Label_NL') || $this->owner->isChanged('Label_EN')) {
+            foreach ($this->owner->Members() as $member) {
+                if($member->getClassName() == Person::class) {
+                    PersonSummary::updateFor($member);
+                    SearchObject::updateForPerson($member);
+                }
+            }
         }
     }
 
@@ -425,5 +479,22 @@ class GroupPermissionExtension extends DataExtension implements PermissionProvid
         if ($this->dataObj()->Members()->exists()) {
             throw new ValidationException("Group has members, associate members with different group or unlink them before deleting");
         }
+    }
+
+    public function removeCachedPermissions() {
+        SimpleCacheItem::get()->filter(['DataObjectID' => $this->owner->ID, 'DataObjectClass' => $this->owner->ClassName])->removeAll();
+    }
+
+    public function validate(ValidationResult $validationResult) {
+        parent::validate($validationResult);
+
+        if ($this->owner->DefaultRoleID) {
+            $groupContainsDefaultRole = $this->owner->Roles()->find("ID", $this->owner->DefaultRoleID);
+            if (!$groupContainsDefaultRole) {
+                $validationResult->addError("You're not allowed to remove the default role for this group");
+            }
+        }
+
+        return $validationResult;
     }
 }

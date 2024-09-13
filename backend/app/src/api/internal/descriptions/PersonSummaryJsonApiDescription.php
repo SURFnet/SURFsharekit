@@ -20,7 +20,11 @@ class PersonSummaryJsonApiDescription extends DataObjectJsonApiDescription {
         'Summary.hasLoggedIn' => 'hasLoggedIn',
         'Summary.position' => "position",
         'Summary.groupTitles' => "groupTitles",
+        'Summary.groupTitlesWithoutMembers' => "groupTitlesWithoutMembers",
+        'Summary.groupLabelsNL' => "groupLabelsNL",
+        'Summary.groupLabelsEN' => "groupLabelsEN",
         'LoggedInUserPermissions' => 'permissions',
+        'Person.RootInstitutesSummary' => "rootInstitutesSummary",
         'Person.InstituteTitles' => 'institutes',
         'Person.GroupCount' => 'groupCount'
     ];
@@ -92,7 +96,12 @@ class PersonSummaryJsonApiDescription extends DataObjectJsonApiDescription {
 
                 $searchTagsWithoutPlus = SearchApiController::getSearchTagsFromSearch($filterValue);
                 foreach ($searchTagsWithoutPlus as $tag) {
-                    $datalist = $datalist->where(["(MATCH(SurfSharekit_SearchObject.SearchText) AGAINST (? IN Boolean MODE) AND SurfSharekit_SearchObject.SearchText like ?)" => ['+' . $tag . '*','%' . $tag . '%']]);
+                    if(stripos($tag, '-') !== false){
+                        $matchTag =  '"' . $tag . '"';
+                    }else{
+                        $matchTag =  $tag . '*';
+                    }
+                    $datalist = $datalist->where(["(MATCH(SurfSharekit_SearchObject.SearchText) AGAINST (? IN Boolean MODE) AND SurfSharekit_SearchObject.SearchText like ?)" => ['+' . $matchTag,'%' . $tag . '%']]);
                 }
                 return $datalist;
             };

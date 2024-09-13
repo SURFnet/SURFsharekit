@@ -9,6 +9,7 @@ use SilverStripe\Forms\GridField\GridFieldImportButton;
 use SilverStripe\Forms\GridField\GridFieldPrintButton;
 use SurfSharekit\Models\Template;
 use SurfSharekit\Models\TemplateSection;
+use SurfSharekit\Models\TemplateStep;
 use Symbiote\GridFieldExtensions\GridFieldOrderableRows;
 
 class TemplateModelAdmin extends ModelAdmin {
@@ -18,7 +19,7 @@ class TemplateModelAdmin extends ModelAdmin {
     private static $page_length = 200;
 
     private static $managed_models = [
-        Template::class, TemplateSection::class
+        Template::class, TemplateSection::class, TemplateStep::class
     ];
 
     public function getEditForm($id = null, $fields = null) {

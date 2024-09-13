@@ -7,6 +7,7 @@ use SurfSharekit\Api\OaipmhApiController;
 use SurfSharekit\Models\Helper\DateHelper;
 use SurfSharekit\Models\Helper\Logger;
 use SurfSharekit\Models\Helper\XMLHelper;
+use SurfSharekit\Models\Institute;
 use SurfSharekit\Models\MetaFieldOption;
 use SurfSharekit\Models\Person;
 use SurfSharekit\Models\ProtocolNode;
@@ -71,11 +72,20 @@ class VirtualMetaField {
             case 'hbo:namePart':
                 return self::addNamePart($repoItem, $context, $parentNode);
                 break;
+            case 'dai:identifierExtension':
+                return self::addDaiIdentifierExtension($repoItem, $context, $parentNode);
+                break;
             case 'dai:identifier':
                 return self::addDaiIdentifier($repoItem, $context, $parentNode);
                 break;
             case 'orcid:identifier':
                 return self::addOrcidIdentifier($repoItem, $context, $parentNode);
+                break;
+            case 'isni:identifier':
+                return self::addIsniIdentifier($repoItem, $context, $parentNode);
+                break;
+            case 'localAuthor:identifier':
+                return self::addLocalAuthorIdentifier($repoItem, $context, $parentNode);
                 break;
             case 'hogeschool:identifier':
                 return self::addHogeschoolIdentifier($repoItem, $context, $parentNode);
@@ -104,6 +114,9 @@ class VirtualMetaField {
             case 'lom:relation:description':
                 return self::addLomRelationDescription($repoItem, $context, $parentNode);
                 break;
+            case 'lom:rightsofusage':
+                return self::addLomRightsOfUsage($repoItem, $context, $parentNode);
+                break;
             case 'oai:Identifier':
                 return self::addOAIIdentifier($repoItem, $context, $parentNode);
                 break;
@@ -124,6 +137,9 @@ class VirtualMetaField {
                 break;
             case 'csv:created':
                 return self::getCSVCreated($repoItem);
+                break;
+            case 'csv:creator':
+                return self::getCSVCreator($repoItem);
                 break;
             case 'json:hasParts':
                 return self::getJSONHasParts($repoItem, $context);
@@ -155,16 +171,22 @@ class VirtualMetaField {
             case 'json:alias':
                 return self::getJSONAlias($repoItem, $context);
                 break;
+            case 'json:rootOrganisation':
+                return self::getJSONRootOrganisation($repoItem, $context);
+                break;
+            case 'json:etag':
+                return self::getEtag($repoItem, $context);
+                break;
         }
     }
 
-    private static function getRepoItemsForSubContext(RepoItem $repoItem, $context){
+    private static function getRepoItemsForSubContext(RepoItem $repoItem, $context) {
         $repoItems = [];
-        if($context->SubMetaFieldID) {
+        if ($context->SubMetaFieldID) {
             $repoItemMetaField = self::getRepoItemMetaField($repoItem, $context);
             if ($repoItemMetaField) {
                 $repoItemMetaFieldValues = $repoItemMetaField->RepoItemMetaFieldValues()->filter(['IsRemoved' => 0]);
-                foreach($repoItemMetaFieldValues as $repoItemMetaFieldValue) {
+                foreach ($repoItemMetaFieldValues as $repoItemMetaFieldValue) {
                     if ($subRepoItem = $repoItemMetaFieldValue->RepoItem()) {
                         $repoItems[] = $subRepoItem;
                     }
@@ -228,7 +250,8 @@ class VirtualMetaField {
                 foreach ($answers as $answer) {
                     /** @var MetaFieldOption $option */
                     $option = $answer->MetaFieldOption();
-                    $optionValue = $option->Value;
+                    // remove prefix as LOM needs the raw ID instead of URL
+                    $optionValue = str_replace('http://purl.edustandaard.nl/concept/', '', $option->Value);
                     $optionLabel = $option->Label_NL;
                     Logger::debugLog([$optionValue, $optionLabel, $previousLabel]);
                     $taxonPathNode = null;
@@ -297,19 +320,34 @@ class VirtualMetaField {
         return $parentNode;
     }
 
-    private static function addDaiIdentifier(RepoItem $repoItem, $context, $parentNode){
-        return static::addPersonIdentifier($repoItem, $context, $parentNode,'PersistentIdentifier', 'info:eu-repo/dai/nl');
+
+    private static function addDaiIdentifierExtension(RepoItem $repoItem, $context, $parentNode) {
+        return static::addPersonIdentifier($repoItem, $context, $parentNode, 'PersistentIdentifier', 'info:eu-repo/dai/nl');
     }
 
-    private static function addOrcidIdentifier(RepoItem $repoItem, $context, $parentNode){
-        return static::addPersonIdentifier($repoItem, $context, $parentNode,'ORCID', null, 'http://orcid.org/');
+    private static function addDaiIdentifier(RepoItem $repoItem, $context, $parentNode) {
+        //return static::addPersonIdentifier($repoItem, $context, $parentNode, 'PersistentIdentifier', 'info:eu-repo/dai/nl');
+        return static::addNameIdentifier($repoItem, $context, $parentNode, 'PersistentIdentifier', 'dai-nl', 'info:eu-repo/dai/nl');
     }
 
-    private static function addHogeschoolIdentifier(RepoItem $repoItem, $context, $parentNode){
-        return static::addPersonIdentifier($repoItem, $context, $parentNode,'HogeschoolID', null);
+    private static function addOrcidIdentifier(RepoItem $repoItem, $context, $parentNode) {
+       // return static::addPersonIdentifier($repoItem, $context, $parentNode, 'ORCID', null, 'http://orcid.org/');
+        return static::addNameIdentifier($repoItem, $context, $parentNode, 'ORCID', 'orcid', 'http://id.loc.gov/vocabulary/identifiers/orcid');
     }
 
-    private static function addPersonIdentifier(RepoItem $repoItem, $context, $parentNode, $personField, $authority, $prefix = ''){
+    private static function addISNIIdentifier(RepoItem $repoItem, $context, $parentNode) {
+        return static::addNameIdentifier($repoItem, $context, $parentNode, 'ISNI', 'isni', 'http://id.loc.gov/vocabulary/identifiers/isni');
+    }
+
+    private static function addLocalAuthorIdentifier(RepoItem $repoItem, $context, $parentNode) {
+        return static::addNameIdentifier($repoItem, $context, $parentNode, 'HogeschoolID', 'local');
+    }
+
+    private static function addHogeschoolIdentifier(RepoItem $repoItem, $context, $parentNode) {
+        return static::addPersonIdentifier($repoItem, $context, $parentNode, 'HogeschoolID', null);
+    }
+
+    private static function addNameIdentifier(RepoItem $repoItem, $context, $parentNode, $personField, $type = null, $typeURI = null){
         $repoItemMetaField = self::getRepoItemMetaField($repoItem, $context);
         if ($repoItemMetaField) {
             $repoItemMetaFieldValue = $repoItemMetaField->RepoItemMetaFieldValues()->filter(['IsRemoved' => 0])->first();
@@ -317,10 +355,35 @@ class VirtualMetaField {
             if ($repoItemMetaFieldValue && $person = $repoItemMetaFieldValue->Person()) {
                 if ($person->exists()) {
                     $contentItem = $person->getField($personField);
-                    if($contentItem && strlen($contentItem)) {
+                    if ($contentItem && strlen($contentItem)) {
+                        $node = self::addNode($parentNode, $contentItem, $context);
+                        if (!is_null($type)) {
+                            $node->addAttribute('type', $type);
+                        }
+                        if (!is_null($typeURI)) {
+                            $node->addAttribute('typeURI', $typeURI);
+                        }
+                        return $node;
+                    }
+                }
+            }
+        }
+        return $parentNode;
+    }
+
+    /** Deprecated */
+    private static function addPersonIdentifier(RepoItem $repoItem, $context, $parentNode, $personField, $authority, $prefix = '') {
+        $repoItemMetaField = self::getRepoItemMetaField($repoItem, $context);
+        if ($repoItemMetaField) {
+            $repoItemMetaFieldValue = $repoItemMetaField->RepoItemMetaFieldValues()->filter(['IsRemoved' => 0])->first();
+            /** @var Person $person */
+            if ($repoItemMetaFieldValue && $person = $repoItemMetaFieldValue->Person()) {
+                if ($person->exists()) {
+                    $contentItem = $person->getField($personField);
+                    if ($contentItem && strlen($contentItem)) {
                         $contentItem = $prefix . $contentItem;
                         $node = self::addNode($parentNode, $contentItem, $context);
-                        if(!is_null($authority)){
+                        if (!is_null($authority)) {
                             $node->addAttribute('authority', $authority);
                         }
                         $node->addAttribute('IDref', '_' . $repoItem->getField('Uuid'));
@@ -465,12 +528,14 @@ class VirtualMetaField {
         return DateHelper::iso8601zFromString($created);
     }
 
-
     private static function getCSVCreated(RepoItem $repoItem) {
         $created = $repoItem->Created;
         return DateHelper::localExcelDateTimeFromString($created);
     }
 
+    private static function getCSVCreator(RepoItem $repoItem) {
+        return $repoItem->Owner()->Title;
+    }
 
     private static function getJSONValidator(RepoItem $repoItem, ProtocolNode $context) {
         if (($institute = $repoItem->Institute()) && $institute && $institute->exists()) {
@@ -495,17 +560,17 @@ class VirtualMetaField {
         return $contentItem;
     }
 
-    private static function getJSONPersonEmail(RepoItem $repoItem, $context){
+    private static function getJSONPersonEmail(RepoItem $repoItem, $context) {
         return static::getJSONPersonInfo($repoItem, $context, 'Email');
     }
 
-    private static function getCSVPersonalIdentifiers(RepoItem $repoItem, $context){
+    private static function getCSVPersonalIdentifiers(RepoItem $repoItem, $context) {
         // if SubMetaField is selected, find childRepoItem and use to continue
         $repoItems = self::getRepoItemsForSubContext($repoItem, $context);
-        if(count($repoItems)){
+        if (count($repoItems)) {
             $context->MetaFieldID = $context->SubMetaFieldID;
             $result = [];
-            foreach($repoItems as $repoItem) {
+            foreach ($repoItems as $repoItem) {
                 $hogeschoolID = static::getJSONPersonInfo($repoItem, $context, 'HogeschoolID');
                 $orcid = static::getJSONPersonInfo($repoItem, $context, 'ORCID', 'http://orcid.org/');
                 $dai = static::getJSONPersonInfo($repoItem, $context, 'PersistentIdentifier', 'info:eu-repo/dai/nl/');
@@ -513,8 +578,7 @@ class VirtualMetaField {
                 $result[] = ['HogeschoolID' => $hogeschoolID, 'ORCID' => $orcid, 'DAI' => $dai, 'ISNI' => $isni];
             }
             return $result;
-        }
-        else {
+        } else {
             $hogeschoolID = static::getJSONPersonInfo($repoItem, $context, 'HogeschoolID');
             $orcid = static::getJSONPersonInfo($repoItem, $context, 'ORCID', 'http://orcid.org/');
             $dai = static::getJSONPersonInfo($repoItem, $context, 'PersistentIdentifier', 'info:eu-repo/dai/nl/');
@@ -523,7 +587,7 @@ class VirtualMetaField {
         }
     }
 
-    private static function getJSONPersonInfo(RepoItem $repoItem, $context, $field, $prefix = ''){
+    private static function getJSONPersonInfo(RepoItem $repoItem, $context, $field, $prefix = '') {
         $contentItem = null;
         $repoItemMetaField = self::getRepoItemMetaField($repoItem, $context);
         if ($repoItemMetaField) {
@@ -532,7 +596,7 @@ class VirtualMetaField {
             if ($repoItemMetaFieldValue && $person = $repoItemMetaFieldValue->Person()) {
                 if ($person->exists()) {
                     $contentItem = $person->$field;
-                    if($contentItem && strlen($contentItem)){
+                    if ($contentItem && strlen($contentItem)) {
                         return $prefix . $contentItem;
                     }
 
@@ -731,22 +795,22 @@ class VirtualMetaField {
     }
 
     private static function addPersonDisplayForm(RepoItem $repoItem, $context, $parentNode) {
-            $repoItemMetaField = self::getRepoItemMetaField($repoItem, $context);
-            if ($repoItemMetaField) {
-                $repoItemMetaFieldValue = $repoItemMetaField->RepoItemMetaFieldValues()->filter(['IsRemoved' => 0])->first();
-                /** @var Person $person */
-                if ($repoItemMetaFieldValue && $person = $repoItemMetaFieldValue->Person()) {
-                    if ($person->exists()) {
-                        if($repoItem->Alias) {
-                            $contentItem = $repoItem->Alias;
-                        } else {
-                            $contentItem = $person->getFullName();
-                        }
-                        $node = self::addNode($parentNode, $contentItem, $context);
-                        return $node;
+        $repoItemMetaField = self::getRepoItemMetaField($repoItem, $context);
+        if ($repoItemMetaField) {
+            $repoItemMetaFieldValue = $repoItemMetaField->RepoItemMetaFieldValues()->filter(['IsRemoved' => 0])->first();
+            /** @var Person $person */
+            if ($repoItemMetaFieldValue && $person = $repoItemMetaFieldValue->Person()) {
+                if ($person->exists()) {
+                    if ($repoItem->Alias) {
+                        $contentItem = $repoItem->Alias;
+                    } else {
+                        $contentItem = $person->getFullName();
                     }
+                    $node = self::addNode($parentNode, $contentItem, $context);
+                    return $node;
                 }
             }
+        }
         return $parentNode;
     }
 
@@ -819,40 +883,172 @@ class VirtualMetaField {
         return $parentNode;
     }
 
+    private static function addLomRightsOfUsage(RepoItem $repoItem, $context, $parentNode) {
+        // First, check if the parent RepoItem has a value for usage rights
+        // Disabled after changing to files/urls
+//        $usageRightRepoItemMetaField = self::getRepoItemMetaField($repoItem, $context);
+//        if ($usageRightRepoItemMetaField) {
+//            /** @var RepoItemMetaFieldValue|null $usageRightRepoItemMetaFieldValue */
+//            $usageRightRepoItemMetaFieldValue = $usageRightRepoItemMetaField->RepoItemMetaFieldValues()->filter(["IsRemoved" => false])->first();
+//            if ($usageRightRepoItemMetaFieldValue) {
+//                $option = MetaFieldOption::get()->find("ID", $usageRightRepoItemMetaFieldValue->MetaFieldOptionID);
+//                if ($option) {
+//                    $mappedValue = $context->mapAnswer($option->Value);
+//                    return self::addNode($parentNode, $mappedValue, $context);
+//                }
+//            }
+//        }
+
+        // Loop the child RepoItems of the parent and return the first usage right value that can be found.
+        $subRepoItemIDs = $repoItem->getAllRepoItemMetaFieldValues()->filter(["RepoItemID:not" => [0, $repoItem->ID]])->column("RepoItemID");
+        if ($subRepoItemIDs) {
+            $subRepoItems = RepoItem::get()->filter([
+                "ID" => $subRepoItemIDs,
+                "RepoType" => ["RepoItemRepoItemFile", "RepoItemLink"]
+            ]);
+
+            foreach ($subRepoItems as $subRepoItem) {
+                $usageRightRepoItemMetaField = self::getRepoItemMetaField($subRepoItem, $context);
+                if ($usageRightRepoItemMetaField) {
+                    /** @var RepoItemMetaFieldValue|null $usageRightRepoItemMetaFieldValue */
+                    $usageRightRepoItemMetaFieldValue = $usageRightRepoItemMetaField->RepoItemMetaFieldValues()->filter(["IsRemoved" => false])->first();
+
+                    if ($usageRightRepoItemMetaFieldValue) {
+                        $option = MetaFieldOption::get()->find("ID", $usageRightRepoItemMetaFieldValue->MetaFieldOptionID);
+                        if ($option) {
+                            $mappedValue = $context->mapAnswer($option->Value);
+                            return self::addNode($parentNode, $mappedValue, $context);
+                        }
+                    }
+                }
+            }
+        }
+        // No usage right value found on the parent RepoItem nor on its child RepoItems, use fallback
+        $defaultValue = "alle-rechten-voorbehouden";
+        $mappedValue = $context->mapAnswer($defaultValue);
+        return self::addNode($parentNode, $mappedValue, $context);
+
+    }
+
     private static function addNamePart(RepoItem $repoItem, $context, $parentNode) {
         $repoItemMetaFieldForMetaField = self::getRepoItemMetaField($repoItem, $context);
         if ($repoItemMetaFieldForMetaField) {
             /** @var RepoItemMetaFieldValue $answer */
             $answers = $repoItemMetaFieldForMetaField->RepoItemMetaFieldValues()->filter(['IsRemoved' => 0]);
             $addedInstitutes = [];
-            $lowestInstitutes = [];
+            $chains = [];
+            // get first answer and chain each of them until root institute
+            // collect uuids
+            // get next answer and check if uuid already used
+            // - if used, do nothing
+            // - if not used, chain up and check if uuid is already used
+            //    - if used, add to same root node
+            //    - if not used, chain up and check if uuid is already used
+            // sort from root to lowest
             foreach ($answers as $answer) {
                 if ($answer->Institute() && $answer->Institute()->exists()) {
+                    /** @var Institute $institute */
                     $institute = $answer->Institute();
                     if ($institute && $institute->exists()) {
-                        $contentItem = $institute->getTitle();
-                        $instituteLabel = $institute->getField('Level');
-                        $node = self::addNode($parentNode, $contentItem, $context);
-                        $node->addAttribute('type', XMLHelper::encodeXMLString($instituteLabel));
-                        $addedInstitutes[$institute->Uuid] = $institute;
-                        if ($instituteLabel == 'discipline' || $instituteLabel == 'lectorate') {
-                            $lowestInstitutes[$institute->Uuid] = $institute;
+                        if (array_key_exists($institute->Uuid, $addedInstitutes)) {
+                            // do nothing
+                        } else {
+                            $instituteChain = $institute->getInstituteChain();
+                            $chains[$institute->Uuid] = $instituteChain;
+                            $addedInstitutes = array_merge($addedInstitutes, $instituteChain['addedInstitutes']);
                         }
-
                     }
                 }
             }
-            foreach ($lowestInstitutes as $lowestInstitute) {
-                $parentDepartment = $lowestInstitute->getParentDepartment();
-                if (!is_null($parentDepartment) && $parentDepartment->exists() && !array_key_exists($parentDepartment->Uuid, $addedInstitutes)) {
-                    // add department
-                    $contentItem = $parentDepartment->getTitle();
-                    $instituteLabel = $parentDepartment->getField('Level');
-                    $node = self::addNode($parentNode, $contentItem, $context);
-                    $node->addAttribute('type', XMLHelper::encodeXMLString($instituteLabel));
-                    $addedInstitutes[$parentDepartment->Uuid] = $parentDepartment;
+            // loop all $chains
+
+            foreach($chains as $chain) {
+                $institutesToBeAdded = [];
+                $instituteChain = $chain;
+                $institute = $instituteChain['institute'];
+                if ($institute && $institute->exists()) {
+                    $node = self::addNode($parentNode, '', $context);
+                    $node->addAttribute('type', XMLHelper::encodeXMLString('corporate'));
+                    do {
+                        $institute = $instituteChain['institute'];
+                        $institutesToBeAdded[$institute->Uuid] = $institute;
+                    } while ($instituteChain = $instituteChain['parentInstituteChain']);
+                    $institutesToBeAdded = array_reverse($institutesToBeAdded);
+                    foreach ($institutesToBeAdded as $institute) {
+                        if ($institute && $institute->exists()) {
+                            $instituteNode = $node->addChild('hbo:namePart', XMLHelper::encodeXMLString($institute->getTitle()));
+                            $instituteLevel = $institute->getField('Level');
+                            if (!empty($instituteLevel)) {
+                                $instituteNode->addAttribute('type', XMLHelper::encodeXMLString($instituteLevel));
+                            }
+                        }
+                    }
                 }
             }
+//
+//            foreach ($lowestInstitutes as $lowestInstitute) {
+//                $addedInstitutes[$lowestInstitute->Uuid] = $lowestInstitute;
+//                $lowestInstituteContentItem = $lowestInstitute->getTitle();
+//                $node = self::addNode($parentNode, '', $context);
+//                $node->addAttribute('type', XMLHelper::encodeXMLString('corporate'));
+//                $lowestInstituteNode = $node->addChild('hbo:namePart', XMLHelper::encodeXMLString($lowestInstituteContentItem));
+//                $lowestInstituteLevel = $lowestInstitute->getField('Level');
+//                if(!empty($lowestInstituteLevel)) {
+//                    $lowestInstituteNode->addAttribute('type', XMLHelper::encodeXMLString($lowestInstituteLevel));
+//                }
+//
+//                $parentDepartment = $lowestInstitute->getParentDepartment();
+//                if (!is_null($parentDepartment) && $parentDepartment->exists()) {
+//                    // add department
+//                    $addedInstitutes[$parentDepartment->Uuid] = $parentDepartment;
+//                    $parentDepartmentContentItem = $parentDepartment->getTitle();
+//                    $parentDepartmentNode = $node->addChild('hbo:namePart', XMLHelper::encodeXMLString($parentDepartmentContentItem));
+//                    $parentDepartmentLevel = $parentDepartment->getField('Level');
+//                    if (!empty($parentDepartmentLevel)) {
+//                        $parentDepartmentNode->addAttribute('type', XMLHelper::encodeXMLString($parentDepartmentLevel));
+//                    }
+//                    $parentOrganisation = $parentDepartment->getRootInstitute();
+//                    if (!is_null($parentOrganisation) && $parentOrganisation->exists()) {
+//                        // add organisation
+//                        $addedInstitutes[$parentOrganisation->Uuid] = $parentOrganisation;
+//                        $parentOrganisationContentItem = $parentOrganisation->getTitle();
+//                        $parentOrganisationNode = $node->addChild('hbo:namePart', XMLHelper::encodeXMLString($parentOrganisationContentItem));
+//                        $parentOrganisationLevel = $parentOrganisation->getField('Level');
+//                        if (!empty($parentOrganisationLevel)) {
+//                            $parentOrganisationNode->addAttribute('type', XMLHelper::encodeXMLString($parentOrganisationLevel));
+//                        }
+//                    }
+//                }else {
+//                    $parentOrganisation = $lowestInstitute->getRootInstitute();
+//                    if (!is_null($parentOrganisation) && $parentOrganisation->exists()) {
+//                        // add organisation
+//                        $addedInstitutes[$parentOrganisation->Uuid] = $parentOrganisation;
+//                        $parentOrganisationContentItem = $parentOrganisation->getTitle();
+//                        $parentOrganisationNode = $node->addChild('hbo:namePart', XMLHelper::encodeXMLString($parentOrganisationContentItem));
+//                        $parentOrganisationLevel = $parentOrganisation->getField('Level');
+//                        if (!empty($parentOrganisationLevel)) {
+//                            $parentOrganisationNode->addAttribute('type', XMLHelper::encodeXMLString($parentOrganisationLevel));
+//                        }
+//                    }
+//                }
+//            }
+//            // add rest of institutes
+//            foreach ($answers as $answer) {
+//                if ($answer->Institute() && $answer->Institute()->exists()) {
+//                    $institute = $answer->Institute();
+//                    if ($institute && $institute->exists()) {
+//                        if(!array_key_exists($institute->Uuid, $addedInstitutes)){
+//                            $node = self::addNode($parentNode, '', $context);
+//                            $node->addAttribute('type', XMLHelper::encodeXMLString('corporate'));
+//                            $instituteNode = $node->addChild('hbo:namePart', XMLHelper::encodeXMLString($institute->getTitle()));
+//                            $instituteLevel = $institute->getField('Level');
+//                            if(!empty($instituteLevel)) {
+//                                $instituteNode->addAttribute('type', XMLHelper::encodeXMLString($instituteLevel));
+//                            }
+//                        }
+//                    }
+//                }
+//            }
         }
         return $parentNode;
     }
@@ -911,7 +1107,7 @@ class VirtualMetaField {
             $repoItemMetaFieldValue = $repoItemMetaField->RepoItemMetaFieldValues()->filter(['IsRemoved' => 0])->first();
             if ($repoItemMetaFieldValue && $person = $repoItemMetaFieldValue->Person()) {
                 if ($person->exists()) {
-                    if($repoItem->Alias) {
+                    if ($repoItem->Alias) {
                         $contentItem = $repoItem->Alias;
                     } else {
                         $contentItem = $person->getFullName();
@@ -920,5 +1116,28 @@ class VirtualMetaField {
             }
         }
         return $contentItem;
+    }
+
+    private static function getJSONRootOrganisation(RepoItem $repoItem, ProtocolNode $context) {
+        $rootInstitute = $repoItem->Institute->getRootInstitute();
+
+        return [
+            'id' => $rootInstitute->Uuid,
+            'name' => $rootInstitute->Title,
+            'type' => $rootInstitute->Level
+        ];
+    }
+
+    private static function getEtag(RepoItem $repoItem, ProtocolNode $context){
+        $repoItemMetaField = self::getRepoItemMetaField($repoItem, $context);
+        if ($repoItemMetaField) {
+            $repoItemMetaFieldValue = $repoItemMetaField->RepoItemMetaFieldValues()->filter(['IsRemoved' => 0])->first();
+            /** @var RepoItemFile $repoItemFile */
+            if ($repoItemMetaFieldValue && $repoItemFile = $repoItemMetaFieldValue->RepoItemFile()) {
+                if ($repoItemFile->exists()) {
+                    return $repoItemFile->ETag;
+                }
+            }
+        }
     }
 }

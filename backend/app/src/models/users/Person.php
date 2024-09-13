@@ -9,10 +9,12 @@ use SilverStripe\Control\Controller;
 use SilverStripe\Forms\CheckboxField;
 use SilverStripe\ORM\ValidationException;
 use SilverStripe\Security\Member;
+use SilverStripe\Security\Permission;
 use SilverStripe\Security\Security;
 use SilverStripe\Versioned\Versioned;
-use SurfSharekit\Api\InstituteScoper;
+use SurfSharekit\constants\RoleConstant;
 use SurfSharekit\Models\Helper\Constants;
+use SurfSharekit\Models\Helper\DateHelper;
 use SurfSharekit\Models\Helper\Logger;
 use SurfSharekit\Models\Helper\MemberHelper;
 use UuidExtension;
@@ -49,11 +51,21 @@ class Person extends Member {
 
         "HasLoggedIn" => 'Boolean(0)',
         "HasFinishedOnboarding" => 'Boolean(0)',
-        "IsRemoved" => 'Boolean(0)'
+        "DisableEmailChange" => 'Boolean(0)'
     ];
 
     private static $has_one = [
-        'PersonImage' => PersonImage::class
+        'PersonImage' => PersonImage::class,
+        'PersonConfig' => PersonConfig::class
+    ];
+
+    private static $has_many = [
+        'Claims' => Claim::class,
+        'Tasks' => Task::class
+    ];
+
+    private static $many_many = [
+        'RootInstitutes' => Institute::class
     ];
 
     public function getCMSFields() {
@@ -73,6 +85,7 @@ class Person extends Member {
             $fields->removeByName('Phone');
             $fields->removeByName('City');
             $fields->removeByName('PersonID');
+            $fields->removeByName('PersonConfigID');
             $fields->removeByName('Password');
             $fields->removeByName('Permissions');
             $fields->removeByName('Locale');
@@ -82,6 +95,7 @@ class Person extends Member {
         }
         $skipEmailField = CheckboxField::create('SkipEmail', 'SkipEmail');
         $fields->insertAfter('Email', $skipEmailField);
+        $fields->insertAfter('SkipEmail', $fields->dataFieldByName('DisableEmailChange'));
         return $fields;
     }
 
@@ -103,13 +117,24 @@ class Person extends Member {
 
     public function onBeforeWrite() {
         if (!$this->isInDB()) { //Require email when creating a new person
-            if (!static::isValidEmail($this->Email) && !$this->SkipEmail) {
+            if (!static::isValidEmail($this->Email) && !$this->SkipEmail && !$this->DisableEmailChange) {
                 throw new Exception("$this->Email is not a valid email");
+            }
+
+            if ($this->DisableEmailChange) {
+                $this->Email = $this->original['Email'] ?? null;
             }
         }
         if (!$this->isInDB()) {
             $this->PersonID = Security::getCurrentUser() ? Security::getCurrentUser()->ID : null;
         }
+
+        if (!$this->isInDB()) {
+            $newPersonConfig = new PersonConfig();
+            $newPersonConfig->write();
+            $this->PersonConfigID = $newPersonConfig->ID;
+        }
+
         if (!$this->IsLoggingIn && $this->isChanged('IsRemoved') && !$this->canDelete(Security::getCurrentUser())) {
             throw new Exception("No permission to delete this person");
         }
@@ -124,6 +149,11 @@ class Person extends Member {
         // has been added to the default member group
         if ($this->isInDB()) {
             PersonSummary::updateFor($this);
+
+            if ($this->DisableEmailChange && static::isValidEmail($this->Email)) {
+                $this->Email = null;
+                $this->write();
+            }
         }
 
         // Remove all cache if current person is changed
@@ -164,14 +194,14 @@ class Person extends Member {
             throw new Exception("Institute is not a root institute");
         }
 
-        $defaultMemberGroupOfInstitute = $institute->Groups()->filter(['Roles.Title' => Constants::TITLE_OF_MEMBER_ROLE])->first();
+        $defaultMemberGroupOfInstitute = $institute->Groups()->filter(['Roles.Title' => RoleConstant::MEMBER])->first();
         if (!$defaultMemberGroupOfInstitute || !$defaultMemberGroupOfInstitute->exists()) {
             throw new Exception("Institute doesn't have a default member group");
         }
         Logger::debugLog("Add " . $this->Uuid . " to default group : $instituteUUID : " . $defaultMemberGroupOfInstitute->getTitle() . "\n");
         if (!$this->isInDB()) {
             $this->write();
-            $this->Groups()->Add($defaultMemberGroupOfInstitute);
+            $defaultMemberGroupOfInstitute->Members()->add($this);
             PersonSummary::updateFor($this);
         }
     }
@@ -201,7 +231,7 @@ class Person extends Member {
         if ($discipline->Level != 'discipline') {
             throw new Exception("Institute is not a discipline");
         }
-        $studentGroupOfDiscipline = $discipline->Groups()->filter(['Roles.Title' => Constants::TITLE_OF_STUDENT_ROLE])->first();
+        $studentGroupOfDiscipline = $discipline->Groups()->filter(['Roles.Title' => RoleConstant::STUDENT])->first();
         if (!$studentGroupOfDiscipline || !$studentGroupOfDiscipline->exists()) {
             throw new Exception("Discipline doesn't have a student group");
         }
@@ -210,7 +240,7 @@ class Person extends Member {
         }
 
         $this->write();
-        $this->Groups()->Add($studentGroupOfDiscipline); //Add to discipline student group
+        $studentGroupOfDiscipline->Members()->add($this); //Add to discipline student group
     }
 
     function getLoggedInUserPermissions() {
@@ -219,6 +249,7 @@ class Person extends Member {
             'canView' => $this->canView($loggedInMember),
             'canEdit' => $this->canEdit($loggedInMember),
             'canDelete' => $this->canDelete($loggedInMember),
+            'canMerge' => $this->canMerge($loggedInMember),
         ];
     }
 
@@ -251,6 +282,19 @@ class Person extends Member {
         return parent::canView($member);
     }
 
+    public function canMerge($member = null) {
+        if ($member == null) {
+            $member = Security::getCurrentUser();
+        }
+        if ($member == null) {
+            return false;
+        }
+        if ($member->isWorksAdmin()) {
+            return true;
+        }
+        return Permission::check("PERSON_MERGE_SAMELEVEL");
+    }
+
     private static function isValidEmail($email) {
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return false;
@@ -259,22 +303,36 @@ class Person extends Member {
     }
 
     public function getInstituteTitles() {
-        $institutes = [];
-        foreach ($this->Groups() as $group) {
-            $institutes[] = $group->Institute();
-        }
         $titles = [];
-        foreach ($institutes as $institute) {
-            foreach ($institutes as $otherInstitute) {
-                if (InstituteScoper::getScopeLevel($institute->ID, $otherInstitute->ID) == InstituteScoper::HIGHER_LEVEL) {
-                    break;
-                }
-                if (!in_array($institute->Title, $titles)) {
-                    $titles[] = $institute->Title;
-                }
+        foreach ($this->Groups() as $group) {
+            $title = $group->Institute()->Title;
+            if (!in_array($title, $titles)) {
+                $titles[] = $title;
             }
         }
         return $titles;
+    }
+
+    public function getRootInstitutesSummary() {
+        $rootInstitutes = [];
+        foreach ($this->RootInstitutes() as $institute) {
+            $rootInstitutes[] = [
+                'id' => $institute->Uuid,
+                'title' => $institute->Title
+            ];
+        }
+        return $rootInstitutes;
+    }
+
+    public function getInstituteIDs() {
+        $ids = [];
+        foreach ($this->Groups() as $group) {
+            $id = $group->Institute()->ID;
+            if (!in_array($id, $ids)) {
+                $ids[] = $id;
+            }
+        }
+        return $ids;
     }
 
     public function getGroupCount() {
@@ -315,6 +373,36 @@ class Person extends Member {
         $titles = [];
         foreach ($this->Groups() as $group) {
             $titles[] = $group->Title;
+        }
+        return $titles;
+    }
+
+    public function getGroupLabelsNL() {
+        $labelsNL = [];
+        foreach ($this->Groups() as $group) {
+            if ($group->RoleCode != 'Default Member') {
+                $labelsNL[] = $group->Label_NL;
+            }
+        }
+        return $labelsNL;
+    }
+
+    public function getGroupLabelsEN() {
+        $labelsEN = [];
+        foreach ($this->Groups() as $group) {
+            if ($group->RoleCode != 'Default Member') {
+                $labelsEN[] = $group->Label_EN;
+            }
+        }
+        return $labelsEN;
+    }
+
+    public function getGroupTitlesWithoutMembers() {
+        $titles = [];
+        foreach ($this->Groups() as $group) {
+            if ($group->RoleCode != 'Default Member') {
+                $titles[] = $group->Title;
+            }
         }
         return $titles;
     }
@@ -378,5 +466,49 @@ class Person extends Member {
         if ($this->Groups()->exists()) {
             throw new ValidationException("Person is part of a group, remove this link before deleting");
         }
+    }
+
+    public static function getPositionOptions(): array {
+        return [
+            "role-lecturer",
+            "teacher",
+            "researcher",
+            "student",
+            "staff-employee",
+            "associate-lecturer",
+            "member-lectureship",
+             "phd",
+            "other",
+        ];
+    }
+
+    function getLastEditorSummary() {
+        // Only check for canView permission as the others are irrelevant in this case
+        $lastEditor = $this->ModifiedBy();
+        return [
+            'id' => $lastEditor->Uuid,
+            'name' => $lastEditor->Name,
+            'permissions' => $lastEditor->LoggedInUserCanViewPermission,
+            'lastEditedLocal' => $this->getLastEditedLocal()
+        ];
+    }
+
+    function getCreatorSummary() {
+        // Only check for canView permission as the others are irrelevant in this case
+        $creator = $this->CreatedBy();
+        return [
+            'id' => $creator->Uuid,
+            'name' => $creator->Name,
+            'permissions' => $creator->LoggedInUserCanViewPermission,
+            'createdLocal' => $this->getCreatedLocal()
+        ];
+    }
+
+    function getCreatedLocal() {
+        return DateHelper::localDatetimeFromUTC($this->Created);
+    }
+
+    function getLastEditedLocal() {
+        return DateHelper::localDatetimeFromUTC($this->LastEdited);
     }
 }

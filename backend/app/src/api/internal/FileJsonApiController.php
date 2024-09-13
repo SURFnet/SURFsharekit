@@ -4,11 +4,13 @@ namespace SurfSharekit\Api;
 
 use Exception;
 use PersonImageJsonApiDescription;
+use Ramsey\Uuid\Uuid;
 use SilverStripe\Assets\File;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Core\Environment;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Security\Security;
+use SurfSharekit\Models\Helper\Logger;
 use SurfSharekit\Models\InstituteImage;
 use SurfSharekit\Models\PersonImage;
 use SurfSharekit\Models\RepoItemFile;
@@ -16,6 +18,32 @@ use SurfSharekit\Models\ReportFile;
 use SurfSharekit\Models\StatsDownload;
 
 class FileJsonApiController extends JsonApiController {
+
+    private static $url_handlers = [
+        'GET $Action/$ID/$Relations/$RelationName' => 'getJsonApiRequest',
+        'POST $Action/$ID/$Relations/$RelationName' => 'postJsonApiRequest',
+        'PATCH $Action/$ID/$Relations/$RelationName' => 'patchJsonApiRequest',
+        'DELETE $Action/$ID/$Relations/$RelationName' => 'deleteJsonApiRequest',
+        'HEAD $Action/$ID/$Relations/$RelationName' => 'headJsonApiRequest'
+    ];
+
+    private static $allowed_actions = [
+        'getJsonApiRequest',
+        'postJsonApiRequest',
+        'patchJsonApiRequest',
+        'deleteJsonApiRequest',
+        'headJsonApiRequest'
+    ];
+
+    private static $errorCode;
+
+    public function __construct() {
+        parent::__construct();
+
+        $this->setStatusRedirectsTo(403, Environment::getEnv('FRONTEND_BASE_URL') . '/login');
+        $this->setStatusRedirectsTo(401, Environment::getEnv('FRONTEND_BASE_URL') . '/login');
+    }
+
     protected function getApiURLSuffix() {
         return '/api/v1/files';
     }
@@ -25,6 +53,39 @@ class FileJsonApiController extends JsonApiController {
             InstituteImage::class => new \InstituteImageJsonApiDescription(),
             ReportFile::class => new \ReportFileJsonApiDescription(),
             RepoItemFile::class => new \RepoItemFileJsonApiDescription()];
+    }
+
+    /**
+     * @return mixed
+     * Handles HEAD request to files. This can be used to determine whether a file is publicly available
+     * without actually downloading said file.
+     */
+    public function headJsonApiRequest() {
+        $request = $this->getRequest();
+        $requestedObjectClass = $request->param('Action');
+        $objectClass = null;
+        foreach ($this->ClassToDescriptionMap as $class => $description) {
+            if ($description->type_plural == $requestedObjectClass) {
+                $objectClass = $class;
+                break;
+            }
+        }
+
+        $objectUUID = $request->param("ID");
+        if (!$objectClass || !$objectUUID || !Uuid::isValid($objectUUID)) {
+            return $this->getResponse()->setStatusCode(400);
+        }
+
+        $preexistingObject = self::getObjectOfTypeById($objectClass, $objectUUID);
+        if (!$preexistingObject) {
+            return $this->getResponse()->setStatusCode(404);
+        }
+
+        if (!$this->canViewObjectToDescribe($preexistingObject)) {
+            return $this->getResponse()->setStatusCode(403);
+        }
+
+        return $this->getResponse()->setStatusCode(200);
     }
 
     /**
@@ -64,21 +125,34 @@ class FileJsonApiController extends JsonApiController {
         /*************************************************************************
          * Track download if user has access to said RepoItemFile. If not, return 403
          */
-        if($objectToDescribe instanceof RepoItemFile) {
-
-            if(!$this->canViewObjectToDescribe($objectToDescribe)){
-                return $this->createJsonApiBodyResponseFrom(static::noPermissionJsonApiBodyError(null), 403);
+        if ($objectToDescribe instanceof RepoItemFile) {
+            if (!$this->canViewObjectToDescribe($objectToDescribe)) {
+                return $this->createJsonApiBodyResponseFrom(static::noPermissionJsonApiBodyError(), 403);
             }
 
             $repoItem = $objectToDescribe->RepoItem();
-            $statusDownload = new StatsDownload();
-            $statusDownload->RepoItemFileID = $objectToDescribe->ID;
-            $statusDownload->RepoItemID = $repoItem->ID;
-            $statusDownload->InstituteID = $repoItem->InstituteID;
-            $statusDownload->DownloadDate = date('Y-m-d H:i:s');
-            $statusDownload->RepoType = $repoItem->RepoType;
-            $statusDownload->IsPublic = $objectToDescribe->IsPublic();
-            $statusDownload->write();
+            if ($repoItem && $repoItem->exists()) {
+                $statusDownload = new StatsDownload();
+                $statusDownload->RepoItemFileID = $objectToDescribe->ID;
+                $statusDownload->RepoItemID = $repoItem->ID;
+                $statusDownload->InstituteID = $repoItem->InstituteID;
+                $statusDownload->DownloadDate = date('Y-m-d H:i:s');
+                $statusDownload->RepoType = $repoItem->RepoType;
+                $statusDownload->IsPublic = $objectToDescribe->IsPublic();
+                $statusDownload->write();
+            }
+
+            if ($objectToDescribe->shouldUseRedirect()) {
+                return $this->redirect($objectToDescribe->getRedirectLink(), 301);
+            }
+        }
+
+        // Open a stream in read-only mode
+        $stream = $objectToDescribe->getStream();
+
+        if(is_null($stream)){
+            Logger::errorLog('File object stream not available! ID=' . $objectToDescribe->Uuid);
+            return $this->createJsonApiBodyResponseFrom(static::objectNotFoundJsonApiBodyError(), 404);
         }
 
         /*************************************************************************
@@ -91,17 +165,14 @@ class FileJsonApiController extends JsonApiController {
         header('Accept-Ranges: ' . 'none');
         header('Content-Length: ' . $objectToDescribe->getAbsoluteSize());
         header('Content-Type: ' . $objectToDescribe->getMimeType());
-        header('Content-Disposition: attachment; filename=' . $objectToDescribe->getFilename());
+        header('Content-Disposition: attachment; filename="' . $objectToDescribe->getFilename()) . '"';
 
         /*************************************************************************
          * Stream file to the browser
          */
 
-        // Open a stream in read-only mode
-        $stream = $objectToDescribe->getStream();
-
         // Check if the stream has more data to read
-        while (!feof($stream)) {
+        while (!is_null($stream) && !feof($stream)) {
             // Read 1024 bytes from the stream
             echo fread($stream, 1024);
         }
@@ -146,19 +217,25 @@ class FileJsonApiController extends JsonApiController {
     }
 
     protected function afterHandleRequest() {
-        parent::afterHandleRequest();
-        $response = $this->getResponse();
-        if ($this->isRedirectToLoginEnabled()) {
-            $code = $response->getStatusCode();
-            if ($code === 403 || $code === 401) {
-                $this->response->setStatusCode(302);
-            }
-            $frontendUrl = Environment::getEnv('FRONTEND_BASE_URL');
-            $response->addHeader('Location', $frontendUrl . '/publicationfiles/' . $this->request->param("ID"));
+        if ($this->getRequest()->isHEAD()) {
+            return;
         }
+
+        $this->setStatusRedirectsTo(403, Environment::getEnv('FRONTEND_BASE_URL') . '/forbiddenfile', ['errorCode' => static::getErrorCode()], true);
+        $this->setStatusRedirectsTo(401, Environment::getEnv('FRONTEND_BASE_URL') . '/unauthorized', ['errorCode' => static::getErrorCode()], true);
+
+        parent::afterHandleRequest();
     }
 
     protected function canViewObjectToDescribe($objectToDescribe) {
         return $objectToDescribe->canView(Security::getCurrentUser());
+    }
+
+    public static function setErrorCode($code) {
+        static::$errorCode = $code;
+    }
+
+    public static function getErrorCode() {
+        return static::$errorCode;
     }
 }

@@ -80,7 +80,7 @@ class OaipmhApiController extends LoginProtectedApiController {
         return $rootNode->asXML();
     }
 
-    protected static function getRootNode(): SimpleXMLElement {
+    public static function getRootNode(): SimpleXMLElement {
         $node = new SimpleXMLElement('<OAI-PMH></OAI-PMH>');
         $node->addAttribute('xmlns', 'http://www.openarchives.org/OAI/2.0/');
         $node->addAttribute('xsi:schemaLocation', 'http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd', 'http://www.w3.org/2001/XMLSchema-instance');

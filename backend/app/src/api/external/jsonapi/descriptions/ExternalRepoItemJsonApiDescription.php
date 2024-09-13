@@ -2,6 +2,8 @@
 
 use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
+use SurfSharekit\Models\Channel;
+use SurfSharekit\Models\Helper\Constants;
 use SurfSharekit\Models\Protocol;
 use SurfSharekit\Models\ProtocolNode;
 use SurfSharekit\Models\RepoItem;
@@ -18,15 +20,21 @@ class ExternalRepoItemJsonApiDescription extends DataObjectJsonApiDescription {
     public $attributeToNodeMap = [];
     public $filterCount = 0;
 
+    private $describingProtocol = null;
+
     /**
      * ExternalRepoItemJsonApiDescription constructor.
      * When created, this class created an fieldToAttribute list for each title of the ProtocolNodes for the external  JsonAPI protocol
      * To map said attributes to the actual values in the RepoItem, a attributeToNodeMap is established as well.
      */
-    public function __construct() {
-        $describingProtocol = Protocol::get()->filter(['SystemKey' => 'JSON:API'])->first();
-        if ($describingProtocol && $describingProtocol->exists()) {
-            foreach ($describingProtocol->ProtocolNodes()->filter('ParentNodeID', 0) as $node) {
+    public function __construct(Channel $channel = null) {
+        if ($channel && $channel->exists()) {
+            $this->describingProtocol = Protocol::get()->filter(['ID' => $channel->ProtocolID, 'SystemKey' => 'JSON:API'])->first();
+        } else {
+            $this->describingProtocol = Protocol::get()->filter(['SystemKey' => 'JSON:API'])->first();
+        }
+        if ($this->describingProtocol && $this->describingProtocol->exists()) {
+            foreach ($this->describingProtocol->ProtocolNodes()->filter('ParentNodeID', 0) as $node) {
                 $this->fieldToAttributeMap[] = $node->NodeTitle;
                 $this->attributeToNodeMap[$node->NodeTitle] = $node;
             }
@@ -61,7 +69,7 @@ class ExternalRepoItemJsonApiDescription extends DataObjectJsonApiDescription {
 
     public function applyGeneralFilter(DataList $objectsToDescribe): DataList {
         $objectsToDescribe = parent::applyGeneralFilter($objectsToDescribe);
-        return $objectsToDescribe->filter(['RepoType' => ["PublicationRecord", "LearningObject", "ResearchObject"], 'IsRemoved' => 0, 'IsArchived' => 0]);
+        return $objectsToDescribe->filter(['RepoType' => Constants::MAIN_REPOTYPES, 'IsRemoved' => 0, 'IsArchived' => 0]);
     }
 
     public function applyFilter(DataList $objectsToDescribe, $attribute, $value): DataList {
@@ -80,7 +88,7 @@ class ExternalRepoItemJsonApiDescription extends DataObjectJsonApiDescription {
             ->leftJoin('SurfSharekit_MetaFieldOption', "${randomTempTableName}SurfSharekit_RepoItemMetaFieldValue.MetaFieldOptionID = ${randomTempTableName}SurfSharekit_MetaFieldOption.ID", "${randomTempTableName}SurfSharekit_MetaFieldOption")
             ->leftJoin('SurfSharekit_ProtocolNode', "${randomTempTableName}SurfSharekit_ProtocolNode.MetaFieldID = ${randomTempTableName}SurfSharekit_MetaField.ID", "${randomTempTableName}SurfSharekit_ProtocolNode")
             ->leftJoin('SurfSharekit_Protocol', "${randomTempTableName}SurfSharekit_ProtocolNode.ProtocolID = ${randomTempTableName}SurfSharekit_Protocol.ID", "${randomTempTableName}SurfSharekit_Protocol")
-            ->where(["${randomTempTableName}SurfSharekit_Protocol.SystemKey" => 'JSON:API'], ["${randomTempTableName}SurfSharekit_RepoItemMetaFieldValue.IsRemoved" => 0]);
+            ->where(["${randomTempTableName}SurfSharekit_Protocol.SystemKey" => 'JSON:API', "${randomTempTableName}SurfSharekit_Protocol.ID" => $this->describingProtocol->ID]);
 
         $fieldParts = explode('.', $attribute);
         if (count($fieldParts) === 2) {
@@ -125,6 +133,9 @@ class ExternalRepoItemJsonApiDescription extends DataObjectJsonApiDescription {
                     case 'LIKE':
                         $joinedQuery = $joinedQuery->whereAny($dateComparisonWithModifier($modeValue, 'LIKE'));
                         break;
+                    case 'NOT LIKE':
+                        $joinedQuery = $joinedQuery->whereAny($dateComparisonWithModifier($modeValue, 'NOT LIKE'));
+                        break;
                     case 'LT':
                         $joinedQuery = $joinedQuery->whereAny($dateComparisonWithModifier($modeValue, '<'));
                         break;
@@ -138,7 +149,7 @@ class ExternalRepoItemJsonApiDescription extends DataObjectJsonApiDescription {
                         $joinedQuery = $joinedQuery->whereAny($dateComparisonWithModifier($modeValue, '>='));
                         break;
                     default:
-                        throw new Exception("$mode is an invalid filter modifier, use on of: [EQ, NEQ, LIKE, LT, LE, GT, GE]");
+                        throw new Exception("$mode is an invalid filter modifier, use on of: [EQ, NEQ, LIKE, NOT LIKE, LT, LE, GT, GE]");
                 }
             }
 

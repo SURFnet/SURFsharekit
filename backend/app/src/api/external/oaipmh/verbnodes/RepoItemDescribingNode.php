@@ -41,11 +41,20 @@ abstract class RepoItemDescribingNode extends OAIPMHVerbNode {
         if (!$metadataPrefix) {
             throw new BadArgumentException('Missing metadataPrefix as argument');
         }
-        $allOAIPMHPrefixes = Protocol::get()->filter('SystemKey', 'OAI-PMH')->setQueriedColumns('Prefix')->column('Prefix');
+        if ($channel && $channel->exists()) {
+            $allOAIPMHPrefixes = Protocol::get()->filter(['ID' => $channel->ProtocolID, 'SystemKey' => 'OAI-PMH'])->setQueriedColumns('Prefix')->column('Prefix');
+        } else {
+            $allOAIPMHPrefixes = Protocol::get()->filter(['SystemKey' => 'OAI-PMH'])->setQueriedColumns('Prefix')->column('Prefix');
+        }
+
         if (!in_array($metadataPrefix, $allOAIPMHPrefixes)) {
             throw new CannotDisseminateFormatException("$metadataPrefix is not a valid prefix");
         }
-        $protocol = Protocol::get()->filter(['Prefix' => $metadataPrefix])->filter(['SystemKey' => 'OAI-PMH'])->first();
+        if ($channel && $channel->exists()) {
+            $protocol = Protocol::get()->filter(['Prefix' => $metadataPrefix, 'ID' => $channel->ProtocolID, 'SystemKey' => 'OAI-PMH'])->first();
+        } else {
+            $protocol = Protocol::get()->filter(['Prefix' => $metadataPrefix, 'SystemKey' => 'OAI-PMH'])->first();
+        }
         $setDbId = null;
         if ($setId) {
             if (!Uuid::isValid($setId)) {
@@ -139,7 +148,11 @@ abstract class RepoItemDescribingNode extends OAIPMHVerbNode {
         }
 
         $channelFilter = static::getChannelFilter($channel);
-        $protocol = Protocol::get()->filter(['Prefix' => $metadataPrefix])->filter(['SystemKey' => 'OAI-PMH'])->first();
+        if ($channel && $channel->exists()) {
+            $protocol = Protocol::get()->filter(['Prefix' => $metadataPrefix, 'ID' => $channel->ProtocolID, 'SystemKey' => 'OAI-PMH'])->first();
+        } else {
+            $protocol = Protocol::get()->filter(['Prefix' => $metadataPrefix, 'SystemKey' => 'OAI-PMH'])->first();
+        }
         $listIdentifiersNode = $node->addChild('srw:records');
         try {
             foreach (static::getAllNodes($metadataPrefix, null, null, null, 'SRU', $protocol->ID, $channel, $channelFilter, $limit, $offset, $purge, $queryFilter, false) as $identifierNode) {
@@ -308,9 +321,14 @@ abstract class RepoItemDescribingNode extends OAIPMHVerbNode {
 
     public
     static function getSelectionQuery($setId, $from, $until, $endpoint, $protocolId, $channel, $channelFilterArray = null, $limit = 0, $offset = 0, $queryFilterArray = null, $includeCachedItems = true) {
-        Logger::debugLog(var_export($queryFilterArray, true));
 
-        $channelJoin = "LEFT JOIN SurfSharekit_Cache_RecordNode c ON c.RepoItemID = SurfSharekit_RepoItem.ID and c.ProtocolID = $protocolId and c.Endpoint = '" . $endpoint . "' AND c.ChannelID = " . ($channel ? $channel->ID : 0);
+        if($endpoint != 'SRU'){
+            $channelJoin = "LEFT JOIN SurfSharekit_Cache_RecordNode c ON c.RepoItemID = SurfSharekit_RepoItem.ID and c.ProtocolID = $protocolId and c.Endpoint = '" . $endpoint . "' AND c.ChannelID = " . ($channel ? $channel->ID : 0);
+        }else{
+            $channelJoin = '';
+        }
+
+
         if (is_null($channelFilterArray)) {
             $channelFilter = '';
         } else {
@@ -367,19 +385,27 @@ abstract class RepoItemDescribingNode extends OAIPMHVerbNode {
             $params[] = $until;
         }
 
-        $generalFilter = "SurfSharekit_RepoItem.RepoType in ('PublicationRecord', 'LearningObject', 'ResearchObject') AND SurfSharekit_RepoItem.IsRemoved = 0 AND SurfSharekit_RepoItem.IsArchived = 0 ";
+        $generalFilter = "SurfSharekit_RepoItem.RepoType in ('PublicationRecord', 'LearningObject', 'ResearchObject', 'Dataset', 'Project') AND SurfSharekit_RepoItem.IsRemoved = 0 AND SurfSharekit_RepoItem.IsArchived = 0 ";
 
-        if ($includeCachedItems) {
+        if ($includeCachedItems && $endpoint != 'SRU') {
             $cachedQueryParams = "OR (c.ID IS NOT NULL $setFilter $dateFilter)";
         } else {
             $cachedQueryParams = '';
         }
 
+        if($endpoint != 'SRU') {
+            $cachedStatement = 'if(c.RepoItemID IS NOT NULL, TRUE, FALSE) as Cached, ';
+        }else{
+            $cachedStatement = '';
+        }
+
+
         $query = "SELECT distinct SurfSharekit_RepoItem.ID, 
                                 SurfSharekit_RepoItem.Uuid, 
                                 SurfSharekit_RepoItem.LastEdited, 
                                 SurfSharekit_RepoItem.InstituteUuid, 
-                                if(c.RepoItemID IS NOT NULL, TRUE, FALSE) as Cached, if($generalFilter $channelFilter, TRUE, FALSE) AS PartOfChannel FROM SurfSharekit_RepoItem 
+                                $cachedStatement
+                                if($generalFilter $channelFilter, TRUE, FALSE) AS PartOfChannel FROM SurfSharekit_RepoItem 
                         $channelJoin $queryJoin
                         WHERE (($generalFilter $channelFilter $setFilter $dateFilter) 
                         $cachedQueryParams

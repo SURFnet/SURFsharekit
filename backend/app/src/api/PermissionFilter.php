@@ -27,12 +27,17 @@ class PermissionFilter {
             if ($dataObj->hasMethod('getPermissionCases')) {
                 $clauses = $dataObj->getPermissionCases();
             }
-            $dataList = static::leftJoinOnPermissions($dataList, $clauses);
             if ($clauses) {
-                $dataList = static::filterOnClauses($dataList, $dataObj->getPermissionCases());
+               $dataList = self::filterThroughClauses($dataList, $clauses);
             }
         }
         return $dataList;
+    }
+
+    public static function filterThroughClauses(DataList $dataList, $clauses) {
+        $dataList = static::leftJoinOnUserPermissions($dataList, $clauses);
+
+        return static::filterOnClauses($dataList, $clauses);
     }
 
     /**
@@ -41,7 +46,7 @@ class PermissionFilter {
      * @return DataList
      * This method left joins on permissions, and filters on permissions in clauses if set
      */
-    public static function leftJoinOnPermissions(DataList $dataList, $clauses) {
+    public static function leftJoinOnUserPermissions(DataList $dataList, $clauses) {
         $member = Security::getCurrentUser();
 
         $classParts = explode('\\', $dataList->dataClass());
