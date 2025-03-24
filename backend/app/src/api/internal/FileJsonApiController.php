@@ -5,17 +5,23 @@ namespace SurfSharekit\Api;
 use Exception;
 use PersonImageJsonApiDescription;
 use Ramsey\Uuid\Uuid;
+use SilverStripe\api\internal\descriptions\ExportItemFileJsonApiDescription;
 use SilverStripe\Assets\File;
+use SilverStripe\Control\Controller;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Core\Environment;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Security\Security;
+use SilverStripe\Versioned\Versioned;
+use SurfSharekit\Models\ExportItem;
 use SurfSharekit\Models\Helper\Logger;
 use SurfSharekit\Models\InstituteImage;
 use SurfSharekit\Models\PersonImage;
 use SurfSharekit\Models\RepoItemFile;
 use SurfSharekit\Models\ReportFile;
-use SurfSharekit\Models\StatsDownload;
+use SurfSharekit\Piwik\CustomEventDimension;
+use SurfSharekit\Piwik\Tracker\PiwikTracker;
+use UuidExtension;
 
 class FileJsonApiController extends JsonApiController {
 
@@ -49,10 +55,13 @@ class FileJsonApiController extends JsonApiController {
     }
 
     protected function getClassToDescriptionMap() {
-        return [PersonImage::class => new PersonImageJsonApiDescription(),
+        return [
+            PersonImage::class => new PersonImageJsonApiDescription(),
             InstituteImage::class => new \InstituteImageJsonApiDescription(),
             ReportFile::class => new \ReportFileJsonApiDescription(),
-            RepoItemFile::class => new \RepoItemFileJsonApiDescription()];
+            RepoItemFile::class => new \RepoItemFileJsonApiDescription(),
+            ExportItem::class => new ExportItemFileJsonApiDescription(),
+        ];
     }
 
     /**
@@ -77,6 +86,7 @@ class FileJsonApiController extends JsonApiController {
         }
 
         $preexistingObject = self::getObjectOfTypeById($objectClass, $objectUUID);
+
         if (!$preexistingObject) {
             return $this->getResponse()->setStatusCode(404);
         }
@@ -131,20 +141,29 @@ class FileJsonApiController extends JsonApiController {
             }
 
             $repoItem = $objectToDescribe->RepoItem();
-            if ($repoItem && $repoItem->exists()) {
-                $statusDownload = new StatsDownload();
-                $statusDownload->RepoItemFileID = $objectToDescribe->ID;
-                $statusDownload->RepoItemID = $repoItem->ID;
-                $statusDownload->InstituteID = $repoItem->InstituteID;
-                $statusDownload->DownloadDate = date('Y-m-d H:i:s');
-                $statusDownload->RepoType = $repoItem->RepoType;
-                $statusDownload->IsPublic = $objectToDescribe->IsPublic();
-                $statusDownload->write();
+            // check if repoItem exists (repoItem does not exist for just uploaded files)
+            if(!is_null($repoItem) && $repoItem->exists()) {
+                PiwikTracker::trackEvent(
+                    Controller::join_links(Environment::getEnv("SS_BASE_URL"), $this->getRequest()->getURL()),
+                    "Downloads",
+                    "download",
+                    "download",
+                    [
+                        CustomEventDimension::REPO_ITEM_FILE_ID => $objectToDescribe->Uuid, // repo_item_file_id
+                        CustomEventDimension::REPO_ITEM_ID => $repoItem->Uuid, // repo_item_id
+                        CustomEventDimension::REPO_TYPE => $repoItem->RepoType, // repo_type
+                        CustomEventDimension::ROOT_INSTITUTE_ID => $repoItem->Institute->RootInstitute->Uuid, // root_institute_id
+                    ]
+                );
             }
 
             if ($objectToDescribe->shouldUseRedirect()) {
                 return $this->redirect($objectToDescribe->getRedirectLink(), 301);
             }
+        } else if ($objectToDescribe instanceof ExportItem) {
+            $objectToDescribe = Versioned::get_by_stage(File::class, Versioned::DRAFT)->where([
+                'ID' => $objectToDescribe->FileID
+            ])->first();
         }
 
         // Open a stream in read-only mode
@@ -179,6 +198,21 @@ class FileJsonApiController extends JsonApiController {
         // Be sure to close the stream resource when you're done with it
         fclose($stream);
     }
+
+    public static function getObjectOfTypeById($objectClass, $objectId) {
+        if ($objectClass === ExportItem::class) {
+            return Versioned::get_by_stage(File::class, Versioned::DRAFT)->where([
+                'Uuid' => $objectId
+            ])->first();
+        }
+
+        $object = UuidExtension::getByUuid($objectClass, $objectId);
+        if ($object && $object->exists()) {
+            return $object;
+        }
+        return null;
+    }
+
 
     /**
      * @param DataObject|null $objectToDescribe

@@ -151,11 +151,6 @@ class UploadApiRepoItemController extends UploadApiAuthController {
     public function getRepoItemStatus(HTTPRequest $request) {
         $repoItemService = RepoItemService::create();
 
-        $changeRepoItemStatusRequest = ChangeRepoItemStatusRequest::fromJson($request->getBody());
-        if (!$changeRepoItemStatusRequest) {
-            throw new BadRequestException(ApiErrorConstant::GA_BR_001);
-        }
-
         $token = Authentication::getJWT($request);
         $rootInstituteUuid = $token->institute;
 

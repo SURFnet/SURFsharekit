@@ -109,7 +109,7 @@ class InstituteJsonApiDescription extends DataObjectJsonApiDescription {
 
                 return $datalist->innerJoin('SurfSharekit_Institute_ConsortiumChildren', '`SurfSharekit_Institute_ConsortiumChildren`.`ChildID` = `SurfSharekit_Institute`.`ID`')
                     ->leftJoin('SurfSharekit_Institute', 'SurfSharekit_Institute_ConsortiumChildren.`SurfSharekit_InstituteID` = `ConsortiumParent`.`ID`', 'ConsortiumParent')
-                    ->where("`ConsortiumParent`.`Uuid` $modifier '$filterValue'");
+                    ->where(["`ConsortiumParent`.`Uuid` $modifier ?" => $filterValue]);
             };
         }
 

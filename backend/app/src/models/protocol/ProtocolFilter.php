@@ -16,7 +16,18 @@ class ProtocolFilter extends DataObject {
 
     private static $db = [
         'Title' => 'Varchar(255)',
-        'VirtualMetaField' => "Enum('dii:Identifier,dcterms:modified,mods:namePart:family,mods:namePart:given,mods:displayForm,lom:languageString,lom:Identifier,lom:encaseInStringNode,vCard,lom:technical,didl:resource:file,didl:resource:link,mods:genre:thesis,hbo:namePart:departmentFromLowerInstitute,dai:identifier,mods:name:personal,orcid:identifier',null)",
+        'VirtualMetaField' => "Enum(
+        'dii:Identifier,
+        dcterms:modified,
+        mods:namePart:family,
+        mods:namePart:given,
+        mods:displayForm,
+        lom:languageString,
+        lom:Identifier,
+        lom:encaseInStringNode,
+        vCard,
+        lom:technical,
+        didl:resource:file,didl:resource:link,mods:genre:thesis,hbo:namePart:departmentFromLowerInstitute,dai:identifier,mods:name:personal,orcid:identifier',null)",
         'RepoItemAttribute' => "Enum('RepoType', null)"
     ];
 

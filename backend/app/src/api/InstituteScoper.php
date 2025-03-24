@@ -14,7 +14,6 @@ use SurfSharekit\Models\RepoItem;
 use SurfSharekit\Models\RepoItemSummary;
 use SurfSharekit\Models\ScopeCache;
 use SurfSharekit\Models\SimpleCacheItem;
-use SurfSharekit\Models\StatsDownload;
 use SurfSharekit\Models\Template;
 
 /**
@@ -205,8 +204,6 @@ class InstituteScoper {
             $returnList = RepoItemSummary::get()->where("SurfSharekit_RepoItemSummary.InstituteID IN ( $scopeFilterIds )");
         } else if ($dataObject == PersonSummary::class) {
             $returnList = PersonSummary::get()->innerJoin('Group_Members', 'Group_Members.MemberID = SurfSharekit_PersonSummary.PersonID')->innerJoin('Group', 'GroupID = `Group`.ID')->where("`Group`.InstituteID IN ( $scopeFilterIds)");
-        } else if ($dataObject == StatsDownload::class) {
-            $returnList = StatsDownload::get()->where("SurfSharekit_StatsDownload.InstituteID IN ( $scopeFilterIds )");
         } else if ($dataObject == SimpleCacheItem::class) {
             $returnList = SimpleCacheItem::get()
                 ->leftJoin('SurfSharekit_RepoItem', 'repoScope.ID = SurfSharekit_SimpleCacheItem.DataObjectID', 'repoScope')

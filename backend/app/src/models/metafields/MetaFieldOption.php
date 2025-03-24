@@ -45,7 +45,8 @@ class MetaFieldOption extends DataObject {
                 "AllRights",
                 "VideoAndSound"     
                 "YouTube"
-        ))'
+        ))',
+        'MetaFieldOptionSourceUrl' => 'Varchar(1024)'
     ];
 
     private static $has_one = [
@@ -85,6 +86,19 @@ class MetaFieldOption extends DataObject {
 
     public function getCoalescedLabel_NL() {
         return $this->MetaFieldOptionID ? $this->MetaFieldOption()->CoalescedLabel_NL . ' - ' . $this->Label_NL : $this->Label_NL;
+    }
+
+    public function getRootNode()
+    {
+        if ($this->MetaFieldOptionID === 0 || !$this->MetaFieldOption()->exists()) {
+            return $this->Uuid;
+        }
+
+        return $this->MetaFieldOption()->getRootNode();
+    }
+
+    public function getIdentifier(){
+        return $this->Uuid;
     }
 
     public function canCreate($member = null, $context = null) {

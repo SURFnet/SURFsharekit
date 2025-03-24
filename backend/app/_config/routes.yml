@@ -15,9 +15,6 @@ SilverStripe\Control\Director:
     # Upload API Docs
     'api/upload/v1/docs': 'SurfSharekit\Api\Upload\Controllers\UploadApiDocsController'
 
-    # Deprecated
-    'api/repoitemupload/v1//$Action!': 'SurfSharekit\Api\RepoItemUploadApiController'
-
     'api/v1/files//$Action/$ID/$Relations/$RelationNam': 'SurfSharekit\Api\FileJsonApiController'
     'api/v1/generateAccessToken': 'SurfSharekit\Api\AccessTokenApiController'
     'api/v1/uploadPart//$Action!': 'SurfSharekit\Api\S3FileUploadPartApiController'
@@ -37,9 +34,12 @@ SilverStripe\Control\Director:
     'api/jsonapi/v1//$Action/$ID/$Relations/$RelationName': 'SurfSharekit\Api\ExternalJsonApiController'
     'api/jsonapi/repoItems/v1//$Action': 'SurfSharekit\Api\ExternalJsonApiSwaggerController'
     'api/jsonapi/persons/v1//$Action': 'SurfSharekit\Api\ExternalPersonJsonApiController'
+    'api/jsonapi/institutes/v1//$Action': 'SilverStripe\api\external\jsonapi\ExternalInstituteJsonApiController'
     'api/v1/actions//$Action/$ID/$Relations/$RelationName': 'SurfSharekit\Api\ActionJsonApiController'
     'api/v1//$Action/$ID/$Relations/$RelationName': 'SurfSharekit\Api\InternalJsonApiController'
     'api/oaipmh/channel/v1//$channel': 'SurfSharekit\Api\OaipmhChannelApiController'
     'api/jsonapi/channel/v1//$channel/$Action/$ID/$Relations/$RelationName': 'SurfSharekit\Api\ExternalChannelJsonApiController'
     'api/sru/channel/v1//$channel': 'SurfSharekit\Api\SruChannelApiController'
+
+    # Fallback
     '$Controller//$Action/$ID/': '*'

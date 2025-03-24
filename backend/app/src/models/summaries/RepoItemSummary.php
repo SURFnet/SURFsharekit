@@ -66,7 +66,7 @@ class RepoItemSummary extends DataObject implements PermissionProvider {
             'isArchived' => $repoItem->IsArchived,
             'publicationDate' => $repoItem->PublicationDate,
             'accessRight' => $repoItem->AccessRight,
-            'embargoDate' => $repoItem->EmbargoDate,
+            'embargoDate' => $repoItem->EmbargoDate
         ];
 
         if ($repoItem->RepoType == 'RepoItemPerson') {
@@ -106,6 +106,7 @@ class RepoItemSummary extends DataObject implements PermissionProvider {
                 }
             }
         }
+
         if ($repoItem->RepoType == 'RepoItemRepoItemFile') {
             $fileRepoItemMetaField = $repoItem->RepoItemMetaFields()->filter(['MetaField.MetaFieldType.Title' => 'File'])->first();
             if ($fileRepoItemMetaField && $fileRepoItemMetaField->exists()) {
@@ -114,6 +115,30 @@ class RepoItemSummary extends DataObject implements PermissionProvider {
                     $summaryValues['url'] = $fileValue->RepoItemFile()->getStreamURL();
                     $summaryValues['publicUrl'] = $fileValue->RepoItemFile()->getPublicStreamURL();
                 }
+            }
+
+            $rightOfUseMetaField = $repoItem->RepoItemMetaFields()->filter(['MetaField.MetaFieldType.Key' => 'RightOfUseDropdown'])->first();
+            if ($rightOfUseMetaField && $rightOfUseMetaField->exists()) {
+                $value = $rightOfUseMetaField->RepoItemMetaFieldValues()->filter('IsRemoved', 0)->first();
+                if ($value && $value->exists()) {
+                    $summaryValues['rightOfUse'] = $value->MetaFieldOption()->Value;
+                    $summaryValues['rightOfUseNL'] = $value->MetaFieldOption()->Label_NL;
+                    $summaryValues['rightOfUseEN'] = $value->MetaFieldOption()->Label_EN;
+                }
+            }
+
+            $multiSelectInstituteField = $repoItem->RepoItemMetaFields()->filter(['MetaField.MetaFieldType.Key' => 'MultiSelectInstitute'])->first();
+            if ($multiSelectInstituteField && $multiSelectInstituteField->exists()) {
+                $multiSelectInstituteFieldValues = $multiSelectInstituteField->RepoItemMetaFieldValues()->filter(['IsRemoved' => 0]);
+
+                $instituteTitles = [];
+                foreach ($multiSelectInstituteFieldValues as $multiSelectInstituteFieldValue) {
+                    $institute = Institute::get()->byID($multiSelectInstituteFieldValue->InstituteID);
+                    if ($institute && $institute->exists()) {
+                        $instituteTitles[] = $institute->Title;
+                    }
+                }
+                $summaryValues['institutes'] = $instituteTitles;
             }
         }
 

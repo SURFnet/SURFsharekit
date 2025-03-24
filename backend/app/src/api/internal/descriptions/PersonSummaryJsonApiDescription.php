@@ -57,7 +57,7 @@ class PersonSummaryJsonApiDescription extends DataObjectJsonApiDescription {
 
                 return $datalist->leftJoin('Group_Members', '`Group_Members`.`MemberID` = SurfSharekit_PersonSummary.PersonID')
                     ->leftJoin('Group', '`Group`.`ID` = `Group_Members`.`GroupID`')
-                    ->where("`Group`.`Uuid` $modifier '$filterValue'");
+                    ->where(["`Group`.`Uuid` $modifier ?" => $filterValue]);
             };
         }
 

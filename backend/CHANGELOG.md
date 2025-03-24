@@ -1,3 +1,94 @@
+## 1.6.0-RC2 (2025-01-22)
+
+No changes.
+
+## 1.6.0-RC1 (2025-01-22)
+
+No changes.
+
+## 1.5.6 (2025-01-22)
+
+No changes.
+
+## 1.5.5 (2025-01-22)
+
+No changes.
+
+## 1.5.4 (2025-01-10)
+
+No changes.
+
+## 1.5.3 (2025-01-10)
+
+No changes.
+
+## 1.5.2 (2025-01-08)
+
+No changes.
+
+## 1.5.1 (2025-01-08)
+
+No changes.
+
+## 1.5.0 (2025-01-06)
+
+### added (2 changes)
+
+- [Added support for MetaFieldOption synchronization to MetaFieldOption, allowing...](https://gitlab.zooma.cloud/zooma/surf/Sharekit/surf-sharekit-cms/-/commit/32498b643fbdc5536cac789b670e0cf9ac82da58) ([merge request](https://gitlab.zooma.cloud/zooma/surf/Sharekit/surf-sharekit-cms/-/merge_requests/437))
+- [Added accessRight, rightOfUse and embargo support for RepoItemRepoItemFiles for the CSV protocol](https://gitlab.zooma.cloud/zooma/surf/Sharekit/surf-sharekit-cms/-/commit/c03c4e4d9674118966274a09ff70d976123552aa) ([merge request](https://gitlab.zooma.cloud/zooma/surf/Sharekit/surf-sharekit-cms/-/merge_requests/438))
+
+### changed (1 change)
+
+- [Exports are now generated asynchronously](https://gitlab.zooma.cloud/zooma/surf/Sharekit/surf-sharekit-cms/-/commit/a80c4c6fd103e231de36214bee60afe328fe5947) ([merge request](https://gitlab.zooma.cloud/zooma/surf/Sharekit/surf-sharekit-cms/-/merge_requests/435))
+
+## 1.4.0 (2024-10-08)
+
+No changes.
+
+## 1.3.0 (2024-10-08)
+
+No changes.
+
+## 1.3.0-RC5 (2024-12-18)
+
+No changes.
+
+## 1.3.0-RC4 (2024-12-17)
+
+No changes.
+
+## 1.3.0-RC3 (2024-12-13)
+
+No changes.
+
+## 1.3.0-RC2 (2024-12-10)
+
+No changes.
+
+## 1.2.6 (2024-10-15)
+
+No changes.
+
+## 1.2.5 (2024-09-19)
+
+No changes.
+
+## 1.2.4 (2024-09-18)
+
+No changes.
+
+## 1.2.3 (2024-09-03)
+
+### fixed (1 change)
+
+- [Allow uppercase extensions](https://gitlab.zooma.cloud/zooma/surf/Sharekit/surf-sharekit-cms/-/commit/6c508c967f2c9f531a8b85e31af57264b7e3df8d) ([merge request](https://gitlab.zooma.cloud/zooma/surf/Sharekit/surf-sharekit-cms/-/merge_requests/395))
+
+## 1.2.1 (2024-07-05)
+
+### fixed (1 change)
+
+- [Fixed several minor issues related to the Upload API](zooma/surf/Sharekit/surf-sharekit-cms@496dd2bad55e376b00938173867d67d3ef5ac847) ([merge request](zooma/surf/Sharekit/surf-sharekit-cms!382))
+
 ## 1.2.0 (2024-07-04)
 
 ### changed (1 change)

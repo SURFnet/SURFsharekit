@@ -36,11 +36,13 @@ use SilverStripe\Security\Security;
 use SilverStripe\Versioned\Versioned;
 use SimpleXMLElement;
 use SurfSharekit\Api\DoiCreator;
+use SurfSharekit\Api\Exceptions\ApiErrorConstant;
+use SurfSharekit\Api\Exceptions\BadRequestException;
+use SurfSharekit\Api\Exceptions\ForbiddenException;
 use SurfSharekit\Api\GetRecordNode;
 use SurfSharekit\Api\InstituteScoper;
 use SurfSharekit\Api\JsonApi;
 use SurfSharekit\Api\PermissionFilter;
-use SurfSharekit\Api\RepoItemUploadApiController;
 use SurfSharekit\Models\Helper\Constants;
 use SurfSharekit\Models\Helper\DateHelper;
 use SurfSharekit\Models\Helper\Logger;
@@ -473,6 +475,10 @@ class RepoItem extends DataObject implements PermissionProvider {
                     if (!$childRepoItem = UuidExtension::getByUuid(RepoItem::class, $repoItemUuid)) {
                         throw new Exception('Trying to attach nonexisting repo item for field ' . $answerObject['fieldKey']);
                     }
+
+                    if (!$childRepoItem->canEdit()) {
+                        throw new Exception("Insufficient permissions for RepoItem $repoItemUuid");
+                    }
                     $repoItemMetaFieldValue->RepoItemID = $childRepoItem->ID;
                 }
 
@@ -493,6 +499,9 @@ class RepoItem extends DataObject implements PermissionProvider {
                 if (isset($answerValueObject['repoItemFileID']) && $repoItemFileUuid = $answerValueObject['repoItemFileID']) {
                     if (!$repoItemFile = UuidExtension::getByUuid(RepoItemFile::class, $repoItemFileUuid)) {
                         throw new Exception('Trying to attach nonexisting repoItemFile for field ' . $answerObject['repoItemFileID']);
+                    }
+                    if (!$repoItemFile->canView()) {
+                        throw new Exception("Insufficient permissions for RepoItemFile $repoItemFileUuid");
                     }
                     $repoItemMetaFieldValue->RepoItemFileID = $repoItemFile->ID;
                 }
@@ -859,11 +868,11 @@ class RepoItem extends DataObject implements PermissionProvider {
                 if ($templateField->IsRequired) { //need an answer for this templateMetaField
                     $repoItemMetaField = $this->RepoItemMetaFields()->filter('MetaFieldID', $templateField->MetaField()->ID)->first();
                     if (!$repoItemMetaField || !$this->repoItemMetaFieldContainsValues($repoItemMetaField)) {
-                        throw new Exception("{$this->ID} Missing answer for field with fieldKey: " . DataObjectJsonApiEncoder::getJSONAPIID($templateField->MetaField()) . ' ' . $templateField->MetaField()->Title);
+                        throw new BadRequestException(ApiErrorConstant::GA_BR_004, "{$this->ID} Missing answer for field with fieldKey: " . DataObjectJsonApiEncoder::getJSONAPIID($templateField->MetaField()) . ' ' . $templateField->MetaField()->Title);
                     }
                 }
             } else {
-                throw new Exception('Missing template metaField for repoItem Metafield');
+                throw new BadRequestException(ApiErrorConstant::GA_BR_004, 'Missing template metaField for repoItem Metafield');
             }
         }
     }
@@ -986,7 +995,7 @@ class RepoItem extends DataObject implements PermissionProvider {
         foreach ($allowedNewStates as $s => $m) {
             if ($s == $newState) {
                 if (!$this->$m(Security::getCurrentUser())) {
-                    throw new Exception("No permissions to set state from $currentState to $newState");
+                    throw new ForbiddenException(ApiErrorConstant::GA_FB_001, "No permissions to set state from $currentState to $newState");
                 } else {
                     $canSetState = true;
                     break;
@@ -995,7 +1004,7 @@ class RepoItem extends DataObject implements PermissionProvider {
         }
 
         if (!$canSetState) {
-            throw new Exception("Cannot set state from $currentState to $newState");
+            throw new BadRequestException(ApiErrorConstant::GA_BR_004, "Cannot set state from $currentState to $newState");
         }
 
         $this->setField('Status', $value);
@@ -1270,9 +1279,7 @@ class RepoItem extends DataObject implements PermissionProvider {
         }
 
         $canCreate = false;
-        if (Controller::curr() instanceof RepoItemUploadApiController) {
-            $canCreate = true;
-        } else if (Permission::check('ADMIN', 'any', $member) || $member->isWorksAdmin()) {
+        if (Permission::check('ADMIN', 'any', $member) || $member->isWorksAdmin()) {
             $canCreate = true;
         } else {
             foreach ($member->ScopedGroups($this->dataObj()->getRelatedInstitute()->ID) as $group) {

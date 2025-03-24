@@ -23,7 +23,7 @@ class StatsDownloadJsonApiDescription extends DataObjectJsonApiDescription {
                 $filterValues = explode(',', $filterValue);
                 $filters = [];
                 foreach ($filterValues as $fv) {
-                    $filters[] = ["SurfSharekit_StatsDownload.RepoType $modifier '$fv'"];
+                    $filters[] = ["SurfSharekit_StatsDownload.RepoType $modifier ?" => $fv];
                 }
                 return $datalist->whereAny($filters);
             };

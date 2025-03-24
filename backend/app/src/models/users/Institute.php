@@ -4,30 +4,35 @@ namespace SurfSharekit\Models;
 
 use Exception;
 use RelationaryPermissionProviderTrait;
+use SilverStripe\extensions\Gridfield\Column\GridfieldSecretaryColumn;
 use SilverStripe\Forms\CheckboxField;
 use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\Forms\GridField\GridFieldAddExistingAutocompleter;
+use SilverStripe\Forms\GridField\GridFieldConfig_RelationEditor;
+use SilverStripe\Forms\GridField\GridFieldDataColumns;
 use SilverStripe\Forms\GridField\GridFieldDeleteAction;
+use SilverStripe\Forms\GridField\GridFieldSortableHeader;
 use SilverStripe\Forms\HiddenField;
 use SilverStripe\Forms\ReadonlyField;
+use SilverStripe\Forms\TextField;
 use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\DB;
+use SilverStripe\ORM\FieldType\DBText;
 use SilverStripe\ORM\HasManyList;
 use SilverStripe\ORM\ValidationException;
 use SilverStripe\Security\Group;
+use SilverStripe\Security\Member;
 use SilverStripe\Security\Permission;
 use SilverStripe\Security\PermissionProvider;
-use SilverStripe\Security\PermissionRole;
 use SilverStripe\Security\Security;
+use SilverStripe\Versioned\GridFieldArchiveAction;
 use SilverStripe\Versioned\Versioned;
 use SurfSharekit\Api\InstituteScoper;
 use SurfSharekit\constants\RoleConstant;
 use SurfSharekit\helper\InstituteGroupManager;
-use SurfSharekit\Models\Helper\Constants;
 use SurfSharekit\Models\Helper\PermissionRoleHelper;
-use UuidExtension;
 
 /***
  * Class Institute
@@ -54,13 +59,15 @@ class Institute extends DataObject implements PermissionProvider {
         'LicenseActive' => "Boolean(0)",
         'ConextCode' => 'Varchar(255)',
         'SRAMCode' => 'Varchar(255)',
+        'ROR' => 'Varchar(255)',
         'ConextTeamIdentifier' => 'Varchar(255)',
         'Abbreviation' => 'Varchar(255)',
         'Level' => 'Enum(array("organisation","department","lectorate","discipline","consortium"), null)',
-        'Type' => 'Enum(array("education","research"), null)',
+        'Type' => 'Enum(array("CentreOfExpertise"), null)',
         'IsRemoved' => 'Boolean(0)',
         'IsHidden' => 'Boolean(0)',
-        'UpdateInstituteLabels' => 'Boolean(0)'
+        'UpdateInstituteLabels' => 'Boolean(0)',
+        'Description' => 'Text'
     ];
 
     private static $has_one = [
@@ -103,6 +110,12 @@ class Institute extends DataObject implements PermissionProvider {
         'AutoAddedGroups' => Group::class, //people in these groups will be automatically added when onboarding
     ];
 
+    private static $many_many_extraFields = [
+        'ConsortiumChildren' => [
+            'Secretary' => 'Int',
+        ],
+    ];
+
     private static $belongs_many_many = [
         'ConsortiumParents' => Institute::class,
         'Persons' => Person::class
@@ -130,6 +143,7 @@ class Institute extends DataObject implements PermissionProvider {
             InstituteGroupManager::createDefaultGroups($rootInstitute);
         }
     }
+
 
     function getCMSFields() {
         $fields = parent::getCMSFields();
@@ -164,6 +178,23 @@ class Institute extends DataObject implements PermissionProvider {
         $uuidField = ReadonlyField::create('DisplayIdentifier', 'Identifier', $this->Uuid);
         $fields->insertBefore('Title', $uuidField);
 
+
+        $children = $this->ConsortiumChildren()->map('ID', 'Title')->toArray();
+
+        if ($this->Level === 'consortium') {
+            $fields->addFieldToTab('Root.Main', DropdownField::create(
+                'SecretaryID',
+                'Penvoerder',
+                $children
+            )
+            ->setEmptyString('-- Selecteer een penvoerder --')
+            ->setValue($this->getSecretaryID()));
+
+        } else {
+            $fields->removeByName('ConsortiumChildren[Secretary]');
+        }
+
+
         /** @var DropdownField $levelField */
         $levelField = $fields->dataFieldByName('Level');
         $levelField->setHasEmptyDefault(true);
@@ -194,11 +225,56 @@ class Institute extends DataObject implements PermissionProvider {
             $repoitemsGridField = $fields->dataFieldByName('RepoItems');
             $repoitemsGridFieldConfig = $repoitemsGridField->getConfig();
             $repoitemsGridFieldConfig->removeComponentsByType([new GridFieldAddExistingAutocompleter(), new GridFieldDeleteAction()]);
+
+            /** @var GridField $consortiumChildrenGridField */
+            $consortiumChildrenGridField = $fields->dataFieldByName('ConsortiumChildren');
+            $consortiumChildrenGridFieldConfig = $consortiumChildrenGridField->getConfig();
+            $consortiumChildrenGridFieldConfig->removeComponentsByType([GridFieldArchiveAction::class]);
+
+             /** @var GridFieldDataColumns $header */
+            $header = $consortiumChildrenGridFieldConfig->getComponentByType(GridFieldDataColumns::class);
+
+            $displayFields = [
+                "Title" => "Title",
+                "Level" => "Level",
+                "ConextCode" => "ConextCode",
+            ];
+
+            if ($this->Level === 'consortium') {
+                $displayFields["ID"] = "";
+
+                $header->setFieldFormatting([
+                    'ID' => function ($value, $item) {
+                        $secretaryID = $this->ConsortiumChildren()->find('ID', $item->ID)->Secretary;
+                        return $secretaryID === 1
+                            ? "<span style='color:#00008b;font-size:1em;font-weight:600;'>Penvoerder</span>"
+                            : "<span></span>";
+                    }
+                ]);
+            }
+
+            $header->setDisplayFields($displayFields);
         }
 
         $fields->dataFieldByName('ConextTeamIdentifier')->setDescription("Separate multiple identifiers with a single space");
 
+        // Get the current user
+        $currentUser = Security::getCurrentUser();
+        if ($this->InstituteID == 0 && $this->Level == 'organisation') {
+            if ($this->ROR) {
+                if (!Permission::checkMember($currentUser, 'ADMIN')) {
+                    $fields->dataFieldByName('ROR')->setReadonly(true);
+                }
+            }
+        } else {
+            $fields->removeByName('ROR');
+        }
+
         return $fields;
+    }
+
+    public function getSecretaryID() {
+       return $this->ConsortiumChildren()->filter("Secretary", 1)->first()->ID ?? 0;
     }
 
     public function providePermissions() {
@@ -444,6 +520,17 @@ class Institute extends DataObject implements PermissionProvider {
 
         if($this->isChanged('IsHidden') && !$this->isChanged('ID')) {
             $this->setChildInstitutesIsHiddenAttribute();
+        }
+
+        // Logic for selecting a Secretary and in case the level is being changed
+        $selectedSecretaryID = $this->getField('SecretaryID');
+        $isLevelChanged = $this->isChanged('Level') && $this->Level !== 'consortium';
+
+        foreach ($this->ConsortiumChildren() as $child) {
+            $isSelectedSecretary = ($child->ID == $selectedSecretaryID);
+            $secretaryStatus = ($isSelectedSecretary && !$isLevelChanged) ? 1 : 0;
+
+            $this->ConsortiumChildren()->add($child, ['Secretary' => $secretaryStatus]);
         }
 
         $this->updateRelevantRepoItems();
@@ -781,4 +868,19 @@ class Institute extends DataObject implements PermissionProvider {
            }
        }
    }
+
+    public function validate() {
+        $result = parent::validate();
+
+        if ($this->InstituteID == 0 && $this->ROR) {
+            $rorRegex = '/^https:\/\/ror\.org\/0[a-hj-km-np-tv-z0-9]{6}[0-9]{2}$/';
+
+            if (!preg_match($rorRegex, $this->ROR)) {
+                $result->addError('Invalid ROR format. Expected format: https://ror.org/0xxxxxxx');
+            }
+        }
+
+        return $result;
+    }
+
 }

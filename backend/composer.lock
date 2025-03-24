@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "de705d77a48139cde0826979a74dd63c",
+    "content-hash": "e8426996294db6c12e881eafecf3d9ec",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -2130,6 +2130,62 @@
                 "source": "https://github.com/marcj/topsort.php/tree/1.1.0"
             },
             "time": "2016-11-19T14:58:11+00:00"
+        },
+        {
+            "name": "matomo/matomo-php-tracker",
+            "version": "3.3.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/matomo-org/matomo-php-tracker.git",
+                "reference": "92c2ce658111c7d86a552521c619083e41ebd834"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/matomo-org/matomo-php-tracker/zipball/92c2ce658111c7d86a552521c619083e41ebd834",
+                "reference": "92c2ce658111c7d86a552521c619083e41ebd834",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "php": "^7.2 || ^8.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^8.5 || ^9.3 || ^10.1"
+            },
+            "suggest": {
+                "ext-curl": "Using this extension to issue the HTTPS request to Matomo"
+            },
+            "type": "library",
+            "autoload": {
+                "classmap": [
+                    "."
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-3-Clause"
+            ],
+            "authors": [
+                {
+                    "name": "The Matomo Team",
+                    "email": "hello@matomo.org",
+                    "homepage": "https://matomo.org/team/"
+                }
+            ],
+            "description": "PHP Client for Matomo Analytics Tracking API",
+            "homepage": "https://matomo.org",
+            "keywords": [
+                "analytics",
+                "matomo",
+                "piwik",
+                "tracker"
+            ],
+            "support": {
+                "forum": "https://forum.matomo.org/",
+                "issues": "https://github.com/matomo-org/matomo-php-tracker/issues",
+                "source": "https://github.com/matomo-org/matomo-php-tracker"
+            },
+            "time": "2024-05-21T15:08:28+00:00"
         },
         {
             "name": "monolog/monolog",
@@ -6988,5 +7044,5 @@
         "ext-json": "*"
     },
     "platform-dev": [],
-    "plugin-api-version": "2.6.0"
+    "plugin-api-version": "2.2.0"
 }

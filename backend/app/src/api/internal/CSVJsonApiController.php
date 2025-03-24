@@ -3,15 +3,18 @@
 namespace SurfSharekit\Api;
 
 use DataObjectCSVFileEncoder;
-use http\Exception;
+use Exception;
 use Ramsey\Uuid\Uuid;
 use RepoItemJsonApiDescription;
+use SilverStripe\api\internal\descriptions\ExportItemJsonApiDescription;
+use SilverStripe\ORM\ArrayList;
 use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Security\Security;
-use StatsDownloadJsonApiDescription;
+use SurfSharekit\Models\ExportItem;
 use SurfSharekit\Models\RepoItem;
 use SurfSharekit\Models\StatsDownload;
+use SurfSharekit\Piwik\PiwikCSVFileEncoder;
 
 /**
  * Class InternalJsonApiController
@@ -29,7 +32,8 @@ class CSVJsonApiController extends JsonApiController {
     }
 
     private static $allowed_actions = [
-        'getJsonApiRequest'
+        'getJsonApiRequest',
+        'postJsonApiRequest'
     ];
 
     private static $allowed_reportTypes = [
@@ -43,7 +47,7 @@ class CSVJsonApiController extends JsonApiController {
     protected function getClassToDescriptionMap() {
         return [
             RepoItem::class => new RepoItemJsonApiDescription(),
-            StatsDownload::class => new StatsDownloadJsonApiDescription()
+            ExportItem::class => new ExportItemJsonApiDescription()
         ];
     }
 
@@ -81,7 +85,7 @@ class CSVJsonApiController extends JsonApiController {
      * called when the user requested a single dataobject
      */
     protected function getDataObject($objectToDescribe) {
-        return ExternalJsonApiController::createJsonApiBodyResponseFrom(static::unsupportedAction(), 403);
+        return $this->createJsonApiBodyResponseFrom(static::unsupportedAction(), 403);
     }
 
     /**
@@ -100,13 +104,30 @@ class CSVJsonApiController extends JsonApiController {
      * Called when the use request all objects of a certain type
      */
     function getDataList($objectClass) {
+        if ($objectClass === ExportItem::class) {
+            return ExportItem::get()->filter([
+                'Person.ID' => Security::getCurrentUser()->ID
+            ]);
+        }
+
         return InstituteScoper::getAll($objectClass);
+    }
+
+    public function postJsonApiRequest() {
+        $exportItem = ExportItem::create([
+            "Args" => json_encode($this->getRequest()->getVars()),
+            "PersonID" => Security::getCurrentUser()->ID
+        ]);
+
+        $exportItem->write();
+
+        return $this->createJsonApiBodyResponseFrom([], 202);
     }
 
     /**
      * @return mixed called when \A HTTP method GET is called, follows the JSON:API protocol to create a response based on SilverStripe DataObjects and their JsonApiDescription
      */
-    public function getJsonApiRequest() {
+    public function generateExport() {
         $request = $this->getRequest();
         $this->classToDescriptionMap = $this->getClassToDescriptionMap();
         //https://jsonapi.org/format/#content-negotiation-clients
@@ -127,6 +148,77 @@ class CSVJsonApiController extends JsonApiController {
 
         $requestVars = $request->getVars();
 
+        // COPIED FROM handleAction!
+
+        //https://jsonapi.org/format/#content-negotiation-clients
+        $stringOfIncludedRelationships = $this->request->requestVar("include") ?: "";
+        $this->listOfIncludedRelationships = explode(',', $stringOfIncludedRelationships);
+
+        if ($requestVars && isset($requestVars['fields'])) {
+            $sparseFieldsPerType = $requestVars['fields'];
+            if (!is_array($sparseFieldsPerType)) {
+                return $this->createJsonApiBodyResponseFrom(static::invalidSparseFieldsJsonApiBodyError(), 400);
+            }
+            $this->sparseFields = $sparseFieldsPerType;
+        }
+
+        if ($requestVars && isset($requestVars['sort'])) {
+            foreach (explode(',', $requestVars['sort']) as $sortString) {
+                if (strpos($sortString, '-') === 0) {
+                    $this->sorts[substr($sortString, 1, strlen($sortString) - 1)] = 'DESC';
+                } else {
+                    $this->sorts[$sortString] = 'ASC';
+                }
+            }
+        }
+
+        if ($requestVars && isset($requestVars['filter'])) {
+            $filtersPerAttribute = $requestVars['filter'];
+            if (!is_array($filtersPerAttribute)) {
+                return $this->createJsonApiBodyResponseFrom(static::invalidFiltersJsonApiBodyError(), 400);
+            }
+            $this->filters = $filtersPerAttribute;
+        }
+
+        if ($requestVars && isset($requestVars['additionalFilter'])) {
+            $additionalFiltersPerAttribute = $requestVars['additionalFilter'];
+            if (!is_array($additionalFiltersPerAttribute)) {
+                return $this->createJsonApiBodyResponseFrom(static::invalidAdditionalFiltersJsonApiBodyError(), 400);
+            }
+            $this->additionalFilters = $additionalFiltersPerAttribute;
+        }
+
+        if ($requestVars && isset($requestVars['purge'])) {
+            $purgeCache = intval($requestVars['purge']);
+            $this->purge = $purgeCache;
+        }
+
+        if ($requestVars && isset($requestVars['page'])) {
+            if (!is_array($requestVars['page'])) {
+                return $this->createJsonApiBodyResponseFrom(static::invalidPaginationJsonApiBodyError(), 400);
+            }
+            $paginationQuery = $requestVars['page'];
+
+            if (isset($paginationQuery['number'])) {
+                $number = intval($paginationQuery['number']);
+                if ($number) {
+                    $this->pageNumber = $number;
+                }
+            }
+            if (isset($paginationQuery['size'])) {
+                $size = intval($paginationQuery['size']);
+                if ($size) {
+                    $this->pageSize = intval($size);
+                }
+            }
+
+            if (!$this->pageNumber || !$this->pageSize) {
+                return $this->createJsonApiBodyResponseFrom(static::invalidPaginationJsonApiBodyError(), 400);
+            }
+        }
+
+        // END COPY
+
         if ($requestVars && isset($requestVars['purge'])) {
             $purgeCache = true;
             set_time_limit(0); // increase time limit when purging
@@ -140,6 +232,11 @@ class CSVJsonApiController extends JsonApiController {
         } else {
             $reportType = 'export';
         }
+
+        if ($reportType === 'downloads') {
+            return PiwikCSVFileEncoder::getDownloadsCSV($requestVars['ExportItem'], $requestVars);
+        }
+
         if (!in_array($reportType, self::$allowed_reportTypes)) {
             return $this->createJsonApiBodyResponseFrom(static::invalidParameter(), 400);
         }
@@ -207,14 +304,14 @@ class CSVJsonApiController extends JsonApiController {
             try {
                 $objectsToDescribe = $objectDescription->applyGeneralFilter($objectsToDescribe);
             } catch (Exception $e) {
-                return $this->createJsonApiBodyResponseFrom(static::invalidFiltersJsonApiBodyError($e->getMessage()), 403);
+                throw new Exception($e ?: 'Please specify filters as e.g.: ....objectType?filter[attribute]=value');
             }
             // Apply field filters
             foreach ($this->filters as $field => $value) {
                 try {
                     $objectsToDescribe = $objectDescription->applyFilter($objectsToDescribe, $field, $value);
                 } catch (Exception $e) {
-                    return $this->createJsonApiBodyResponseFrom(static::invalidFiltersJsonApiBodyError($e->getMessage()), 400);
+                    throw new Exception($e ?: 'Please specify filters as e.g.: ....objectType?filter[attribute]=value');
                 }
             }
 
@@ -223,36 +320,71 @@ class CSVJsonApiController extends JsonApiController {
                 try {
                     $objectsToDescribe = $objectDescription->applySort($objectsToDescribe, $sortField, $ascOrDesc);
                 } catch (Exception $e) {
-                    return $this->createJsonApiBodyResponseFrom(static::invalidSortJsonApiBodyError($e->getMessage()), 400);
+                    throw new Exception($e ?: 'Please specify sorting as e.g.: ....sort=title,-authorName');
                 }
             }
 
             if ($reportType == 'statistics') {
                 if ($objectClass != RepoItem::class) {
-                    return $this->createJsonApiBodyResponseFrom(static::invalidFiltersJsonApiBodyError("Cannot export $reportType $objectClass"), 400);
+                    throw new Exception("Cannot export $reportType $objectClass");
                 }
-                return DataObjectCSVFileEncoder::repoItemStatsToCSVFile($objectsToDescribe, $purgeCache);
+                return DataObjectCSVFileEncoder::repoItemStatsToCSVFile($requestVars['ExportItem'], $objectsToDescribe, $purgeCache);
             } else if ($reportType == 'export') {
                 if ($objectClass != RepoItem::class) {
-                    return $this->createJsonApiBodyResponseFrom(static::invalidFiltersJsonApiBodyError("Cannot export $reportType $objectClass"), 400);
+                    throw new Exception("Cannot export $reportType $objectClass");
                 }
-                return DataObjectCSVFileEncoder::repoItemListToCSVFile($objectsToDescribe, $purgeCache);
+                return DataObjectCSVFileEncoder::repoItemListToCSVFile($requestVars['ExportItem'], $objectsToDescribe, $purgeCache);
             } else {
                 if ($objectClass != StatsDownload::class) {
-                    return $this->createJsonApiBodyResponseFrom(static::invalidFiltersJsonApiBodyError("Cannot export $reportType $objectClass"), 400);
+                    throw new Exception("Cannot export $reportType $objectClass");
                 }
-                return DataObjectCSVFileEncoder::statsDownloadsToCSVFile($objectsToDescribe);
+                return DataObjectCSVFileEncoder::statsDownloadsToCSVFile($requestVars['ExportItem'], $objectsToDescribe);
             }
         } catch (Exception $e) {
-            return $this->createJsonApiBodyResponseFrom(static::noPermissionJsonApiBodyError($e->getMessage()), 403);
+            throw new Exception($e ?: 'You do not have the permissions for this action');
         }
     }
 
-    protected function deleteToObject($objectClass, $requestBody, $prexistingObject, $relationshipToModify = null) {
-        return ExternalJsonApiController::createJsonApiBodyResponseFrom(static::unsupportedAction(), 403);
+    private function getExports() {
+        $exportItems = ExportItem::get()->filter([
+            "PersonID" => Security::getCurrentUser()->ID
+        ])->sort('Created DESC');
+
+        $responseBody = new ArrayList();
+
+        foreach ($exportItems as $exportItem) {
+            $responseBody->push([
+                "id" => $exportItem->Uuid,
+                "status" => $exportItem->Status,
+                "created" => $exportItem->Created,
+                "finished" => $exportItem->FinishedAt,
+                "file" => [
+                    "url" => $exportItem->File->getAbsoluteURL()
+                ]
+            ]);
+        }
+
+        return $responseBody;
     }
 
     protected function canViewObjectToDescribe($objectToDescribe) {
         return $objectToDescribe->canView(Security::getCurrentUser());
+    }
+
+    protected function deleteToObject($objectClass, $requestBody, $prexistingObject, $relationshipToModify = null) {
+        /** @var ExportItem $object */
+        if (null === $object = $objectClass::get()->find('Uuid', $this->getRequest()->param('ID'))) {
+            $this->getResponse()->setStatusCode(404);
+            return;
+        }
+
+        if (!$object->canDelete()) {
+            $this->getResponse()->setStatusCode(204);
+            return;
+        }
+
+        $object->delete();
+
+        $this->getResponse()->setStatusCode(204);
     }
 }

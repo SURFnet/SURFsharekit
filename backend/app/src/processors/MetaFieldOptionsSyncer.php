@@ -7,25 +7,27 @@ use SurfSharekit\Models\MetaFieldOption;
 
 class MetaFieldOptionsSyncer {
 
-    private $metaField;
+    private MetaField $metaField;
+    private ?MetaFieldOption $metaFieldOption;
     private $rootNode;
 
-    public function __construct(array $rootNode, $metaField) {
+    public function __construct(array $rootNode, MetaField $metaField, ?MetaFieldOption $metaFieldOption = null) {
         $this->rootNode = $rootNode;
         $this->metaField = $metaField;
+        $this->metaFieldOption = $metaFieldOption;
     }
 
     function run() {
         try {
             DB::get_conn()->transactionStart();
             $rootNodeId = $this->rootNode['@id'];
-            $existingMetaFieldOption = MetaFieldOption::get()->filter(["Value" => $rootNodeId])->first();
+            $existingMetaFieldOption = $this->metaField->MetaFieldOptions()->filter(["Value" => $rootNodeId])->first();
 
-            $metaFieldOptionId = null;
+            $metaFieldOptionId = $this->metaFieldOption->ID ?? null;
             if ($existingMetaFieldOption) {
-                $metaFieldOptionId = $this->updateMetaFieldOption($this->rootNode, $existingMetaFieldOption, 1)->ID;
+                $metaFieldOptionId = $this->updateMetaFieldOption($this->rootNode, $existingMetaFieldOption, 1, $metaFieldOptionId)->ID;
             } else {
-                $metaFieldOptionId = $this->createMetaFieldOption($this->rootNode, 1)->ID;
+                $metaFieldOptionId = $this->createMetaFieldOption($this->rootNode, 1, $metaFieldOptionId)->ID;
             }
 
             if (array_key_exists('metaFieldOptions', $this->rootNode)){
@@ -42,8 +44,7 @@ class MetaFieldOptionsSyncer {
         $sortOrder = 1;
         foreach ($childNodes as $childNode){
             $childNodeId = $childNode['@id'];
-            $existingMetaFieldOption = MetaFieldOption::get()->filter(["Value" => $childNodeId])->first();
-
+            $existingMetaFieldOption = $this->metaField->MetaFieldOptions()->filter(["Value" => $childNodeId])->first();
 
             $metaFieldOptionId = null;
             if ($existingMetaFieldOption) {

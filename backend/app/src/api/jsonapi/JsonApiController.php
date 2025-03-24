@@ -19,6 +19,9 @@ use UuidExtension;
  * This class is the entry point for a json api to GET,POST and PATCH DataObjects inside the logged in member's scope
  */
 abstract class JsonApiController extends LoginProtectedApiController {
+    var $maxPageSize = 100;
+    var $minPageSize = 1;
+
     /**
      * @var array A list of all accessible DataObjects and their JsonApi definition
      */
@@ -49,11 +52,11 @@ abstract class JsonApiController extends LoginProtectedApiController {
     /**
      * @var int that can be set during a get request to limit how many results are sent to the client
      */
-    var $pageSize = null;
+    var $pageSize = 100;
     /**
      * @var int that can be set during a get request to offset the results that are sent to the client
      */
-    var $pageNumber = null;
+    var $pageNumber = 1;
 
     /**
      * @var int $purge
@@ -139,9 +142,10 @@ abstract class JsonApiController extends LoginProtectedApiController {
             }
             if (isset($paginationQuery['size'])) {
                 $size = intval($paginationQuery['size']);
-                if ($size) {
-                    $this->pageSize = intval($size);
+                if ($size < $this->minPageSize || $size > $this->maxPageSize) {
+                    return $this->createJsonApiBodyResponseFrom(static::invalidPageSizeJsonApiBodyError($this->minPageSize, $this->maxPageSize), 400);
                 }
+                $this->pageSize = $size;
             }
 
             if (!$this->pageNumber || !$this->pageSize) {
@@ -271,7 +275,7 @@ abstract class JsonApiController extends LoginProtectedApiController {
             if ($objectId && !Uuid::isValid($objectId)) {
                 return $this->createJsonApiBodyResponseFrom(static::invalidObjectIDJsonApiBodyArray(), 400);
             }
-            $objectToDescribe = self::getObjectOfTypeById($objectClass, $objectId);
+            $objectToDescribe = static::getObjectOfTypeById($objectClass, $objectId);
 
             if (!$objectToDescribe) {
                 return $this->createJsonApiBodyResponseFrom(static::objectNotFoundJsonApiBodyError(), 404);
@@ -692,6 +696,18 @@ abstract class JsonApiController extends LoginProtectedApiController {
                     JsonApi::TAG_ERROR_TITLE => 'Locked',
                     JsonApi::TAG_ERROR_DETAIL => $message ? $message : 'Object has been made inaccessible',
                     JsonApi::TAG_ERROR_CODE => 'JAC_021'
+                ]
+            ]
+        ];
+    }
+
+    public static function invalidPageSizeJsonApiBodyError($minPageSize, $maxPageSize) {
+        return [
+            JsonApi::TAG_ERRORS => [
+                [
+                    JsonApi::TAG_ERROR_TITLE => 'Incorrect pagination query params',
+                    JsonApi::TAG_ERROR_DETAIL => "Please use a page size between $minPageSize and $maxPageSize",
+                    JsonApi::TAG_ERROR_CODE => 'JAC_022'
                 ]
             ]
         ];

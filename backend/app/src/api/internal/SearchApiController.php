@@ -232,22 +232,6 @@ class SearchApiController extends JsonApiController {
             }
 
             /**
-             * Add sort
-             */
-            $sort = $request->getVar('sort');
-            $sortString = '';
-            if ($sort && strtolower($sort) == 'lastedited') {
-                //Temporarily removed due to time constraints. works in docker, but not in TEST or STAGING
-//                $sortString = " ORDER BY LastEdited ASC";
-            } else if (strtolower($sort) == '-lastedited') {
-                //Temporarily removed due to time constraints. works in docker, but not in TEST or STAGING
-//                $sortString = " ORDER BY LastEdited DESC";
-            } else if ($sort) {
-                return $this->createJsonApiBodyResponseFrom(static::invalidSortJsonApiBodyError("Only lastEdited and -lastEdited supported"), 401);
-            }
-            $searchQuery .= $sortString;
-
-            /**
              * Add limit
              */
 

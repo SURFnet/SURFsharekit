@@ -305,6 +305,7 @@ class TemplateMetaField extends DataObject {
             "validationRegex" => $metaFieldType->ValidationRegex,
             "required" => $this->IsRequired,
             "retainOrder" => $metaField->RetainOptionOrder ? 1 : 0,
+            "jsonKey" => $metaField->JsonKey,
         ];
         if ($cacheItem) {
             SimpleCacheItem::cacheFor($this, 'Description', $jsonArray);

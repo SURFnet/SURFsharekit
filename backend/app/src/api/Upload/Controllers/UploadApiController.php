@@ -62,6 +62,7 @@ class UploadApiController extends CORSController {
             $errorResponse = ResponseHelper::errorResponse($e->getApiError()->getCode(), $e->getApiError()->getDescription(), $e->getApiError()->getMessage());
             return ResponseHelper::responseInternalServerError($errorResponse);
         } catch (Exception $e) {
+            Logger::errorLog($e->getMessage());
             if (method_exists($e, "getResponse") && $e->getResponse()->getStatusCode() == 404) {
                 $errorResponse = ResponseHelper::errorResponse(ApiErrorConstant::GA_NF_001["code"], ApiErrorConstant::GA_NF_001["description"], ApiErrorConstant::GA_NF_001["message"]);
                 return ResponseHelper::responseBadRequest($errorResponse);
@@ -78,7 +79,10 @@ class UploadApiController extends CORSController {
         } finally {
             try {
                 DB::get_conn()->transactionRollback();
-            } catch (Throwable $e) {}
+            } catch (Throwable $e) {
+                Logger::errorLog("Failed rolling back DB transaction");
+                Logger::errorLog($e->getMessage());
+            }
         }
     }
 }

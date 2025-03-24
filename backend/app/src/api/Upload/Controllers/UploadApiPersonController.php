@@ -120,13 +120,16 @@ class UploadApiPersonController extends UploadApiAuthController {
             throw new BadRequestException(ApiErrorConstant::UA_BR_007,"The provided position does not exist. please choose from this list: " . implode(', ', Person::getPositionOptions()));
         }
 
-        if (!Mod11Validator::Mod11DaiValidator($createPersonRequest->dai)) {
+        if ($createPersonRequest->dai !== null && !Mod11Validator::Mod11DaiValidator($createPersonRequest->dai)) {
             throw new BadRequestException(ApiErrorConstant::UA_BR_009);
         }
 
-        if (!Mod11Validator::Mod11IsniOrcidValidator($createPersonRequest->isni) || !Mod11Validator::Mod11IsniOrcidValidator($createPersonRequest->orcid)) {
-            $errorCode = !Mod11Validator::Mod11IsniOrcidValidator($createPersonRequest->isni) ? ApiErrorConstant::UA_BR_010 : ApiErrorConstant::UA_BR_011;
-            throw new BadRequestException($errorCode);
+        if ($createPersonRequest->isni !== null && !Mod11Validator::Mod11IsniOrcidValidator($createPersonRequest->isni)) {
+            throw new BadRequestException(ApiErrorConstant::UA_BR_010);
+        }
+
+        if ($createPersonRequest->orcid !== null && !Mod11Validator::Mod11IsniOrcidValidator($createPersonRequest->orcid)) {
+            throw new BadRequestException(ApiErrorConstant::UA_BR_011);
         }
 
         $personService = PersonService::create();

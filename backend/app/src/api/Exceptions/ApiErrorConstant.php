@@ -7,7 +7,7 @@ class ApiErrorConstant {
     const GA_BR_001 = ["code" => "GA_BR_001", "description" => "Incorrect post body", "message" => "Incorrect post body"];
     const GA_BR_002 = ["code" => "GA_BR_002", "description" => "Missing parameters", "message" => "There are one or more requests parameters missing"];
     const GA_BR_003 = [ "code" => "GA_BR_003", "description" => "Unsupported filter", "message" => "Filter not supported for this object type"];
-    const GA_BR_004 = ["code" => "GA_BR_004", "description" => "Missing and/or invalid fields", "message" => "There are one or more fields missing or invalid"];
+    const GA_BR_004 = ["code" => "GA_BR_004", "description" => "Validation error", "message" => "There are one or more fields missing or invalid"];
     const GA_BR_005 = ["code" => "GA_BR_005", "description" => "Resource already exists", "message" => "The provided resource already exists"];
     const GA_BR_006 = ["code" => "GA_BR_006", "description" => "Invalid filter", "message" => "One or more of the provided filters is unsupported or invalid"];
     const GA_NF_001 = ["code" => "GA_NF_001", "description" => "Unknown request path", "message" => "Request path could not be found"];

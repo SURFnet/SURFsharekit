@@ -17,6 +17,9 @@ use Zooma\SilverStripe\Models\SwaggerDocsHelper;
  * This class is the entrypoint for the external api to list all repoItems the user has access to
  */
 class ExternalJsonApiController extends JsonApiController {
+    var $maxPageSize = 1000;
+    var $minPageSize = 1;
+
     protected $channel;
 
     /**

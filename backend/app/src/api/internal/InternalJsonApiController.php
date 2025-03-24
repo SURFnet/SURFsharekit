@@ -205,7 +205,22 @@ class InternalJsonApiController extends JsonApiController {
                 }
             }
         }
-        return InstituteScoper::getAll($objectClass);
+        $dataList = InstituteScoper::getAll($objectClass);
+
+        // Additional check to filter out the RepoItemFiles of which canView returns false
+        if ($objectClass == RepoItemFile::class) {
+            $dataListFilteredOnCanViewPermission = $dataList->filterByCallback(function ($dataObject) {
+                return $dataObject->canView();
+            });
+
+            $idsToFilterOn = $dataListFilteredOnCanViewPermission->column('ID');
+            if (count($idsToFilterOn) == 0) {
+                $idsToFilterOn = [0];
+            }
+
+            $dataList = $dataList->filter(["ID" => $idsToFilterOn]);
+        }
+        return $dataList;
     }
 
     protected function deleteToObject($objectClass, $requestBody, $prexistingObject, $relationshipToModify = null) {

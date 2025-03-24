@@ -318,7 +318,7 @@ class S3FileUploadApiController extends LoginProtectedApiController {
         }
 
         // Check if the extension of the provided file(s) is allowed
-        $ext = pathinfo($requestBody['fileName'], PATHINFO_EXTENSION);
+        $ext = strtolower(pathinfo($requestBody['fileName'], PATHINFO_EXTENSION));
         $allowedExtensions = MimetypeHelper::getWhitelistedExtensions();
 
         if (!in_array($ext, $allowedExtensions)) {

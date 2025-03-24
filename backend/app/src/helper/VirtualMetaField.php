@@ -163,7 +163,10 @@ class VirtualMetaField {
                 return self::getJSONClassificationTaxonomy($repoItem, $context);
                 break;
             case 'json:vocabulary':
-                return self::getJSONVocabulary($repoItem, $context);
+                return self::getJSONTreeMultiSelect($repoItem, $context);
+                break;
+            case 'json:domain':
+                return self::getJSONTreeMultiSelect($repoItem, $context);
                 break;
             case 'json:diiIdentifier':
                 return self::getJSONDiiIdentifier($repoItem, $context);
@@ -693,7 +696,7 @@ class VirtualMetaField {
         return $taxonPathNode;
     }
 
-    private static function getJSONVocabulary(RepoItem $repoItem, $context) {
+    private static function getJSONTreeMultiSelect(RepoItem $repoItem, $context) {
         $repoItemMetaFieldForMetaField = self::getRepoItemMetaField($repoItem, $context);
         $taxonPathNode = [];
         if ($repoItemMetaFieldForMetaField) {

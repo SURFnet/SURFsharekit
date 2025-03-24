@@ -20,7 +20,7 @@ class FileUploadService implements IFileUploadService {
     use Configurable;
 
     function processFileUpload($file, FileUploadStrategy $strategy, $existingFile = null) {
-        $uploadedFileExtension = pathinfo($file["name"], PATHINFO_EXTENSION);
+        $uploadedFileExtension = strtolower(pathinfo($file["name"], PATHINFO_EXTENSION));
         $allowedExtensions = $strategy->setAllowedMimeTypes();
         $maxFileSize = $strategy->getMaxFileSize();
 

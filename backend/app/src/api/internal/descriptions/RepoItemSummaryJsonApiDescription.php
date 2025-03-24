@@ -96,7 +96,7 @@ class RepoItemSummaryJsonApiDescription extends DataObjectJsonApiDescription {
                 $filterValues = explode(',', $filterValue);
                 $filters = [];
                 foreach ($filterValues as $fv) {
-                    $filters[] = ["SurfSharekit_RepoItem.RepoType $modifier '$fv'"];
+                    $filters[] = ["SurfSharekit_RepoItem.RepoType $modifier ?" => $fv];
                 }
                 return $datalist->whereAny($filters);
             };

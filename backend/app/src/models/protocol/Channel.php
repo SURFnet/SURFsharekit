@@ -43,11 +43,13 @@ class Channel extends DataObject {
         'SkipAPIKeyValidation' => 'Int(0)',
         'CallbackUrl' => 'Varchar(255)',
         'PushEnabled' => 'Boolean',
-        'IsPersonChannel' => 'Boolean(0)'
+        'IsPersonChannel' => 'Boolean(0)',
+        'IsInstituteChannel' => 'Boolean(0)'
     ];
 
     private static $field_labels = [
-        'IsPersonChannel' => 'Channel can return Persons'
+        'IsPersonChannel' => 'Channel can return Persons',
+        'IsInstituteChannel' => 'Channel can return Institutes'
     ];
 
     private static $has_one = [
@@ -84,6 +86,7 @@ class Channel extends DataObject {
         $fields->dataFieldByName('CallbackUrl')->setDescription('This is the url where RepoItem changes are pushed to on creation, deletion or update');
         $fields->dataFieldByName('PushEnabled')->setDescription('Enabling this functionality makes sure that changes in RepoItems are send to the callback url defined above');
         $fields->dataFieldByName('IsPersonChannel')->setDescription('Persons are ALWAYS returned in JSON format, regardless of the selected protocol. Also, Channel and protocol filters do NOT affect the data that is returned for Persons');
+        $fields->dataFieldByName('IsInstituteChannel')->setDescription('Institutes are ALWAYS returned in JSON format, regardless of the selected protocol. Also, Channel and protocol filters do NOT affect the data that is returned for Institutes');
         $fields->dataFieldByName('ProtocolID')->setDescription('After protocol change, cache needs to be rebuild');
 
         return $fields;

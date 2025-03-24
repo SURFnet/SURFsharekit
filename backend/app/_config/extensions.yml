@@ -140,3 +140,7 @@ SurfSharekit\Models\UploadApiClientConfig:
   extensions:
     - UuidExtension
     - UuidRelationExtension
+
+SurfSharekit\Models\ExportItem:
+  extensions:
+    - UuidExtension

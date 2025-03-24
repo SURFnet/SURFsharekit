@@ -2,12 +2,14 @@
 
 use League\Csv\Writer;
 use Ramsey\Uuid\Uuid;
+use SilverStripe\Assets\File;
 use SilverStripe\Control\Controller;
 use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\ValidationException;
 use SilverStripe\Security\Security;
 use SurfSharekit\Models\Cache_RecordNode;
+use SurfSharekit\Models\ExportItem;
 use SurfSharekit\Models\Helper\Logger;
 use SurfSharekit\Models\MetaField;
 use SurfSharekit\Models\Protocol;
@@ -49,7 +51,7 @@ class DataObjectCSVFileEncoder {
         return (string)$csvWriter;
     }
 
-    public static function repoItemListToCSVFile(DataList $repoItems, $purgeCache = false) {
+    public static function repoItemListToCSVFile(ExportItem $exportItem, DataList $repoItems, $purgeCache = false) {
         $uuid = Uuid::uuid4();
         $fileName = Security::getCurrentUser()->ID . "-export-$uuid.csv";
         $canReportMethod = function (DataObject $viewMaybeObj) {
@@ -58,18 +60,17 @@ class DataObjectCSVFileEncoder {
         $repoItems = $repoItems->filterByCallback($canReportMethod);
         $csvString = static::getRepoItemsCSV($repoItems, $purgeCache);
 
-        $csvFile = "assets/$fileName";
-        file_put_contents($csvFile, $csvString);
-
-        $file = new ReportFile();
-        $file->setFromLocalFile($csvFile);
+        $file = new File();
+        $file->setFromString($csvString, $fileName);
         $file->write();
 
-        Controller::curr()->getResponse()->addHeader('Location', $file->getStreamURL());
-        return 'redirect to download';
+        $exportItem->FileID = $file->ID;
+        $exportItem->write();
+
+        return true;
     }
 
-    public static function statsDownloadsToCSVFile(DataList $downloadItems) {
+    public static function statsDownloadsToCSVFile(ExportItem $exportItem, DataList $downloadItems) {
         $downloadFileIds = $downloadItems->columnUnique('RepoItemFileID');
         $statsData = [];
         // TODO: performance verbetering mogelijk
@@ -108,18 +109,22 @@ class DataObjectCSVFileEncoder {
         $fileName = Security::getCurrentUser()->ID . "-downloads-$uuid.csv";
         $csvString = (string)$csvWriter;
 
-        $csvFile = "assets/$fileName";
+        $csvFile = tempnam(sys_get_temp_dir(), 'TMPCSV-');
         file_put_contents($csvFile, $csvString);
 
-        $file = new ReportFile();
-        $file->setFromLocalFile($csvFile);
+        $file = new File();
+        $file->setFromLocalFile($csvFile, $fileName);
         $file->write();
 
-        Controller::curr()->getResponse()->addHeader('Location', $file->getStreamURL());
-        return 'redirect to download';
+        unlink($csvFile);
+
+        $exportItem->FileID = $file->ID;
+        $exportItem->write();
+
+        return true;
     }
 
-    public static function repoItemStatsToCSVFile(DataList $repoItems, $purgeCache = false) {
+    public static function repoItemStatsToCSVFile(ExportItem $exportItem, DataList $repoItems, $purgeCache = false) {
         $canReportMethod = function (DataObject $viewMaybeObj) {
             return $viewMaybeObj->canReport(Security::getCurrentUser());
         };
@@ -167,15 +172,19 @@ class DataObjectCSVFileEncoder {
         $fileName = Security::getCurrentUser()->ID . "-stats-$uuid.csv";
         $csvString = (string)$csvWriter;
 
-        $csvFile = "assets/$fileName";
+        $csvFile = tempnam(sys_get_temp_dir(), 'TMPCSV-');
         file_put_contents($csvFile, $csvString);
 
-        $file = new ReportFile();
-        $file->setFromLocalFile($csvFile);
+        $file = new File();
+        $file->setFromLocalFile($csvFile, $fileName);
         $file->write();
 
-        Controller::curr()->getResponse()->addHeader('Location', $file->getStreamURL());
-        return 'redirect to download';
+        unlink($csvFile);
+
+        $exportItem->FileID = $file->ID;
+        $exportItem->write();
+
+        return true;
     }
 
     public static function getCSVRowFor($repoItem, bool $purgeCache, $describingProtocol) {

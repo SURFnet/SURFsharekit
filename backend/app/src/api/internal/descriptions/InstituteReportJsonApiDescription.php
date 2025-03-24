@@ -29,7 +29,7 @@ class InstituteReportJsonApiDescription extends DataObjectJsonApiDescription {
                 $filters = [];
                 foreach ($filterValues as $fv) {
                     if (Uuid::isValid($fv)) {
-                        $filters[] = ["SurfSharekit_Institute.Uuid $modifier '$fv'"];
+                        $filters[] = ["SurfSharekit_Institute.Uuid $modifier ?" => $fv];
                     } else {
                         throw new Exception('Invalid ID, use UUID4');
                     }

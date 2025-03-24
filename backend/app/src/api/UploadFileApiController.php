@@ -159,7 +159,7 @@ class UploadFileApiController extends JsonApiController {
         }
 
         if(is_null($fileTypeExtension)){
-            $ext = pathinfo($this->postFile['name'], PATHINFO_EXTENSION);
+            $ext = strtolower(pathinfo($this->postFile['name'], PATHINFO_EXTENSION));
 
             $allowedExtensions = MimetypeHelper::getWhitelistedExtensions();
 //            $allowedExtensions = Config::inst()->get(File::class, 'allowed_extensions');

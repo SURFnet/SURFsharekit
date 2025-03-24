@@ -294,10 +294,12 @@ class SramLoginApiController extends CORSController {
                     if (!$consortiumInstitute || !$consortiumInstitute->exists() ) {
 
                         if (Institute::get()->filter(['SRAMCode' => $organization, 'LicenseActive' => true])->count() == 0) {
+                            Logger::infoLog("No institute found with SRAMCode $organization in combination with an active license");
                             continue;
                         }
 
                         if (null !== $title = $this->getConsortiumTitle($urn)) {
+                            Logger::infoLog("Creating new institute $title (consortium) with SRAMCode $urn");
                             $consortiumInstitute = Institute::create([
                                 'Title' => $title,
                                 'SRAMCode' => $urn,
@@ -424,10 +426,18 @@ class SramLoginApiController extends CORSController {
     private static function getConextCodeFromExternalAffilliation($externalAffiliation) {
         $splitByAtSign = explode('@', $externalAffiliation);
         if(count($splitByAtSign) > 1){
-            return $splitByAtSign[count($splitByAtSign)-1];
+            $fullInstituteDomain = $splitByAtSign[count($splitByAtSign)-1]; // eg hb.institute.nl
+            $explodedFullInstituteDomain = explode(".", $fullInstituteDomain);
+
+            // Make sure to only get the root domain as the part after the @ can be a subdomain. So when exploding on '.' we only need the last 2 elements from the resulting array
+            if (count($explodedFullInstituteDomain) > 2) {
+                return $explodedFullInstituteDomain[count($explodedFullInstituteDomain)-2] . "."  . $explodedFullInstituteDomain[count($explodedFullInstituteDomain)-1];
+            }
+            return $fullInstituteDomain;
         }
         return $externalAffiliation;
     }
+
     private static function getFunctionFromExternalAffiliation($externalAffiliation) {
         $splitByAtSign = explode('@', $externalAffiliation);
         if(count($splitByAtSign) > 1){

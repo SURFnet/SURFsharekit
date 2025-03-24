@@ -8,7 +8,7 @@ use SurfSharekit\Models\MimetypeObject;
 class MimetypeHelper {
 
     public static function getWhitelistedExtensions() {
-        return MimetypeObject::get()->filter('Whitelist', true)->column('Extension');
+        return array_map('strtolower', MimetypeObject::get()->filter('Whitelist', true)->column('Extension'));
     }
 
     public static function getMimeType(?string $fileName, ?string $extension){

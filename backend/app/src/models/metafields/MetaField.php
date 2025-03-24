@@ -87,6 +87,10 @@ class MetaField extends DataObject {
         'MetaFieldType.Title' => 'Type',
     ];
 
+    private static $field_labels = [
+        'JsonUrl' => 'MetaFieldOption Source Url'
+    ];
+
     public static function ensureDropdownField(DataObject $object, FieldList $cmsFields, $fieldName = 'MetaFieldID', $title = 'MetaField', $emptyDefault = false, $emptyString = '') {
         $metaFieldField = $cmsFields->dataFieldByName($fieldName);
         $readOnly = $metaFieldField->isReadonly();

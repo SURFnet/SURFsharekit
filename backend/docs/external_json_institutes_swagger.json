@@ -1,0 +1,363 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "External Organisation JSON:API",
+        "description": "The Organisation API exposes all organisations registered in SURFsharekit.\n\n  ## Filtering \n\n The SURFsharekit Upload API offers a diverse range of filtering options for person lookup. These can be specified in the query parameters of the request. Filters can be combined to create an even more refined and specific filter. See the following examples on how to use these filters: \n \n `GET https://api.surfsharekit.nl/api/upload/v1/institutes?filter[name][LIKE]=%Hogeschool%`  \n \n `GET https://api.surfsharekit.nl/api/upload/v1/institutes?filter[name][LIKE]=%Hogeschool%&filter[inactive][EQ]=0`  \n \n \n ### Supported filter modes: \n\n `EQ` Equal to \n\n `NEQ` Not equal to \n\n `LIKE` contains value - pre and postfix value with % ,f.e. %johndoe%\n\n `NOT LIKE` does not contain value - pre and postfix value with % ,f.e. %johndoe% \n\n `LT` lower than \n\n `LE` Lower than or equal to \n\n `GT` Greater than \n\n `GE` Greater than or equal to \n \n \n ## JSON filtering\n \n The API also offers the possibility to filter using JSON in a specific format, for example:\n \n    { \n      \"name\": \"Hogeschool Utrecht\",\n      \"OR\": {\n        \"OR\": {\n          \"level\": \"123\",\n          \"name\": \"Hogeschool Leiden\",\n          \"AND\": {\n            \"level\": \"organisation\"\n          }\n        },\n        \"inactive\": \"0\",\n        \"level\": \"consortium\"\n      }\n    } \n   \n    \nThis translates in a where query like this:\n\n    \n    (\n      ( Name = ?  AND ( \n        Inactive = ? OR Level = ?  OR ( \n          Level = ? OR Name = ? OR ( \n              Level = ?  \n            )\n          )\n        )\n      )\n    )\n      \nThe JSON can then be used as follows: \n```\nGET https://api.surfsharekit.nl/api/jsonapi/channel/v1/edusources/institutes?filter={\"name\":\"Hogeschool Utrecht\",\"OR\":{\"OR\":{\"level\":\"123\",\"name\":\"Hogeschool Leiden\",\"AND\":{\"level\":\"organisation\"}},\"inactive\":\"0\",\"level\":\"consortium\"}}\n```\n\n## Filterable fields\nThe fields available for filtering are specified below:\n- inactive\n- isHidden\n- name\n- level\n- type \n- id\n- ror\n- parentId",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "https://url.nl"
+        }
+    ],
+    "security": [
+        {
+            "BearerAuth": []
+        }
+    ],
+    "paths": {
+        "/{channel}/institutes": {
+            "get": {
+                "tags": [
+                    "Institutes"
+                ],
+                "summary": "This endpoint allows you to retrieve all institutes registered in SURFSharekit",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "channel",
+                        "description": "Select the desired channel to retrieve institutes from",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "page[size]",
+                        "description": "Set the total amount of items for that page",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "page[number]",
+                        "description": "Set the page number",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "meta": {
+                                            "type": "object",
+                                            "properties": {
+                                                "totalCount": {
+                                                    "type": "integer",
+                                                    "example": 1242
+                                                }
+                                            }
+                                        },
+                                        "filters": {
+                                            "type": "array",
+                                            "items": {}
+                                        },
+                                        "links": {
+                                            "type": "object",
+                                            "properties": {
+                                                "first": {
+                                                    "type": "string",
+                                                    "example": "/api/jsonapi/channel/v1/edusources/institutes?page[size]=2&page[number]=1"
+                                                },
+                                                "self": {
+                                                    "type": "string",
+                                                    "example": "/api/jsonapi/channel/v1/edusources/institutes?page[size]=2&page[number]=1"
+                                                },
+                                                "next": {
+                                                    "type": "string",
+                                                    "example": "/api/jsonapi/channel/v1/edusources/institutes?page[size]=2&page[number]=2"
+                                                },
+                                                "last": {
+                                                    "type": "string",
+                                                    "example": "/api/jsonapi/channel/v1/edusources/institutes?page[size]=2&page[number]=1112"
+                                                }
+                                            }
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Institute"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Method not Allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/{channel}/institutes/{id}": {
+            "get": {
+                "tags": [
+                    "Institutes"
+                ],
+                "summary": "This endpoint allows you to retrieve an institute by identifier",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "channel",
+                        "description": "Select the desired channel to retrieve a specific institute from",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "description": "The UUID of an institute",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "page[size]",
+                        "description": "Set the total amount of items for that page",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "page[number]",
+                        "description": "Set the page number",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Succesfull response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Institute"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Method not Allowed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "BearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT"
+            }
+        },
+        "schemas": {
+            "Error": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string"
+                    },
+                    "detail": {
+                        "type": "string"
+                    },
+                    "code": {
+                        "type": "string"
+                    }
+                }
+            },
+            "ConsortiumChild": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "example": "d538801a-9bf5-4e7a-8e90-3ee4110cf6dc"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Hogeschool Leiden"
+                    },
+                    "parentId": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": null
+                    },
+                    "parentName": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": null
+                    },
+                    "ror": {
+                        "type": "string",
+                        "example": "https://ror.org/02mhbdp94"
+                    },
+                    "level": {
+                        "type": "string",
+                        "example": "consortium"
+                    },
+                    "description": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": null
+                    },
+                    "inactive": {
+                        "type": "integer",
+                        "example": 0
+                    },
+                    "secretary": {
+                        "type": "integer",
+                        "example": 1
+                    }
+                }
+            },
+            "Institute": {
+                "type": "object",
+                "properties": {
+                    "attributes": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "example": "Hogeschool Leiden"
+                            },
+                            "parentId": {
+                                "type": "string",
+                                "nullable": true,
+                                "example": null
+                            },
+                            "parentName": {
+                                "type": "string",
+                                "nullable": true,
+                                "example": null
+                            },
+                            "ror": {
+                                "type": "string",
+                                "example": "https://ror.org/02mhbdp94"
+                            },
+                            "level": {
+                                "type": "string",
+                                "example": "consortium"
+                            },
+                            "description": {
+                                "type": "string",
+                                "nullable": true,
+                                "example": null
+                            },
+                            "inactive": {
+                                "type": "integer",
+                                "example": 0
+                            },
+                            "consortiumChildren": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/ConsortiumChild"
+                                }
+                            }
+                        }
+                    },
+                    "type": {
+                        "type": "string",
+                        "example": "institute"
+                    },
+                    "id": {
+                        "type": "string",
+                        "example": "b57a30ac-276b-4de1-8733-b75297621736"
+                    }
+                }
+            }
+        }
+    }
+}

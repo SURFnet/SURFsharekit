@@ -120,7 +120,7 @@ class PersonJsonApiDescription extends DataObjectJsonApiDescription {
 
                  return $datalist->leftJoin('Group_Members', '`Group_Members`.`MemberID` = `Member`.`ID`')
                     ->leftJoin('Group', '`Group`.`ID` = `Group_Members`.`GroupID`')
-                    ->where("`Group`.`Uuid` $modifier '$filterValue'");
+                     ->where(["`Group`.`Uuid` $modifier ?" => $filterValue]);
             };
         }
 

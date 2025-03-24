@@ -129,7 +129,7 @@ class ProtocolNode extends DataObject {
         $fields = parent::getCMSFields();
         /** @var DropdownField $virtualMetaField */
         $virtualMetaField = $fields->dataFieldByName('VirtualMetaField');
-        $virtualMetaField->setEmptyString('Select a vritual metafield');
+        $virtualMetaField->setEmptyString('Select a virtual metafield');
         $virtualMetaField->setHasEmptyDefault(true);
 
         if ($this->isInDB()) {
@@ -572,7 +572,12 @@ class ProtocolNode extends DataObject {
                                 $this->addAttributesFunction($node);
                             }
                             foreach ($this->ChildrenNodes() as $childNode) {
-                                $this->addValueToChildNode($childNode, $mv, $node);
+                                // if childNode has metaField set, than
+                                if($childNode->metaField()->exists()) {
+                                    $childNode->addTo($repoItem, $node);
+                                }else {
+                                    $this->addValueToChildNode($childNode, $mv, $node);
+                                }
                             }
                         }
                     }

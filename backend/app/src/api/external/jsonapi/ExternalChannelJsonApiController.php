@@ -5,11 +5,14 @@ namespace SurfSharekit\Api;
 use Exception;
 use ExternalPersonJsonApiDescription;
 use ExternalRepoItemChannelJsonApiDescription;
+use SilverStripe\api\external\jsonapi\descriptions\ExternalInstituteJsonApiDescription;
+use SilverStripe\api\external\jsonapi\ExternalInstituteJsonApiController;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Security\Member;
 use SilverStripe\Security\Security;
 use SurfSharekit\Models\Channel;
 use SurfSharekit\Models\Helper\Logger;
+use SurfSharekit\Models\Institute;
 use SurfSharekit\Models\Person;
 use SurfSharekit\Models\RepoItem;
 
@@ -43,6 +46,10 @@ class ExternalChannelJsonApiController extends ExternalJsonApiController {
         
         if ($this->channel && $this->channel->IsPersonChannel) {
             $classToDescriptionMap[Person::class] = new ExternalPersonJsonApiDescription($this->channel);
+        }
+
+        if ($this->channel && $this->channel->IsInstituteChannel) {
+            $classToDescriptionMap[Institute::class] = new ExternalInstituteJsonApiDescription($this->channel);
         }
 
         if ($this->channel) {
@@ -126,5 +133,13 @@ class ExternalChannelJsonApiController extends ExternalJsonApiController {
             throw new Exception("Sparse fields not supported");
         }
         return $objectClass::get();
+    }
+
+    protected function canViewObjectToDescribe($objectToDescribe){
+        if ($objectToDescribe instanceof Institute) {
+            return true;
+        } else {
+            return parent::canViewObjectToDescribe($objectToDescribe);
+        }
     }
 }

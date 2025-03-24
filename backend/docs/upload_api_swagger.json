@@ -880,7 +880,7 @@
                             "type": "string"
                         },
                         "required": true,
-                        "description": "Uuid of the RepoItem to get"
+                        "description": "Uuid of the RepoItem to update the status of"
                     }
                 ],
                 "responses": {
