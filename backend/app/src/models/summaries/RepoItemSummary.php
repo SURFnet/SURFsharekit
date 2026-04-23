@@ -2,6 +2,8 @@
 
 namespace SurfSharekit\Models;
 
+use SilverStripe\Control\Director;
+use SilverStripe\Core\Environment;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Security\Permission;
 use SilverStripe\Security\PermissionProvider;
@@ -61,6 +63,7 @@ class RepoItemSummary extends DataObject implements PermissionProvider {
             'lastEdited' => $repoItem->LastEdited,
             'created' => $repoItem->Created,
             'authorName' => $repoItem->Owner()->FullName,
+            'instituteName' => $repoItem->Institute()->Title,
             'permissions' => $repoItem->LoggedInUserPermissions,
             'isRemoved' => $repoItem->IsRemoved,
             'isArchived' => $repoItem->IsArchived,
@@ -102,7 +105,7 @@ class RepoItemSummary extends DataObject implements PermissionProvider {
             if ($urlRepoItemMetaField && $urlRepoItemMetaField->exists()) {
                 $linkValue = $urlRepoItemMetaField->RepoItemMetaFieldValues()->filter(['IsRemoved' => 0])->first();
                 if ($linkValue && $linkValue->exists()) {
-                    $summaryValues['url'] = $linkValue->Value;
+                    $summaryValues['url'] = Environment::getEnv('SS_BASE_URL') . '/api/v1/links/' . $repoItem->Uuid . "?utm_source=surfsharekit.nl";
                 }
             }
         }
@@ -265,7 +268,8 @@ class RepoItemSummary extends DataObject implements PermissionProvider {
             'canView' => true,
             'canEdit' => true,
             'canDelete' => true,
-            'canCopy' => $this->RepoItem()->canCopy(Security::getCurrentUser())
+            'canCopy' => $this->RepoItem()->canCopy(Security::getCurrentUser()),
+            'canArchive' => $this->RepoItem()->canArchive(Security::getCurrentUser())
         ];
     }
 

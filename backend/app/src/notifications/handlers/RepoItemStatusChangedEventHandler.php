@@ -31,6 +31,14 @@ class RepoItemStatusChangedEventHandler extends NotificationEventHandler {
 
                 switch ($relatedObject->Status) {
                     case "Published":
+                        echo("[PROCESSING_EVENT] - Sending an email to linked inactive involved persons...");
+                        echo("<br>");
+                        Logger::debugLog("[PROCESSING_EVENT] - Sending [SURF Sharekit | Profiel activeren SURFsharekit] to linked inactive involved persons...");
+                        $persons = $relatedObject->getInvolvedPersons();
+                        /** @var Person $person */
+                        foreach ($persons as $person) {
+                            $person->trySendInvitationMail();
+                        }
                     case "Approved":
                         $notificationKey = NotificationKeyGenerator::generate($relatedObject->RepoType, NotificationAction::APPROVED, NotificationType::EMAIL);
                         if ($personConfig && $personConfig->exists() && $personConfig->isNotificationEnabled($notificationKey)) {
@@ -42,10 +50,7 @@ class RepoItemStatusChangedEventHandler extends NotificationEventHandler {
                         }
                         break;
                     case "Submitted":
-                        $ownerEmail = $relatedObject->Owner()->Email;
-                        if(is_null($ownerEmail)){
-                            $ownerEmail = '';
-                        }
+                        $ownerEmail = $relatedObject->Owner()->Email ?? null;
                         $personsToMail = $this->getAllPersonsToMail($relatedObject, $ownerEmail);
                         echo("[PROCESSING_EVENT] - Sending an email to " . count($personsToMail) . " unique email addresses...");
                         echo("<br>");
@@ -79,28 +84,5 @@ class RepoItemStatusChangedEventHandler extends NotificationEventHandler {
                 }
             }
         }
-    }
-
-    private function getAllPersonsToMail(RepoItem $repoItem, string $emailToExclude): array {
-        foreach (Constants::ALL_REPOTYPES as $type) {
-            $typeUpper = strtoupper($type);
-            $clauses[] = "(SurfSharekit_RepoItem.RepoType = '$type' AND (Permission.Code = 'REPOITEM_PUBLISH_$typeUpper' OR PermissionRoleCode.Code = 'REPOITEM_PUBLISH_$typeUpper'))";
-        }
-
-        $personsToMail = Person::get()
-            ->innerJoin('Group_Members', 'Group_Members.MemberID = SurfSharekit_Person.ID')
-            ->innerJoin('Group', 'Group_Members.GroupID = Group.ID')
-            ->innerJoin('(' . InstituteScoper::getInstitutesOfUpperScope([$repoItem->InstituteID])->sql() . ')', 'gi.ID = Group.InstituteID', 'gi')
-            //get parents of groups
-            ->leftJoin('Group_Roles', 'Group_Roles.GroupID = Group.ID')
-            //join on permissions
-            ->leftJoin('PermissionRoleCode', 'PermissionRoleCode.RoleID = Group_Roles.PermissionRoleID')
-            ->leftJoin('Permission', 'Permission.GroupID = Group_Roles.GroupID')
-            ->innerJoin('SurfSharekit_RepoItem', "SurfSharekit_RepoItem.ID = $repoItem->ID")
-            ->whereAny($clauses)
-            ->filter('Email:not', [$emailToExclude, '', null])
-            ->leftJoin('SurfSharekit_PersonConfig', 'SurfSharekit_Person.PersonConfigID = SurfSharekit_PersonConfig.ID');
-        // Exclude empty email to prevent memory exhaust
-        return $personsToMail->columnUnique('Email');
     }
 }

@@ -3,6 +3,7 @@
 namespace SurfSharekit\models\notifications;
 
 use PermissionProviderTrait;
+use SilverStripe\EnvironmentExport\Exportable;
 use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\RequiredFields;
 use SilverStripe\ORM\DataObject;
@@ -22,6 +23,7 @@ use UuidRelationExtension;
  */
 class NotificationType extends DataObject implements PermissionProvider {
     use PermissionProviderTrait;
+    use Exportable;
 
     const EMAIL = "Email";
 
@@ -72,6 +74,10 @@ class NotificationType extends DataObject implements PermissionProvider {
 
     protected function onBeforeWrite() {
         parent::onBeforeWrite();
+
+        if ($this->ImportTaskWrite) {
+            return;
+        }
 
         if (!$this->isInDB()) {
             $latestVersion = NotificationVersion::get()->sort("VersionCode DESC")->first();

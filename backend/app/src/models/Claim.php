@@ -6,6 +6,7 @@ use SilverStripe\ORM\DataObject;
 use SilverStripe\Security\Permission;
 use SurfSharekit\Api\InstituteScoper;
 use SurfSharekit\constants\RoleConstant;
+use SurfSharekit\Extensions\Security;
 use SurfSharekit\Models\Helper\Constants;
 use SurfSharekit\Models\Helper\NotificationEventCreator;
 use UuidExtension;
@@ -54,17 +55,25 @@ class Claim extends DataObject {
     }
 
     public function canView($member = null) {
+        if ($member === null) {
+            $member = Security::getCurrentUser();
+        }
+
         if ($member) {
             return parent::canView($member) || $member->ID == $this->CreatedByID || $this->getPersonsToEditClaim()->filter('ID', $member->ID)->count();
         }
-        return parent::canView($member);
+        return false;
     }
 
     public function canEdit($member = null) {
+        if ($member === null) {
+            $member = Security::getCurrentUser();
+        }
+
         if ($member) {
             return parent::canEdit($member) || $member->ID == $this->CreatedByID || $this->getPersonsToEditClaim()->filter('ID', $member->ID)->count();
         }
-        return parent::canEdit($member);
+        return false;
     }
 
     function getObjectUuid() {

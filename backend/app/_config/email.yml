@@ -1,74 +1,32 @@
 ---
-Name: zooma-email
-After: '#emailconfig'
----
-
----
-Only:
-  environment: 'live'
+Name: zooma-mail-config
+After:
+  - '#mailer'
 ---
 SilverStripe\Core\Injector\Injector:
-  Swift_Transport:
-    class: Swift_SmtpTransport
-    properties:
-      Host: localhost
-      Port: 25
+  Symfony\Component\Mailer\Transport\TransportInterface:
+    constructor: null  # Default value breaks the factory override
+    factory: null  # Disabling the factory gives more control to this yml file
 
 ---
-Only:
-  environment: 'acceptance'
----
-SilverStripe\Core\Injector\Injector:
-  Swift_Transport:
-    class: Swift_SmtpTransport
-    properties:
-      Host: localhost
-      Port: 25
-
----
-Only:
-  environment: 'staging'
----
-SilverStripe\Core\Injector\Injector:
-  Swift_Transport:
-    class: Swift_SmtpTransport
-    properties:
-      Host: email-smtp.eu-west-1.amazonaws.com
-      Port: 587
-      Encryption: tls
-    calls:
-      Username: [ setUsername, ["`SES_SMTP_USERNAME`"] ] # CONSTANTS IN ENV
-      Password: [ setPassword, ["`SES_SMTP_PASSWORD`"] ]
-      AuthMode: [ setAuthMode, ['login'] ]
-
----
-Only:
-  environment: 'test'
----
-SilverStripe\Core\Injector\Injector:
-  Swift_Transport:
-    class: Swift_SmtpTransport
-    properties:
-      Host: email-smtp.eu-west-1.amazonaws.com
-      Port: 587
-      Encryption: tls
-    calls:
-      Username: [ setUsername, ["`SES_SMTP_USERNAME`"] ] # CONSTANTS IN ENV
-      Password: [ setPassword, ["`SES_SMTP_PASSWORD`"] ]
-      AuthMode: [ setAuthMode, ['login'] ]
-
----
-Only:
+Except:
   environment: 'dev'
 ---
 SilverStripe\Core\Injector\Injector:
-  Swift_Transport:
-    class: Swift_SmtpTransport
-    properties:
-      Host: email-smtp.eu-west-1.amazonaws.com
-      Port: 587
-      Encryption: tls
-    calls:
-      Username: [ setUsername, ["`SES_SMTP_USERNAME`"] ] # CONSTANTS IN ENV
-      Password: [ setPassword, ["`SES_SMTP_PASSWORD`"] ]
-      AuthMode: [ setAuthMode, ['login'] ]
+  Symfony\Component\Mailer\Transport\TransportInterface:
+    class: Symfony\Component\Mailer\Transport\Smtp\EsmtpTransport
+    constructor:
+      Host: localhost
+      Port: 25
+---
+Only:
+  environment: 'dev'
+After:
+  - '#zooma-mail-config'
+---
+SilverStripe\Core\Injector\Injector:
+  Symfony\Component\Mailer\Transport\TransportInterface:
+    class: Symfony\Component\Mailer\Bridge\Amazon\Transport\SesSmtpTransport
+    constructor:
+      Username: "`SES_SMTP_USERNAME`"
+      Password: "`SES_SMTP_PASSWORD`"

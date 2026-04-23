@@ -27,9 +27,11 @@ class RepoItemJsonApiDescription extends DataObjectJsonApiDescription {
         'RepoType' => 'repoType',
         'IsRemoved' => 'isRemoved',
         'Status' => 'status',
+        'DeleteReason' => 'deleteReason',
         'DeclineReason' => 'declineReason',
         'IsHistoricallyPublished' => 'isHistoricallyPublished',
         'NeedsToBeFinished' => 'needsToBeFinished',
+        'DeletionHasBeenDeclined' => 'deletionHasBeenDeclined',
         'UploadedFromApi' => 'uploadedFromApi',
         'Title' => 'title',
         'IsArchived' => 'isArchived',
@@ -71,6 +73,10 @@ class RepoItemJsonApiDescription extends DataObjectJsonApiDescription {
         "tasks" => [
             RELATIONSHIP_GET_RELATED_OBJECTS_METHOD => 'getUncompletedReviewTasks',
             RELATIONSHIP_RELATED_OBJECT_CLASS => Task::class,
+        ],
+        "recoverTasks" => [
+            RELATIONSHIP_GET_RELATED_OBJECTS_METHOD => 'getUncompletedRecoverTasks',
+            RELATIONSHIP_RELATED_OBJECT_CLASS => Task::class,
         ]
     ];
 
@@ -83,6 +89,7 @@ class RepoItemJsonApiDescription extends DataObjectJsonApiDescription {
         'needsToBeFinished' => 'NeedsToBeFinished',
         'uploadedFromApi' => 'UploadedFromApi',
         'isRemoved' => 'IsRemovedFromApi',
+        'isArchived' => 'IsArchivedFromApi',
         'copyFrom' => 'CopyFrom'
     ];
 
@@ -90,6 +97,7 @@ class RepoItemJsonApiDescription extends DataObjectJsonApiDescription {
         return ['title' => 'Title',
             'repoType' => 'RepoType',
             'isHistoricallyPublished' => 'IsHistoricallyPublished',
+            'deletionHasBeenDeclined' => 'DeletionHasBeenDeclined',
             'lastEdited' => 'LastEdited',
             'status' => 'Status',
             'publicationDate' => 'PublicationDate',

@@ -2,6 +2,7 @@
 
 namespace SurfSharekit\Models;
 
+use SilverStripe\EnvironmentExport\Exportable;
 use SilverStripe\ORM\DataObject;
 
 /**
@@ -10,6 +11,8 @@ use SilverStripe\ORM\DataObject;
  * DataObject representing a single attribute added to a @see ProtocolNode
  */
 class ProtocolNodeAttribute extends DataObject {
+    use Exportable;
+
     private static $table_name = 'SurfSharekit_ProtocolNodeAttribute';
 
     private static $db = [

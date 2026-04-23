@@ -15,6 +15,9 @@ use SurfSharekit\Models\Helper\Constants;
 
 /**
  * Class ApiMemberExtension
+ * @property String ApiToken
+ * @property String ApiTokenAcc
+ * @property String ApiTokenExpires
  * @package SurfSharekit\Api
  * Extension to the SilverStripe Member class to add Api Features
  */
@@ -44,7 +47,7 @@ class ApiMemberExtension extends DataExtension {
      */
     public static function isTokenIsExpired($member) {
         //Api tokens for API users cannot expire
-        if (ApiMemberExtension::hasApiUserRole($member)) {
+        if (ApiMemberExtension::hasApiUserRole($member) && ($member->ApiToken || $member->ApiTokenAcc)) {
             return false;
         }
 
@@ -91,16 +94,21 @@ class ApiMemberExtension extends DataExtension {
 
         $member->ApiTokenExpires = $tokenInfo['expires'];
         $member->write();
+
         return $tokenInfo;
     }
 
     public static function getHashedTokenInformation(Member $member) {
-        $expirationdate = new DateTime($member->ApiTokenExpires);
-        $apiToken = Environment::getEnv('APPLICATION_ENVIRONMENT') == 'live' ? $member->ApiToken : $member->ApiTokenAcc;
-        return [
-            'token' => $apiToken, //is actually the has of the apitokens
-            'expires' => $expirationdate->getTimestamp()
-        ];
+        if ($expires = $member->ApiTokenExpires) {
+            $expirationdate = new DateTime($expires);
+            $apiToken = Environment::getEnv('APPLICATION_ENVIRONMENT') == 'live' ? $member->ApiToken : $member->ApiTokenAcc;
+            return [
+                'token' => $apiToken, //is actually the has of the apitokens
+                'expires' => $expirationdate->getTimestamp()
+            ];
+        } else {
+            return null;
+        }
     }
 
     /**

@@ -15,7 +15,7 @@ Bigfork\SilverStripeOAuth\Client\Authenticator\Authenticator:
   providers:
     'SurfConext':
       name: 'SURFconext'
-      scopes: ['email', 'openid']
+      scopes: ['openid']
 ---
 After:
   '#oauthcontroller'

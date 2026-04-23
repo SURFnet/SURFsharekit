@@ -6,6 +6,7 @@ use DataObjectJsonApiBodyEncoder;
 use DataObjectJsonApiEncoder;
 use Exception;
 use Ramsey\Uuid\Uuid;
+use SilverStripe\api\BaseController;
 use SilverStripe\Control\Middleware\HTTPCacheControlMiddleware;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\DB;
@@ -18,8 +19,8 @@ use UuidExtension;
  * @package SurfSharekit\Api
  * This class is the entry point for a json api to GET,POST and PATCH DataObjects inside the logged in member's scope
  */
-abstract class JsonApiController extends LoginProtectedApiController {
-    var $maxPageSize = 100;
+abstract class JsonApiController extends BaseController {
+    var $maxPageSize = 200;
     var $minPageSize = 1;
 
     /**
@@ -200,7 +201,7 @@ abstract class JsonApiController extends LoginProtectedApiController {
         $preexistingObject = null;
         if ($objectUUID) {
             if (!Uuid::isValid($objectUUID)) {
-                return $this->createJsonApiBodyResponseFrom(static::invalidObjectIDJsonApiBodyArray(), 400);
+                return $this->createJsonApiBodyResponseFrom(static::invalidObjectIDJsonApiBodyArray(), 404);
             }
             $preexistingObject = self::getObjectOfTypeById($objectClass, $objectUUID);
         }
@@ -273,7 +274,7 @@ abstract class JsonApiController extends LoginProtectedApiController {
         if ($objectId = $request->param("ID")) {
             //Retrieving a single object
             if ($objectId && !Uuid::isValid($objectId)) {
-                return $this->createJsonApiBodyResponseFrom(static::invalidObjectIDJsonApiBodyArray(), 400);
+                return $this->createJsonApiBodyResponseFrom(static::invalidObjectIDJsonApiBodyArray(), 404);
             }
             $objectToDescribe = static::getObjectOfTypeById($objectClass, $objectId);
 

@@ -57,9 +57,9 @@ class ResponseHelper {
         ]);
     }
 
-    public static function responsePaginatedDataList(HTTPRequest $request, DataList $list, \Closure $map, $defaultPageSize = 100): HTTPResponse {
-        $pageSize = (int)$request->getVar('pageSize') ?? $defaultPageSize;
-        $pageNumber = (int)$request->getVar('pageNumber') ?? 1;
+    public static function responsePaginatedDataList(HTTPRequest $request, DataList $list, \Closure $map, $defaultPageSize = 10): HTTPResponse {
+        $pageSize = (int)$request->getVar('pageSize') ?: $defaultPageSize;
+        $pageNumber = (int)$request->getVar('pageNumber') ?: 1;
 
         $count = $list->count();
         $items = $list->limit($pageSize, ($pageNumber - 1) * $pageSize);
@@ -89,6 +89,10 @@ class ResponseHelper {
 
     public static function responseNotModified($statusCode = 304) {
         return self::getJsonResponse(304);
+    }
+
+    public static function responsePermanentRedirect(string $destination) {
+        return HTTPResponse::create()->redirect($destination, 308);
     }
 
     public static function responseBadRequest(ErrorResponse $errorResponse) {

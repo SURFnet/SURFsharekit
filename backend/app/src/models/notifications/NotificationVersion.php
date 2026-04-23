@@ -3,6 +3,7 @@
 namespace SurfSharekit\models\notifications;
 
 use PermissionProviderTrait;
+use SilverStripe\EnvironmentExport\Exportable;
 use SilverStripe\Forms\RequiredFields;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\HasManyList;
@@ -24,6 +25,7 @@ use UuidRelationExtension;
  */
 class NotificationVersion extends DataObject implements PermissionProvider {
     use PermissionProviderTrait;
+    use Exportable;
 
     private static $singular_name = 'Notification version';
     private static $plural_name = 'Notification versions';
@@ -74,6 +76,10 @@ class NotificationVersion extends DataObject implements PermissionProvider {
 
     protected function onBeforeWrite() {
         parent::onBeforeWrite();
+        if ($this->ImportTaskWrite) {
+            return;
+        }
+
         if (!$this->isInDB()) {
             $latestVersion = NotificationVersion::get()->sort("VersionCode DESC")->first();
             $this->VersionCode = $latestVersion ? $latestVersion->VersionCode + 1 : 1;

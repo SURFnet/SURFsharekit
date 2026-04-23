@@ -7,6 +7,7 @@ use SilverStripe\api\Exceptions\InternalServerErrorException;
 use SilverStripe\api\ResponseHelper;
 use SilverStripe\Control\Director;
 use SilverStripe\Control\HTTPRequest;
+use SilverStripe\Control\HTTPResponse;
 use SilverStripe\ORM\DB;
 use SurfSharekit\Api\CORSController;
 use SurfSharekit\Api\Exceptions\BadRequestException;
@@ -17,6 +18,7 @@ use SurfSharekit\Api\Exceptions\NotImplementedException;
 use SurfSharekit\Api\Exceptions\PayloadTooLargeException;
 use SurfSharekit\Api\Exceptions\UnauthorizedException;
 use SurfSharekit\Api\Exceptions\ApiErrorConstant;
+use SurfSharekit\Models\Helper\AfterCommit;
 use SurfSharekit\Models\Helper\Logger;
 use Throwable;
 
@@ -26,7 +28,7 @@ class UploadApiController extends CORSController {
         throw new NotFoundException(ApiErrorConstant::GA_NF_001);
     }
 
-    public function handleRequest(HTTPRequest $request) {
+    public function handleRequest(HTTPRequest $request): HTTPResponse {
         try {
             return parent::handleRequest($request);
         } catch (BadRequestException $e) {
@@ -79,6 +81,7 @@ class UploadApiController extends CORSController {
         } finally {
             try {
                 DB::get_conn()->transactionRollback();
+                AfterCommit::clear();
             } catch (Throwable $e) {
                 Logger::errorLog("Failed rolling back DB transaction");
                 Logger::errorLog($e->getMessage());

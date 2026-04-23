@@ -2,6 +2,7 @@
 
 namespace SurfSharekit\Models;
 
+use SilverStripe\EnvironmentExport\Exportable;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Versioned\Versioned;
 
@@ -11,6 +12,7 @@ use SilverStripe\Versioned\Versioned;
  * DataObject representing a subset of @see TemplateMetaField
  */
 class TemplateSection extends DataObject {
+    use Exportable;
 
     private static $extensions = [
         Versioned::class . '.versioned',

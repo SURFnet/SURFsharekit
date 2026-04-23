@@ -2,6 +2,7 @@
 
 namespace SurfSharekit\Models;
 
+use SilverStripe\EnvironmentExport\Exportable;
 use SilverStripe\Forms\CheckboxField;
 use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\Forms\GridField\GridFieldAddExistingAutocompleter;
@@ -17,8 +18,14 @@ use Symbiote\GridFieldExtensions\GridFieldOrderableRows;
  * Class Protocol
  * @package SurfSharekit\Models
  * DataObject representing a protocol the external api can open
+ *
+ * @property String Uuid
+ * @property String SystemKey
+ * @property String Version
  */
 class Protocol extends DataObject {
+    use Exportable;
+
     private static $table_name = 'SurfSharekit_Protocol';
 
     private static $extensions = [

@@ -1,19 +1,22 @@
-FROM brettt89/silverstripe-web:7.4-apache
+FROM gitlab.zooma.cloud:5050/zooma-int/true/docker-containers/silverstripe:8.3-stable-backend
 
-RUN install-php-extensions xdebug sockets
+RUN install-php-extensions xdebug sockets redis
 
 RUN echo "xdebug.mode=debug" >> /usr/local/etc/php/conf.d/xdebug.ini && \
         echo "xdebug.default_enable=1" >> /usr/local/etc/php/conf.d/xdebug.ini && \
         echo "xdebug.client_host=host.docker.internal" >> /usr/local/etc/php/conf.d/xdebug.ini && \
         echo "xdebug.mode=debug" >> /usr/local/etc/php/conf.d/xdebug.ini && \
-        echo "xdebug.start_with_request=yes" >> /usr/local/etc/php/conf.d/xdebug.ini && \
         echo "xdebug.discover_client_host=0" >> /usr/local/etc/php/conf.d/xdebug.ini && \
         echo "xdebug.client_port=9003" >> /usr/local/etc/php/conf.d/xdebug.ini && \
-        echo "xdebug.idekey=PHPSTORM" >> /usr/local/etc/php/conf.d/xdebug.ini
+        echo "xdebug.idekey=PHPSTORM" >> /usr/local/etc/php/conf.d/xdebug.ini && \
+        echo "xdebug.start_with_request=trigger" >> /usr/local/etc/php/conf.d/xdebug.ini
+
+RUN echo "upload_max_filesize=10000000" >> /usr/local/etc/php/conf.d/php-overrides.ini && \
+        echo "xdebug.post_max_size=10000000" >> /usr/local/etc/php/conf.d/php-overrides.ini
 
 #### Install RabbitMQ + dependencies
 
-RUN apt-get install curl gpgv apt-transport-https -y
+RUN apt-get install curl gpg apt-transport-https -y
 
 RUN apt-get update && apt-get install -y \
     curl \

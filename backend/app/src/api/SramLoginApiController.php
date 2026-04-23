@@ -12,6 +12,7 @@ use Jumbojett\OpenIDConnectClient;
 use SilverStripe\Core\Environment;
 use SilverStripe\Security\Group;
 use SilverStripe\Security\Security;
+use SurfSharekit\Api\Traits\LoginCookieTrait;
 use SurfSharekit\constants\RoleConstant;
 use SurfSharekit\Models\Helper\Constants;
 use SurfSharekit\Models\Helper\Logger;
@@ -27,6 +28,7 @@ use const SurfSharekit\Models\AUTHENTICATION_LOG;
  * A class used as the entryPoint to login with a context OpenID callback code and redirect_uri
  */
 class SramLoginApiController extends CORSController {
+    use LoginCookieTrait;
 
     /**
      * @config
@@ -79,18 +81,31 @@ class SramLoginApiController extends CORSController {
         }
         $this->getResponse()->setStatusCode(200);
 
+        // Validate SRAM URL before continuing
+        $parsedUrl = parse_url($this->conextURL);
+        if (!$this->conextURL || !isset($parsedUrl['scheme']) || !isset($parsedUrl['host'])) {
+            $this->getResponse()->setStatusCode(500);
+            $msg = 'SRAM_URL is not configured with a valid scheme/host';
+            LogItem::warnLog($msg . ' value=' . var_export($this->conextURL, true), __CLASS__, __FUNCTION__, AUTHENTICATION_LOG);
+            return json_encode([self::ERROR_TAG => $msg, 'value' => $this->conextURL]);
+        }
+
         $oidc = new OpenIDConnectClient($this->conextURL, $client_id, $client_secret);
         $oidc->providerConfigParam(['token_endpoint' => $this->conextURL . '/OIDC/token']);
         $oidc->setProviderURL($this->conextURL);
         $oidc->setRedirectURL($redirect_uri);
-        $oidc->addScope('voperson_external_affiliation');
+        $oidc->addScope(['voperson_external_affiliation', 'voperson_external_id']);
         $_REQUEST['state'] = false; // TODO: Check what this is
 
         try {
             $res = $oidc->authenticate();
         } catch (Exception $exception) {
             $this->getResponse()->setStatusCode(400);
-            return json_encode(['error' => 'Authentication invalid']);
+            LogItem::warnLog('SRAM authenticate failed: ' . $exception->getMessage(), __CLASS__, __FUNCTION__, AUTHENTICATION_LOG);
+            return json_encode([
+                'error' => 'Authentication invalid',
+                'message' => $exception->getMessage()
+            ]);
         }
 
         if ($res) {
@@ -143,10 +158,18 @@ class SramLoginApiController extends CORSController {
             $teamIdentifiers = $userInfo->eduperson_entitlement;
             $scopedAffiliation = $userInfo->eduperson_scoped_affiliation;
             $sub = $userInfo->sub;
-
+            $voPersonExternalId = !empty($userInfo->voperson_external_id) ? $userInfo->voperson_external_id[0] : null;
             if (!$sub) {
                 return null;
             }
+
+            $organizations = self::getOrganisationsFromEntitlements($userInfo->eduperson_entitlement ?? []);
+            // Prefer the external affiliation (contains the institute domain) to derive ConextCode, fallback to schac/VO id
+            $conextAffiliationSource = $externalAffiliation ?? ($userInfo->schac_home_organization[0] ?? $voPersonExternalId);
+            $conextCode = self::getConextCodeFromExternalAffilliation($conextAffiliationSource);
+            $organizationsWithCooperations = Arr::where($organizations, function ($organization) {
+                return count($organization['cooperations']) > 0;
+            });
 
             LogItem::debugLog([
                 '-----------------------------------------------',
@@ -155,19 +178,17 @@ class SramLoginApiController extends CORSController {
                 "firstName:" . json_encode($firstName),
                 "email:" . json_encode($email),
                 "organization:" . json_encode($organization),
+                "organizations" . json_encode($organizations),
+                "organizationsWithCooperations" . json_encode($organizationsWithCooperations),
                 "externalAffiliation:" . json_encode($externalAffiliation),
                 "teamIdentifiers:" . json_encode($teamIdentifiers),
                 "scopedAffiliation:" . json_encode($scopedAffiliation),
                 "sub:" . json_encode($sub),
+                "conextCode:" . json_encode($conextCode),
+                "voperson_external_id:" . json_encode($voPersonExternalId),
                 '-----------------------------------------------',
             ], __CLASS__, __FUNCTION__, AUTHENTICATION_LOG);
 
-
-            $organizations = self::getOrganisationsFromEntitlements($userInfo->eduperson_entitlement ?? []);
-            $conextCode = self::getConextCodeFromExternalAffilliation($externalAffiliation);
-            $organizationsWithCooperations = Arr::where($organizations, function ($organization) {
-                return count($organization['cooperations']) > 0;
-            });
 
             /** @var $institute Institute */
             $institute = Institute::get()->filter('ConextCode', $conextCode)->first();
@@ -180,14 +201,14 @@ class SramLoginApiController extends CORSController {
 
             // if institute does not exist or license is not active
             if ($conextCode == static::EDUID_SRAMCODE || $institute == null || $institute->exists() == false || $institute->LicenseActive == false) {
-                // check if user has consortia that have existing institute
+                // check if user is in an institute with an active license
                 if (Institute::get()->filter(['SRAMCode' => array_keys($organizations), 'LicenseActive' => true])->count() == 0) {
-
-                    // check if person exists, if not we throw error else we just continue logging in
+                    // if not, check if person exists
                     if (!$person || !$person->exists()) {
+                        // if no person exists, we cannot create one, so exit
                         // also no institute found by organization name of consortia that have an active license
                         $organizationsString = implode(', ', array_keys($organizations));
-                        $err = "Institute $organization not found or not active and none of the given cooperation organizations ($organizationsString) are found or active ";
+                        $err = "Cannot create use for institute $organization not found or not active and none of the given cooperation organizations ($organizationsString) are found or active ";
                         LogItem::debugLog($err, __CLASS__, __FUNCTION__, AUTHENTICATION_LOG);
                         return $err;
                     }
@@ -215,7 +236,7 @@ class SramLoginApiController extends CORSController {
                 }
             }
 
-            if ($conextCode != static::EDUID_SRAMCODE) {
+            if ($conextCode != static::EDUID_SRAMCODE && $institute !== null && $institute->exists()) {
                 // sync organization institute groups
                 $this->syncWithInstitute($institute, $person);
             }
@@ -252,6 +273,10 @@ class SramLoginApiController extends CORSController {
             }
 
             Security::setCurrentUser($person);
+            
+            // Set the sharekit-access-token cookie using the trait
+            $this->setAuthenticationCookie($generatedTokenInformation['token']);
+
             return [
                 'name' => $person->getName(),
                 'token' => $generatedTokenInformation['token'],
@@ -424,6 +449,9 @@ class SramLoginApiController extends CORSController {
 
 
     private static function getConextCodeFromExternalAffilliation($externalAffiliation) {
+        if (!$externalAffiliation) {
+            return null;
+        }
         $splitByAtSign = explode('@', $externalAffiliation);
         if(count($splitByAtSign) > 1){
             $fullInstituteDomain = $splitByAtSign[count($splitByAtSign)-1]; // eg hb.institute.nl
@@ -439,6 +467,9 @@ class SramLoginApiController extends CORSController {
     }
 
     private static function getFunctionFromExternalAffiliation($externalAffiliation) {
+        if (!$externalAffiliation) {
+            return null;
+        }
         $splitByAtSign = explode('@', $externalAffiliation);
         if(count($splitByAtSign) > 1){
             return $splitByAtSign[0];

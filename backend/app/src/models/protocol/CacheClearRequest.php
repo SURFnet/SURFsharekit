@@ -16,9 +16,10 @@ class CacheClearRequest extends DataObject implements PermissionProvider {
 
     private static $db = [
         "TaskID" => "Varchar(255)",
-        "Status" => "Enum('Created, Queued, Started, Done', 'Created')",
+        "Status" => "Enum('Created, Queued, Started, Done, Failed', 'Created')",
         "Queue" => "Boolean(1)",
-        "Progress" => "Int"
+        "Progress" => "Int",
+        "FailReason" => "Varchar(255)"
     ];
 
     private static $has_one = [
@@ -40,26 +41,6 @@ class CacheClearRequest extends DataObject implements PermissionProvider {
         "ProgressSummary" => "Progress"
     ];
 
-    public function validate() {
-        $result = parent::validate();
-
-        $savedRelations = [];
-        foreach ($this->hasOne() as $relation => $class) {
-            if (!empty($this->{$relation . "ID"})) {
-                $savedRelations[] = $relation;
-            }
-        }
-
-        if (count($savedRelations) === 0) {
-            $result->addError("Please choose a protocol, channel or institute");
-        }
-        if (count($savedRelations) > 1) {
-            $result->addError("Please choose one protocol, channel or institute");
-        }
-
-        return $result;
-    }
-
     protected function onBeforeWrite() {
         parent::onBeforeWrite();
 
@@ -74,6 +55,11 @@ class CacheClearRequest extends DataObject implements PermissionProvider {
             }
         }
 
+        // Ensure progress is 100% when status is Done
+        if ($this->Status === 'Done') {
+            $this->Progress = 100;
+        }
+
     }
 
     public function getCMSFields() {
@@ -86,14 +72,10 @@ class CacheClearRequest extends DataObject implements PermissionProvider {
         if (!$this->isInDB()) {
             $fields->removeByName('Status');
             $fields->removeByName('Progress');
-
-            $fields->replaceField('InstituteID', $instituteField = HasOneAutocompleteField::create('InstituteID', 'Institute', Institute::class, 'Title'));
-            $instituteField
-                ->setSearchFields(['Title']);
         } else {
             foreach ($this->hasOne() as $relation => $class) {
                 if (!empty($this->{$relation . "ID"})) {
-                    $fields->replaceField($relation . "ID", ReadonlyField::create('ChosenRelation', $relation, $this->{$relation}->Title));
+                    $fields->replaceField($relation . "ID", ReadonlyField::create("Chosen$relation", $relation, $this->{$relation}->Title));
                     continue;
                 }
                 $fields->removeByName($relation . "ID");
@@ -104,9 +86,14 @@ class CacheClearRequest extends DataObject implements PermissionProvider {
             $fields->removeByName('Queue');
         }
 
+        if (!$this->Status == "Failed") {
+            $fields->removeByName("FailReason");
+        }
+
         $fields->changeFieldOrder([
             "Queue",
             "Status",
+            "FailReason",
             "ProtocolID",
             "ChannelID",
             "InstituteID",
@@ -122,13 +109,19 @@ class CacheClearRequest extends DataObject implements PermissionProvider {
         $this->write();
     }
 
+    public function onFail(string $message) {
+        $this->Status = "Failed";
+        $this->FailReason = $message;
+        $this->write();
+    }
+
     public function canEdit($member = null, $context = []) {
         if ($this->isInDB() && $this->Queue) {
             return false;
         }
 
         $name = strtoupper($this->dataObj()->ClassName);
-        return Permission::check("${name}_EDIT");
+        return Permission::check("{$name}_EDIT");
     }
 
     public function getType() {
@@ -160,6 +153,11 @@ class CacheClearRequest extends DataObject implements PermissionProvider {
     }
 
     public function updateProgress(int $percentage) {
+        // Don't update progress if status is already Done - it should always be 100%
+        if ($this->Status === 'Done') {
+            $percentage = 100;
+        }
+        
         SQLUpdate::create('SurfSharekit_CacheClearRequest', ['"Progress"' => $percentage], ['"ID"' => $this->ID])->execute();
     }
 }

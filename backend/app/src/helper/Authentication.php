@@ -9,18 +9,10 @@ use SurfSharekit\Api\Exceptions\ApiErrorConstant;
 use SurfSharekit\Api\Exceptions\UnauthorizedException;
 
 class Authentication {
+    private static $bearerToken;
 
     public static function getJWT(?HTTPRequest $request = null): stdClass {
-        if (!$request) {
-            /** @var Controller $controller */
-            if ($controller = Controller::has_curr()) {
-                $request = $controller->getRequest();
-            } else {
-                throw new UnauthorizedException(ApiErrorConstant::GA_UA_002);
-            }
-        }
-
-        $jwt = $request->BearerToken ?? null;
+        $jwt = static::$bearerToken ?? null;
         if (!$jwt) {
             throw new UnauthorizedException(ApiErrorConstant::GA_UA_002);
         }
@@ -29,6 +21,6 @@ class Authentication {
     }
 
     public static function setJWT(HTTPRequest $request, stdClass $token): void {
-        $request->BearerToken = $token;
+        static::$bearerToken = $token;
     }
 }

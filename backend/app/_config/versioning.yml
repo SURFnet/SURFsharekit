@@ -1,0 +1,6 @@
+---
+Name: surf-sharekit-versioning
+After: versionedgridfield
+---
+SilverStripe\ORM\DataObject:
+  versioned_gridfield_extensions: false

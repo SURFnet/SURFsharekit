@@ -3,6 +3,7 @@
 namespace SurfSharekit\Models;
 
 use ExternalRepoItemChannelJsonApiDescription;
+use SilverStripe\EnvironmentExport\Exportable;
 use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\Forms\GridField\GridFieldAddExistingAutocompleter;
@@ -26,6 +27,8 @@ use SurfSharekit\Models\Helper\XMLHelper;
  * DataObject representing a single value added to a @see Protocol
  */
 class ProtocolNode extends DataObject {
+    use Exportable;
+
     private static $table_name = 'SurfSharekit_ProtocolNode';
     private static $default_sort = 'SortOrder ASC';
 
@@ -33,7 +36,7 @@ class ProtocolNode extends DataObject {
         'NodeTitle' => 'Varchar(255)',
         'ArrayNotation' => 'Int(0)',
         'HardcodedValue' => 'Varchar(255)',
-        'VirtualMetaField' => "Enum('dii:Identifier,dcterms:modified,mods:namePart:family,mods:namePart:given,mods:displayForm,lom:languageString,lom:Identifier,lom:encaseInStringNode,vCard,lom:technical,didl:resource:file,didl:resource:link,mods:genre:thesis,hbo:namePart:departmentFromLowerInstitute,dai:identifierExtension,mods:name:personal,lom:contribute:validator,lom:relation:description,oai:Identifier,mods:identifier:isbn,lom:classification:taxonomy,hbo:namePart,didl:resource,json:modified,json:partOf,json:hasParts,mods:dateIssued,json:dateIssued,json:personEmail,json:alias,json:resourceMimeType,json:taxonomy,json:diiIdentifier,json:vocabulary,orcid:identifier,hogeschool:identifier,json:hogeschoolIdentifier,json:orcid,json:isni,json:dai,json:validator,csv:personalIdentifiers,json:created,json:rootOrganisation,json:etag,csv:created,csv:creator,dai:identifier,isni:identifier,localAuthor:identifier,lom:rightsofusage',null)",
+        'VirtualMetaField' => "Enum('dii:Identifier,dcterms:modified,mods:namePart:family,mods:namePart:given,mods:displayForm,lom:languageString,lom:Identifier,lom:encaseInStringNode,vCard,lom:technical,didl:resource:file,didl:resource:link,mods:genre:thesis,hbo:namePart:departmentFromLowerInstitute,dai:identifierExtension,mods:name:personal,lom:contribute:validator,lom:relation:description,oai:Identifier,mods:identifier:isbn,lom:classification:taxonomy,hbo:namePart,didl:resource,json:modified,json:partOf,json:hasParts,mods:dateIssued,json:dateIssued,json:personEmail,json:alias,json:resourceMimeType,json:taxonomy,json:diiIdentifier,json:vocabulary,orcid:identifier,hogeschool:identifier,json:hogeschoolIdentifier,json:orcid,json:isni,json:dai,json:validator,csv:personalIdentifiers,json:created,json:rootOrganisation,json:etag,csv:created,csv:creator,csv:apa,csv:vocabulary,dai:identifier,isni:identifier,localAuthor:identifier,lom:rightsofusage,json:link,json:stripMarkdown,csv:stripMarkdown,mods:stripMarkdown,json:parseShareControlUrl',null)",
         'Property' => 'Varchar(255)',
         'NamespaceURI' => 'Varchar(255)',
         'SortOrder' => 'Int(0)',
@@ -93,6 +96,10 @@ class ProtocolNode extends DataObject {
 
     protected function onBeforeWrite() {
         parent::onBeforeWrite();
+        if ($this->ImportTaskWrite) {
+            return;
+        }
+
         if (!$this->isInDB()) {
             if ($this->ParentNode()->exists()) {
                 $parentNode = $this->ParentNode();

@@ -17,7 +17,7 @@ class PermissionFilter {
     public static function filterThroughCanViewPermissions(DataList $dataList) {
         $member = Security::getCurrentUser();
 
-        if ($member->isDefaultAdmin()) {
+        if ($member->isMainAdmin()) {
             return $dataList;
         }
 

@@ -10,8 +10,11 @@ class ApiErrorConstant {
     const GA_BR_004 = ["code" => "GA_BR_004", "description" => "Validation error", "message" => "There are one or more fields missing or invalid"];
     const GA_BR_005 = ["code" => "GA_BR_005", "description" => "Resource already exists", "message" => "The provided resource already exists"];
     const GA_BR_006 = ["code" => "GA_BR_006", "description" => "Invalid filter", "message" => "One or more of the provided filters is unsupported or invalid"];
+    const GA_BR_007 = ["code" => "GA_BR_007", "description" => "Incorrect post body", "message" => "Invalid body"];
+    const GA_BR_008 = ["code" => "UA_BR_013", "description" => "Sharecontrol request failed", "message" => "The ShareControl API could not handle this request."];
     const GA_NF_001 = ["code" => "GA_NF_001", "description" => "Unknown request path", "message" => "Request path could not be found"];
     const GA_NF_002 = ["code" => "GA_NF_002", "description" => "Resource not found", "message" => "Requested resource could not be found"];
+    const GA_NF_003 = ["code" => "GA_NF_003", "description" => "Institute does not exist", "message" => "Institute with this UUID does not exist"];
     const GA_FB_001 = ["code" => "GA_FB_001", "description" => "Insufficient permissions", "message" => "You do not have the required permissions to perform this action"];
     const GA_UA_001 = ["code" => "GA_UA_001", "description" => "Missing authorization header", "message" => "Missing authorization header"];
     const GA_UA_002 = ["code" => "GA_UA_002", "description" => "Invalid bearer token", "message" => "The provided bearer token was found invalid"];
@@ -34,12 +37,15 @@ class ApiErrorConstant {
     const UA_BR_007 = ["code" => "UA_BR_007", "description" => "Position does not exist", "message" => "The provided position does not exist"];
     const UA_BR_008 = ["code" => "UA_BR_008", "description" => "Incorrect RepoItem status", "message" => "Could not perform the required action on this RepoItem because of its status"];
     const UA_BR_009 = ["code" => "UA_BR_009", "description" => "Incorrect DAI", "message" => "The provided DAI is incorrect. Please ensure it conforms to the required format and try again."];
-    const UA_BR_010 = ["code" => "UA_BR_0010", "description" => "Incorrect ISNI", "message" => "The provided ISNI is incorrect. Please ensure it conforms to the required format and try again."];
-    const UA_BR_011 = ["code" => "UA_BR_0011", "description" => "Incorrect ORCID", "message" => "The provided ORCID is incorrect. Please ensure it conforms to the required format and try again."];
+    const UA_BR_010 = ["code" => "UA_BR_010", "description" => "Incorrect ISNI", "message" => "The provided ISNI is incorrect. Please ensure it conforms to the required format and try again."];
+    const UA_BR_011 = ["code" => "UA_BR_011", "description" => "Incorrect ORCID", "message" => "The provided ORCID is incorrect. Please ensure it conforms to the required format and try again."];
+    const UA_BR_012 = ["code" => "UA_BR_012", "description" => "Unable to patch meta data", "message" => "The referenced RepoItem does not have the 'Draft' status, please update the status to 'Draft' first"];
+
     const UA_FB_001 = ["code" => "UA_FB_001", "description" => "No permissions for institute", "message" => "Missing permissions for the provided institute"];
     const UA_FB_002 = ["code" => "UA_FB_002", "description" => "Authenticated for wrong institute", "message" => "You're trying to perform an action outside the scope of the institute you're authenticated for"];
     const UA_NF_001 = ["code" => "UA_NF_001", "description" => "File does not exist", "message" => "The file to replace does not exist"];
     const UA_NF_002 = ["code" => "UA_NF_002", "description" => "RepoItem does not exist", "message" => "RepoItem with this UUID does not exist"];
+    const UA_NF_003 = ["code" => "UA_NF_002", "description" => "Institute does not exist", "message" => "Institute with this UUID does not exist"];
     const UA_ISE_001 = ["code" => "UA_USE_001", "description" => "Unexpected error during file processing", "message" => "An unexpected error occurred while processing the uploaded file(s)"];
 
 }

@@ -5,6 +5,7 @@ namespace SurfSharekit\models\notifications;
 use PermissionProviderTrait;
 use SilverStripe\Admin\ModelAdmin;
 use SilverStripe\Control\Controller;
+use SilverStripe\EnvironmentExport\Exportable;
 use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\ListboxField;
 use SilverStripe\Forms\RequiredFields;
@@ -34,6 +35,7 @@ use UuidRelationExtension;
  */
 class Notification extends DataObject implements PermissionProvider {
     use PermissionProviderTrait;
+    use Exportable;
 
     private static $singular_name = 'Notification';
     private static $plural_name = 'Notifications';
@@ -144,6 +146,10 @@ class Notification extends DataObject implements PermissionProvider {
 
     protected function onBeforeWrite() {
         parent::onBeforeWrite();
+        if ($this->ImportTaskWrite) {
+            return;
+        }
+
         if (!$this->isInDB()) {
             $latestVersion = NotificationVersion::get()->sort("VersionCode DESC")->first();
             if ($latestVersion) {

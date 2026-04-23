@@ -4,6 +4,7 @@ namespace SurfSharekit\Api;
 
 use Ramsey\Uuid\Uuid;
 use SilverStripe\ORM\DataList;
+use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\DB;
 use SilverStripe\Security\Group;
 use SilverStripe\Security\Security;
@@ -41,7 +42,7 @@ class InstituteScoper {
 
     /**
      * @param $dataObject
-     * @return \SilverStripe\ORM\DataList|null
+     * @return DataList|null
      * Function used to limit the DataObject:get method to whatever scope the currently logged in user has
      */
     public static function getAll($dataObject) {
@@ -54,7 +55,7 @@ class InstituteScoper {
         $member = Security::getCurrentUser();
 
         $memberInstituteIDs = [];
-        if (!$member->isDefaultAdmin()) {
+        if (!$member->isMainAdmin()) {
             $memberInstituteIDs = $member->extend('getInstituteIdentifiers')[0]; //this gets the institute of the member via the member extension.
         }
 
@@ -63,6 +64,54 @@ class InstituteScoper {
         $result = PermissionFilter::filterThroughcanViewPermissions($dataList);
         ScopeCache::setCachedDataList($dataList);
         return $result;
+    }
+
+    /**
+     * Fetches all records of a specific DataObject type that the current member is authorized to edit.
+     * @param String|DataObject $dataObject The class name of the DataObject to fetch.
+     * @return DataList A filtered DataList containing only editable records.
+     */
+    public static function getAllCanEdit($dataObject): DataList
+    {
+        $member = Security::getCurrentUser();
+        if (!$member) {
+            // We return an empty DataList filtered to -1 to satisfy the return type
+            return $dataObject::get()->filter(['ID' => -1]);
+        }
+
+        $memberInstituteIDs = [];
+        if (!$member->isMainAdmin()) {
+            $memberInstituteIDs = $member->extend('getInstituteIdentifiers')[0] ?: [];
+        }
+
+        $dataList = static::getDataListScopedTo($dataObject, $memberInstituteIDs);
+
+        // Call the new helper function
+        $editableIDs = static::filterThroughCanEditPermissions($dataList, $member);
+
+        // Return the filtered DataList
+        return $dataObject::get()->filter(['ID' => $editableIDs ?: -1]);
+    }
+
+    /**
+     * Iterates through a list of DataObjects and collects IDs of records the member can edit.
+     *
+     * This helper performs a manual permission check by calling canEdit() on each individual
+     * record in the provided list.
+     *
+     * @param \SilverStripe\ORM\SS_List $dataList The list of records to iterate through.
+     * @param \SilverStripe\Security\Member $member The member to check permissions against.
+     * @return int[]|string[] An array of IDs representing the editable records.
+     */
+    protected static function filterThroughCanEditPermissions($dataList, $member): array
+    {
+        $editableIDs = [];
+        foreach ($dataList as $item) {
+            if ($item->canEdit($member)) {
+                $editableIDs[] = $item->ID;
+            }
+        }
+        return $editableIDs;
     }
 
     /**

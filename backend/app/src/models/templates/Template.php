@@ -5,6 +5,7 @@ namespace SurfSharekit\Models;
 use DataObjectJsonApiEncoder;
 use Exception;
 use RelationaryPermissionProviderTrait;
+use SilverStripe\EnvironmentExport\Exportable;
 use SilverStripe\Forms\CheckboxField;
 use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\Forms\GridField\GridFieldAddExistingAutocompleter;
@@ -13,6 +14,7 @@ use SilverStripe\Forms\GridField\GridFieldDeleteAction;
 use SilverStripe\Forms\GridField\GridFieldPaginator;
 use SilverStripe\Forms\HiddenField;
 use SilverStripe\Forms\ReadonlyField;
+use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\DataObjectSchema;
 use SilverStripe\ORM\HasManyList;
@@ -33,6 +35,8 @@ use Symbiote\GridFieldExtensions\WritingGridFieldOrdereableRows;
  * This object is used to create a @see RepoItem with the same RepoType
  */
 class Template extends DataObject implements PermissionProvider {
+    use Exportable;
+
     const RELATION_TEMPLATE = 'Template';
 
     private static $extensions = [
@@ -293,6 +297,10 @@ class Template extends DataObject implements PermissionProvider {
     protected function onAfterWrite() {
         parent::onAfterWrite();
 
+        if ($this->ImportTaskWrite) {
+            return;
+        }
+
         if (!$this->isChanged('ID')) {//if not recently created
             //  $this->downPropagateTemplateMetaFields();
         }
@@ -487,5 +495,9 @@ class Template extends DataObject implements PermissionProvider {
         }
 
         return $templateSteps;
+    }
+
+    public static function updateDataListForExport(DataList &$dataList) {
+        $dataList = $dataList->filter('InstituteID', 0);
     }
 }

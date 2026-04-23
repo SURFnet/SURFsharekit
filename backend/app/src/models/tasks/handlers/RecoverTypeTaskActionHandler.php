@@ -42,6 +42,8 @@ class RecoverTypeTaskActionHandler extends TaskActionHandler {
         // Undo RepoItem deletion
         $repoItem->IsRemoved = false;
         if ($repoItem->IsHistoricallyPublished) {
+            $repoItem->DeletionHasBeenDeclined = true;
+            $repoItem->DeclineReason = $task->ReasonOfDecline;
             $repoItem->publish();
         }
         $repoItem->write();

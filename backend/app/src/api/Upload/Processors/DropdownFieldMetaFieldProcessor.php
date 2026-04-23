@@ -35,6 +35,6 @@ class DropdownFieldMetaFieldProcessor extends MetaFieldProcessor
     }
 
     public function convertValueToJson(RepoItemMetaField $repoItemMetaField) {
-        return $repoItemMetaField->RepoItemMetaFieldValues()->first()->MetaFieldOptionUuid;
+        return $repoItemMetaField->RepoItemMetaFieldValues()->filter(["IsRemoved" => false])->first()->MetaFieldOptionUuid;
     }
 }

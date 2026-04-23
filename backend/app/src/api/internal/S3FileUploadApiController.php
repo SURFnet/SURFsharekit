@@ -53,9 +53,16 @@ class S3FileUploadApiController extends LoginProtectedApiController {
 
         $mimeType = MimetypeHelper::getMimeType($requestBody['fileName'], null);
 
-        $partCount = $requestBody['partCount'];
+        $partCount = (int)$requestBody['partCount'];
         $fileName = $requestBody['fileName'];
 
+        if ($partCount < 1 || $partCount > 200) {
+            $response->setBody(json_encode([
+                "error" => "Invalid value provided for partCount"
+            ]));
+            $response->setStatusCode(400);
+            return $response;
+        }
 
 
         $identifier = Uuid::uuid4();

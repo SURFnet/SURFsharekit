@@ -32,6 +32,7 @@ use SurfSharekit\api\internal\descriptions\PermissionCategoryJsonApiDescription;
 use SurfSharekit\api\internal\descriptions\PermissionDescriptionJsonApiDescription;
 use SurfSharekit\Models\Claim;
 use SurfSharekit\Models\DefaultMetaFieldOptionPart;
+use SurfSharekit\Models\Helper\Logger;
 use SurfSharekit\Models\Institute;
 use SurfSharekit\Models\InstituteImage;
 use SurfSharekit\Models\MetaField;
@@ -185,7 +186,11 @@ class InternalJsonApiController extends JsonApiController {
      * Called when the use request all objects of a certain type
      */
     function getDataList($objectClass) {
-        if (in_array($objectClass, [Person::class, Institute::class, RepoItemSummary::class, PersonSummary::class])) {
+        if (in_array($objectClass, [Person::class])) { // Disable list calls for the following classes
+            throw new Exception("Access to this route is prohibited");
+        }
+
+        if (in_array($objectClass, [Institute::class, RepoItemSummary::class, PersonSummary::class])) { // Turning off the scope is only allowed for these classes
             if (isset($this->filters['scope'])) {
                 if ($this->filters['scope'] == 'off') {
                     unset($this->filters['scope']);
@@ -208,7 +213,7 @@ class InternalJsonApiController extends JsonApiController {
         $dataList = InstituteScoper::getAll($objectClass);
 
         // Additional check to filter out the RepoItemFiles of which canView returns false
-        if ($objectClass == RepoItemFile::class) {
+        if ($objectClass == RepoItemFile::class || $objectClass == Claim::class || $objectClass == BulkAction::class) {
             $dataListFilteredOnCanViewPermission = $dataList->filterByCallback(function ($dataObject) {
                 return $dataObject->canView();
             });
@@ -220,6 +225,7 @@ class InternalJsonApiController extends JsonApiController {
 
             $dataList = $dataList->filter(["ID" => $idsToFilterOn]);
         }
+//        Logger::infoLog('Final data list query : ' . $dataList->sql());
         return $dataList;
     }
 

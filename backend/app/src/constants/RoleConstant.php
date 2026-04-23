@@ -22,6 +22,14 @@ class RoleConstant {
     const PROFILE_EDITOR = "Profile Editor";
     const ORGANISATION_EDITOR = "Organisation Editor";
 
+    const REPO_ITEM_ADMIN = "Repo item admin";
+    const ARCHIVE_ADMIN = "Archive admin";
+    const MEMBER_EDITOR = "Member editing";
+    const MEMBER_MANAGER = "Member management";
+    const INSTITUTE_MANAGER = "Institute manager";
+
+    const LMS_CONNECTOR = "LMS Connector";
+
     // Main roles are the default roles. Default roles CANNOT be removed from their respective groups.
     const MAIN_ROLES = [
         self::WORKSADMIN,
@@ -42,7 +50,12 @@ class RoleConstant {
         self::DATASET_UPLOADER,
         self::PROFILE_EDITOR,
         self::ORGANISATION_EDITOR,
-        self::PROJECT_UPLOADER
+        self::PROJECT_UPLOADER,
+        self::REPO_ITEM_ADMIN,
+        self::ARCHIVE_ADMIN,
+        self::MEMBER_EDITOR,
+        self::MEMBER_MANAGER,
+        self::INSTITUTE_MANAGER
     ];
 
     // A specific group is created For each of the following roles upon creating a new Institute
@@ -69,7 +82,7 @@ class RoleConstant {
         self::MEMBER => [],
         self::STUDENT => [self::THESIS_UPLOADER],
         self::STAFF => [self::THESIS_UPLOADER, self::RESEARCH_UPLOADER, self::LEARNING_MATERIAL_UPLOADER],
-        self::SUPPORTER => [],
-        self::SITEADMIN => [],
+        self::SUPPORTER => [self::REPO_ITEM_ADMIN, self::MEMBER_EDITOR],
+        self::SITEADMIN => [self::REPO_ITEM_ADMIN, self::ARCHIVE_ADMIN, self::MEMBER_EDITOR, self::MEMBER_MANAGER, self::INSTITUTE_MANAGER],
     ];
 }

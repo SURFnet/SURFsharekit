@@ -1,0 +1,8 @@
+{
+  "gitlab-token": {
+    "gitlab.zooma.cloud": {
+      "username": "<gitlab email>",
+      "token": "<gitlab token>"
+    }
+  }
+}

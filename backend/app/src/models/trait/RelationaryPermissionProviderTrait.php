@@ -55,7 +55,7 @@ trait RelationaryPermissionProviderTrait {
         if ($member == null) {
             return false;
         }
-        if ($member->isDefaultAdmin()) {
+        if ($member->isMainAdmin()) {
             return true;
         }
 
@@ -117,9 +117,9 @@ trait RelationaryPermissionProviderTrait {
         $actionKey = strtoupper($actionKey);
         if ($relationKey) {
             $relationKey = strtoupper($relationKey);
-            return "${nameuc}_${actionKey}_$relationKey";
+            return "{$nameuc}_{$actionKey}_$relationKey";
         } else {
-            return "${nameuc}_${actionKey}";
+            return "{$nameuc}_{$actionKey}";
         }
     }
 

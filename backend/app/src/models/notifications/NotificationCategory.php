@@ -3,6 +3,7 @@
 namespace SurfSharekit\models\notifications;
 
 use PermissionProviderTrait;
+use SilverStripe\EnvironmentExport\Exportable;
 use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\Forms\GridField\GridFieldAddExistingAutocompleter;
 use SilverStripe\Forms\RequiredFields;
@@ -27,6 +28,7 @@ use UuidRelationExtension;
  */
 class NotificationCategory extends DataObject implements PermissionProvider {
     use PermissionProviderTrait;
+    use Exportable;
 
     private static $singular_name = 'Notification category';
     private static $plural_name = 'Notification categories';
@@ -74,6 +76,10 @@ class NotificationCategory extends DataObject implements PermissionProvider {
 
     protected function onBeforeWrite() {
         parent::onBeforeWrite();
+        if ($this->ImportTaskWrite) {
+            return;
+        }
+
         if (!$this->isInDB()) {
             $latestVersion = NotificationVersion::get()->sort("VersionCode DESC")->first();
             if ($latestVersion) {

@@ -2,7 +2,13 @@
 
 namespace SurfSharekit\Helper;
 
+use DateTime;
+use SilverStripe\Control\Controller;
+use SilverStripe\Control\Director;
+use SilverStripe\Core\Environment;
+use SilverStripe\ORM\FieldType\DBDatetime;
 use SimpleXMLElement;
+use SurfSharekit\Api\DoiCreator;
 use SurfSharekit\Api\OaipmhApiController;
 use SurfSharekit\Models\Helper\DateHelper;
 use SurfSharekit\Models\Helper\Logger;
@@ -15,6 +21,7 @@ use SurfSharekit\Models\RepoItem;
 use SurfSharekit\Models\RepoItemFile;
 use SurfSharekit\Models\RepoItemMetaField;
 use SurfSharekit\Models\RepoItemMetaFieldValue;
+use SurfSharekit\ShareControl\ShareControlDownloadService;
 
 /**
  * Class VirtualMetaField
@@ -24,162 +31,138 @@ use SurfSharekit\Models\RepoItemMetaFieldValue;
 class VirtualMetaField {
     public static function addNodeForType($type, RepoItem $repoItem, ProtocolNode $context, SimpleXMLElement $parentNode = null) {
         switch ($type) {
-            case 'dii:Identifier':
-                return self::addDiiIdentifier($repoItem, $context, $parentNode);
-                break;
-            case 'dcterms:modified':
-                return self::addDctermsModified($repoItem, $context, $parentNode);
-                break;
+            // Mods
             case 'mods:dateIssued':
                 return self::addModsDateIssued($repoItem, $context, $parentNode);
-                break;
             case 'mods:namePart:family':
                 return self::addPersonFamilyName($repoItem, $context, $parentNode);
-                break;
             case 'mods:namePart:given':
                 return self::addPersonGivenName($repoItem, $context, $parentNode);
-                break;
             case 'mods:displayForm':
                 return self::addPersonDisplayForm($repoItem, $context, $parentNode);
-                break;
-            case 'lom:languageString':
-                return self::addLanguageString($repoItem, $context, $parentNode);
-                break;
-            case 'lom:Identifier':
-                return self::addLomIdentifier($repoItem, $context, $parentNode);
-                break;
-            case 'vCard':
-                return self::addVCard($repoItem, $context, $parentNode);
-                break;
-            case 'lom:encaseInStringNode':
-                return self::addEncaseInStringNode($repoItem, $context, $parentNode);
-                break;
-            case 'lom:technical':
-                return self::addLomTechnicalNode($repoItem, $context, $parentNode);
-                break;
-            case 'didl:resource:file':
-                return self::addDidlResourceFile($repoItem, $context, $parentNode);
-                break;
-            case 'didl:resource:link':
-                return self::addDidlResourceLink($repoItem, $context, $parentNode);
-                break;
-            case 'mods:genre:thesis':
-                return self::addThesisType($repoItem, $context, $parentNode);
-                break;
-            case 'hbo:namePart:departmentFromLowerInstitute':
-                return self::addNamePartDepartmentFromLowerInstitute($repoItem, $context, $parentNode);
-                break;
-            case 'hbo:namePart':
-                return self::addNamePart($repoItem, $context, $parentNode);
-                break;
-            case 'dai:identifierExtension':
-                return self::addDaiIdentifierExtension($repoItem, $context, $parentNode);
-                break;
-            case 'dai:identifier':
-                return self::addDaiIdentifier($repoItem, $context, $parentNode);
-                break;
-            case 'orcid:identifier':
-                return self::addOrcidIdentifier($repoItem, $context, $parentNode);
-                break;
-            case 'isni:identifier':
-                return self::addIsniIdentifier($repoItem, $context, $parentNode);
-                break;
-            case 'localAuthor:identifier':
-                return self::addLocalAuthorIdentifier($repoItem, $context, $parentNode);
-                break;
-            case 'hogeschool:identifier':
-                return self::addHogeschoolIdentifier($repoItem, $context, $parentNode);
-                break;
-            case 'csv:personalIdentifiers':
-                return self::getCSVPersonalIdentifiers($repoItem, $context);
-                break;
-            case 'json:hogeschoolIdentifier':
-                return self::getJSONPersonInfo($repoItem, $context, 'HogeschoolID');
-                break;
-            case 'json:orcid':
-                return self::getJSONPersonInfo($repoItem, $context, 'ORCID', 'http://orcid.org/');
-                break;
-            case 'json:dai':
-                return self::getJSONPersonInfo($repoItem, $context, 'PersistentIdentifier', 'info:eu-repo/dai/nl/');
-                break;
-            case 'json:isni':
-                return self::getJSONPersonInfo($repoItem, $context, 'ISNI', 'http://isni.org/isni/');
-                break;
             case 'mods:name:personal':
                 return self::addModsNamePersonal($repoItem, $context, $parentNode);
-                break;
-            case 'lom:contribute:validator':
-                return self::addLomValidatorFromLowerInstitute($repoItem, $context, $parentNode);
-                break;
-            case 'lom:relation:description':
-                return self::addLomRelationDescription($repoItem, $context, $parentNode);
-                break;
-            case 'lom:rightsofusage':
-                return self::addLomRightsOfUsage($repoItem, $context, $parentNode);
-                break;
-            case 'oai:Identifier':
-                return self::addOAIIdentifier($repoItem, $context, $parentNode);
-                break;
+            case 'mods:genre:thesis':
+                return self::addThesisType($repoItem, $context, $parentNode);
             case 'mods:identifier:isbn':
                 return self::addISBNIdentifier($repoItem, $context, $parentNode);
-                break;
+            case 'mods:stripMarkdown':
+                return self::addModsStripMarkdown($repoItem, $context, $parentNode);
+
+            // DIDL
+            case 'didl:resource:file':
+                return self::addDidlResourceFile($repoItem, $context, $parentNode);
+            case 'didl:resource:link':
+                return self::addDidlResourceLink($repoItem, $context, $parentNode);
             case 'didl:resource':
                 return self::getResourceLink($repoItem, $context, $parentNode);
-                break;
+
+            // NL LOM
+            case 'lom:languageString':
+                return self::addLanguageString($repoItem, $context, $parentNode);
+            case 'lom:Identifier':
+                return self::addLomIdentifier($repoItem, $context, $parentNode);
+            case 'lom:encaseInStringNode':
+                return self::addEncaseInStringNode($repoItem, $context, $parentNode);
+            case 'lom:technical':
+                return self::addLomTechnicalNode($repoItem, $context, $parentNode);
+            case 'lom:contribute:validator':
+                return self::addLomValidatorFromLowerInstitute($repoItem, $context, $parentNode);
+            case 'lom:relation:description':
+                return self::addLomRelationDescription($repoItem, $context, $parentNode);
+            case 'lom:rightsofusage':
+                return self::addLomRightsOfUsage($repoItem, $context, $parentNode);
             case 'lom:classification:taxonomy':
                 return self::addClassificationTaxonomy($repoItem, $context, $parentNode);
-                break;
+
+            // HBO
+            case 'hbo:namePart:departmentFromLowerInstitute':
+                return self::addNamePartDepartmentFromLowerInstitute($repoItem, $context, $parentNode);
+            case 'hbo:namePart':
+                return self::addNamePart($repoItem, $context, $parentNode);
+
+            // DAI
+            case 'dai:identifierExtension':
+                return self::addDaiIdentifierExtension($repoItem, $context, $parentNode);
+            case 'dai:identifier':
+                return self::addDaiIdentifier($repoItem, $context, $parentNode);
+
+            // JSON
+            case 'json:hogeschoolIdentifier':
+                return self::getJSONPersonInfo($repoItem, $context, 'HogeschoolID');
+            case 'json:orcid':
+                return self::getJSONPersonInfo($repoItem, $context, 'ORCID', 'http://orcid.org/');
+            case 'json:dai':
+                return self::getJSONPersonInfo($repoItem, $context, 'PersistentIdentifier', 'info:eu-repo/dai/nl/');
+            case 'json:isni':
+                return self::getJSONPersonInfo($repoItem, $context, 'ISNI', 'http://isni.org/isni/');
             case 'json:modified':
                 return self::getJSONModified($repoItem);
-                break;
             case 'json:created':
                 return self::getJSONCreated($repoItem);
-                break;
-            case 'csv:created':
-                return self::getCSVCreated($repoItem);
-                break;
-            case 'csv:creator':
-                return self::getCSVCreator($repoItem);
-                break;
             case 'json:hasParts':
                 return self::getJSONHasParts($repoItem, $context);
-                break;
             case 'json:partOf':
                 return self::getJSONPartOf($repoItem, $context);
-                break;
             case 'json:dateIssued':
                 return self::getJSONDateIssued($repoItem, $context);
-                break;
             case 'json:personEmail':
                 return self::getJSONPersonEmail($repoItem, $context);
-                break;
             case 'json:validator':
                 return self::getJSONValidator($repoItem, $context);
-                break;
             case 'json:resourceMimeType':
                 return self::getJSONResourceMimeType($repoItem, $context);
-                break;
             case 'json:taxonomy':
                 return self::getJSONClassificationTaxonomy($repoItem, $context);
-                break;
+            case 'json:domain':
             case 'json:vocabulary':
                 return self::getJSONTreeMultiSelect($repoItem, $context);
-                break;
-            case 'json:domain':
-                return self::getJSONTreeMultiSelect($repoItem, $context);
-                break;
             case 'json:diiIdentifier':
                 return self::getJSONDiiIdentifier($repoItem, $context);
-                break;
             case 'json:alias':
                 return self::getJSONAlias($repoItem, $context);
-                break;
             case 'json:rootOrganisation':
                 return self::getJSONRootOrganisation($repoItem, $context);
-                break;
             case 'json:etag':
                 return self::getEtag($repoItem, $context);
-                break;
+            case 'json:link':
+                return self::getJSONLink($repoItem, $context);
+            case 'json:stripMarkdown':
+                return self::getJSONStripMarkdown($repoItem, $context);
+            case 'json:parseShareControlUrl':
+                return self::getJSONParseShareControlUrl($repoItem, $context);
+
+            // CSV
+            case 'csv:apa':
+                return self::getAPA($repoItem);
+            case 'csv:created':
+                return self::getCSVCreated($repoItem);
+            case 'csv:creator':
+                return self::getCSVCreator($repoItem);
+            case 'csv:personalIdentifiers':
+                return self::getCSVPersonalIdentifiers($repoItem, $context);
+            case 'csv:vocabulary':
+                return self::getCSVVocabulary($repoItem, $context);
+            case 'csv:stripMarkdown':
+                return self::getCSVStripMarkdown($repoItem, $context);
+
+            // Other
+            case 'vCard':
+                return self::addVCard($repoItem, $context, $parentNode);
+            case 'orcid:identifier':
+                return self::addOrcidIdentifier($repoItem, $context, $parentNode);
+            case 'isni:identifier':
+                return self::addIsniIdentifier($repoItem, $context, $parentNode);
+            case 'localAuthor:identifier':
+                return self::addLocalAuthorIdentifier($repoItem, $context, $parentNode);
+            case 'hogeschool:identifier':
+                return self::addHogeschoolIdentifier($repoItem, $context, $parentNode);
+            case 'oai:Identifier':
+                return self::addOAIIdentifier($repoItem, $context, $parentNode);
+            case 'dii:Identifier':
+                return self::addDiiIdentifier($repoItem, $context, $parentNode);
+            case 'dcterms:modified':
+                return self::addDctermsModified($repoItem, $context, $parentNode);
         }
     }
 
@@ -245,7 +228,7 @@ class VirtualMetaField {
     private static function addClassificationTaxonomy(RepoItem $repoItem, $context, $parentNode) {
         $repoItemMetaFieldForMetaField = self::getRepoItemMetaField($repoItem, $context);
         if ($repoItemMetaFieldForMetaField) {
-            $answers = $repoItemMetaFieldForMetaField->RepoItemMetaFieldValues()->filter(['IsRemoved' => 0, 'MetaFieldOption.ID:not' => null])->sort('metafieldoption_SurfSharekit_MetaFieldOption.Label_NL ASC');
+            $answers = $repoItemMetaFieldForMetaField->RepoItemMetaFieldValues()->filter(['IsRemoved' => 0, 'MetaFieldOption.ID:not' => null])->sort('MetaFieldOption.Label_NL ASC');
             if ($answers->count()) {
                 $previousLabel = '';
                 /** @var RepoItemMetaFieldValue $answer */
@@ -445,7 +428,7 @@ class VirtualMetaField {
                     continue;
                 }
                 /**
-                 * @var $file RepoItemFile
+                 * @var RepoItemFile $file
                  */
                 $file = $fileAnswerValue->RepoItemFile();
                 if (!$file || !$file->exists()) {
@@ -462,23 +445,23 @@ class VirtualMetaField {
         $linkRepoItemMetaField = $repoItem->RepoItemMetaFields()->filter(['MetaField.MetaFieldType.Title' => 'RepoItemLink'])->first();
         if ($linkRepoItemMetaField && $linkRepoItemMetaField->exists()) {
             foreach ($linkRepoItemMetaField->RepoItemMetaFieldValues()->filter(['IsRemoved' => 0]) as $value) {
-                $linkRepoItems = $value->RepoItem();
-                if (!$linkRepoItems || !$linkRepoItems->exists()) {
+                $linkRepoItem = $value->RepoItem();
+                if (!$linkRepoItem || !$linkRepoItem->exists()) {
                     continue;
                 }
-                $urlAnswer = $linkRepoItems->RepoItemMetaFields()->filter(['MetaField.MetaFieldType.Title' => 'URL'])->first();
-                if (!$urlAnswer || !$urlAnswer->exists()) {
+                $urlRepoItemMetaField = $linkRepoItem->RepoItemMetaFields()->filter(['MetaField.MetaFieldType.Title' => 'URL'])->first();
+                if (!$urlRepoItemMetaField || !$urlRepoItemMetaField->exists()) {
                     continue;
                 }
-                $fileAnswerValue = $urlAnswer->RepoItemMetaFieldValues()->filter(['IsRemoved' => 0])->first();
-                if (!$fileAnswerValue || !$fileAnswerValue->exists()) {
+                $urlRepoItemMetaFieldValue = $urlRepoItemMetaField->RepoItemMetaFieldValues()->filter(['IsRemoved' => 0])->first();
+                if (!$urlRepoItemMetaFieldValue || !$urlRepoItemMetaFieldValue->exists()) {
                     continue;
                 }
 
-                $url = $fileAnswerValue->Value;
-                if (!$url) {
+                if (!$urlRepoItemMetaFieldValue->Value) {
                     continue;
                 }
+                $url = Environment::getEnv('FRONTEND_BASE_URL') . '/link/' . $linkRepoItem->Uuid;
                 if (!$hasMovedTechnicalNodeToParentNode) {
                     $parentNode = $parentNode->addChild('technical');
                     $hasMovedTechnicalNodeToParentNode = true;
@@ -540,6 +523,131 @@ class VirtualMetaField {
         return $repoItem->Owner()->Title;
     }
 
+    private static function getRepoItemMetaFieldValueByJsonKey(RepoItem $repoItem, string $jsonKey): ?string {
+        $repoItemMetaField = $repoItem->RepoItemMetaFields()
+            ->leftJoin('SurfSharekit_MetaField', 'SurfSharekit_RepoItemMetaField.MetaFieldID = SurfSharekit_MetaField.ID')
+            ->filter('MetaField.JsonKey', $jsonKey)
+            ->first();
+
+        if ($repoItemMetaField) {
+            /** @var RepoItemMetaFieldValue $repoItemMetaFieldValue */
+            $repoItemMetaFieldValue = $repoItemMetaField->RepoItemMetaFieldValues()
+                ->filter(['IsRemoved' => 0])
+                ->first();
+
+            if ($repoItemMetaFieldValue) {
+                return $repoItemMetaFieldValue->Value;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Get all metafieldvalues for a given JSON key
+     * 
+     * @param RepoItem $repoItem
+     * @param string $jsonKey
+     * @return array Array of metafieldvalue strings
+     */
+    private static function getRepoItemMetaFieldValuesByJsonKey(RepoItem $repoItem, string $jsonKey): array {
+        $repoItemMetaField = $repoItem->RepoItemMetaFields()
+            ->leftJoin('SurfSharekit_MetaField', 'SurfSharekit_RepoItemMetaField.MetaFieldID = SurfSharekit_MetaField.ID')
+            ->filter('MetaField.JsonKey', $jsonKey)
+            ->first();
+
+        $values = [];
+        if ($repoItemMetaField) {
+            /** @var RepoItemMetaFieldValue $repoItemMetaFieldValue */
+            $repoItemMetaFieldValues = $repoItemMetaField->RepoItemMetaFieldValues()
+                ->filter(['IsRemoved' => 0]);
+
+            foreach ($repoItemMetaFieldValues as $repoItemMetaFieldValue) {
+                if ($repoItemMetaFieldValue && $repoItemMetaFieldValue->Value) {
+                    $values[] = $repoItemMetaFieldValue->Value;
+                }
+            }
+        }
+
+        return $values;
+    }
+
+    private static function getAPA(RepoItem $repoItem) {
+        // Create author string in format 'Jansen, J., Smid, J. & De Vries, P. (2025)'
+        $authors = $repoItem->getInvolvedPersons();
+        $authorStringArr = [];
+        /** @var Person $person */
+        foreach ($authors as $person) {
+            $authorStringArr[] = ucfirst($person->Surname) . ", " . ($person->Initials ?: substr($person->FirstName, 0, 1)) . ".";
+        }
+        switch (count($authors)) {
+            case 0:
+                $authorString = null;
+                break;
+            case 1:
+                $authorString = $authorStringArr[0];
+                break;
+            default:
+                $final = array_pop($authorStringArr);
+                $authorString = implode(", ", $authorStringArr) . ", & " . $final;
+                break;
+        }
+        $publicationDate = self::getRepoItemMetaFieldValueByJsonKey($repoItem, 'dateIssued');
+        if ($authorString && $publicationDate) $authorString .= " ($publicationDate)";
+
+        // Create title in format 'Title: subtitle' or 'Title: subtitle (2025)' if no author present
+        $title = self::getRepoItemMetaFieldValueByJsonKey($repoItem, 'title');
+        $subTitle = self::getRepoItemMetaFieldValueByJsonKey($repoItem, 'subtitle');
+        if ($subTitle) $title = "$title: $subTitle";
+        if (!$authorString && $publicationDate) $title .= " ($publicationDate)";
+
+        // Construct publication in format 'Nature, 2025, 15-16'
+        // If publishedIn is not present, then exclude $publication from the output
+        $publishedIn = self::getRepoItemMetaFieldValueByJsonKey($repoItem, 'publishedIn');
+        $publication = null;
+        
+        if ($publishedIn) {
+            $pageString = implode("-", array_filter([
+                self::getRepoItemMetaFieldValueByJsonKey($repoItem, 'pageStart'),
+                self::getRepoItemMetaFieldValueByJsonKey($repoItem, 'pageEnd')
+            ]));
+            $publishedParts = array_filter([
+                $publishedIn,
+                self::getRepoItemMetaFieldValueByJsonKey($repoItem, 'year'),
+                $pageString
+            ]);
+            $publication = implode(", ", $publishedParts);
+        }
+
+        if (DoiCreator::hasDoi($repoItem)) {
+            $doi = Controller::join_links([Environment::getEnv("DOI_PREFIX") . "$repoItem->Uuid"]);
+        } else {
+            $date = new DateTime();
+            $day = $date->format("j F Y");
+            $doi = "geraadpleegd op $day, van " . $repoItem->getPublicURL();
+        }
+
+        // Logic for Uitgevers
+        $publisher = '';
+        $publisherFromDocument = self::getRepoItemMetaFieldValueByJsonKey($repoItem, 'publisherSource');
+        $publishers = self::getRepoItemMetaFieldValuesByJsonKey($repoItem, 'publisher');
+
+        // Determine publisher value to use
+        if ($publisherFromDocument) {
+            $publisher = $publisherFromDocument;
+        } elseif (!empty($publishers)) {
+            $publisher = implode(';', $publishers);
+        }
+
+        $apaParts = [$authorString, $title, $publication, $doi];
+        if ($publisher) {
+            array_unshift($apaParts, $publisher);
+        }
+        $apaParts = array_filter($apaParts); //Remove empty values
+
+        return implode(". ", $apaParts);
+    }
+
     private static function getJSONValidator(RepoItem $repoItem, ProtocolNode $context) {
         if (($institute = $repoItem->Institute()) && $institute && $institute->exists()) {
             /** @var RepoItemMetaFieldValue $answer */
@@ -588,6 +696,48 @@ class VirtualMetaField {
             $isni = static::getJSONPersonInfo($repoItem, $context, 'ISNI', 'http://isni.org/isni/');
             return ['HogeschoolID' => $hogeschoolID, 'ORCID' => $orcid, 'DAI' => $dai, 'ISNI' => $isni];
         }
+    }
+
+    private static function getCSVVocabulary(RepoItem $repoItem, $context) {
+        // For CSV exports we want human-readable vocabulary labels (NL) rather than stored option values/codes.
+        // This returns an array so the CSV export can flatten it into a single cell when needed.
+
+        // If SubMetaField is selected, find childRepoItems and use those as context (similar to other CSV helpers)
+        $repoItems = self::getRepoItemsForSubContext($repoItem, $context);
+        if (count($repoItems)) {
+            $originalMetaFieldId = $context->MetaFieldID;
+            $context->MetaFieldID = $context->SubMetaFieldID;
+            $labels = [];
+            foreach ($repoItems as $subRepoItem) {
+                $labels = array_merge($labels, static::getCSVVocabularyLabels($subRepoItem, $context));
+            }
+            $context->MetaFieldID = $originalMetaFieldId;
+            return $labels;
+        }
+
+        return static::getCSVVocabularyLabels($repoItem, $context);
+    }
+
+    private static function getCSVVocabularyLabels(RepoItem $repoItem, $context): array {
+        $repoItemMetaField = self::getRepoItemMetaField($repoItem, $context);
+        if (!$repoItemMetaField) {
+            return [];
+        }
+
+        $labels = [];
+        $values = $repoItemMetaField->RepoItemMetaFieldValues()->filter(['IsRemoved' => 0])->sort('MetaFieldOption.Label_NL ASC');
+        /** @var RepoItemMetaFieldValue $value */
+        foreach ($values as $value) {
+            if (($option = $value->MetaFieldOption()) && $option->exists()) {
+                $labels[] = $option->Label_NL ?: $option->Value;
+            } else if ($raw = $value->getField('Value')) {
+                $labels[] = $raw;
+            }
+        }
+
+        return array_values(array_filter($labels, function ($v) {
+            return !is_null($v) && $v !== '';
+        }));
     }
 
     private static function getJSONPersonInfo(RepoItem $repoItem, $context, $field, $prefix = '') {
@@ -668,7 +818,7 @@ class VirtualMetaField {
         $repoItemMetaFieldForMetaField = self::getRepoItemMetaField($repoItem, $context);
         $taxonPathNode = null;
         if ($repoItemMetaFieldForMetaField) {
-            $answers = $repoItemMetaFieldForMetaField->RepoItemMetaFieldValues()->filter(['IsRemoved' => 0, 'MetaFieldOption.ID:not' => null])->sort('metafieldoption_SurfSharekit_MetaFieldOption.Label_NL ASC');
+            $answers = $repoItemMetaFieldForMetaField->RepoItemMetaFieldValues()->filter(['IsRemoved' => 0, 'MetaFieldOption.ID:not' => null])->sort('MetaFieldOption.Label_NL ASC');
             if ($answers->count()) {
                 $previousLabel = '';
                 /** @var RepoItemMetaFieldValue $answer */
@@ -700,7 +850,7 @@ class VirtualMetaField {
         $repoItemMetaFieldForMetaField = self::getRepoItemMetaField($repoItem, $context);
         $taxonPathNode = [];
         if ($repoItemMetaFieldForMetaField) {
-            $answers = $repoItemMetaFieldForMetaField->RepoItemMetaFieldValues()->filter(['IsRemoved' => 0, 'MetaFieldOption.ID:not' => null])->sort('metafieldoption_SurfSharekit_MetaFieldOption.Label_NL ASC');
+            $answers = $repoItemMetaFieldForMetaField->RepoItemMetaFieldValues()->filter(['IsRemoved' => 0, 'MetaFieldOption.ID:not' => null])->sort('MetaFieldOption.Label_NL ASC');
             if ($answers->count()) {
                 /** @var RepoItemMetaFieldValue $answer */
                 foreach ($answers as $answer) {
@@ -770,7 +920,7 @@ class VirtualMetaField {
 
             if ($repoItemMetaFieldValue && $repoItemMetaFieldValue->Value) {
                 $mimeType = 'text/html';
-                $resourceUrl = $repoItemMetaFieldValue->Value;
+                $resourceUrl = Environment::getEnv('FRONTEND_BASE_URL') . '/link/' . $repoItem->Uuid;
                 $resourceNode = self::addNode($parentNode, '', $context);
                 $resourceNode->addAttribute('mimeType', XMLHelper::encodeXMLString($mimeType));
                 $resourceNode->addAttribute('ref', XMLHelper::encodeXMLString($resourceUrl));
@@ -1142,5 +1292,121 @@ class VirtualMetaField {
                 }
             }
         }
+    }
+
+    private static function getJSONLink(RepoItem $repoItem, ProtocolNode $context) {
+        return Environment::getEnv('FRONTEND_BASE_URL') . '/link/' . $repoItem->Uuid;
+    }
+
+    private static function getJSONStripMarkdown(RepoItem $repoItem, ProtocolNode $context) {
+        $repoItemMetaField = self::getRepoItemMetaField($repoItem, $context);
+        if ($repoItemMetaField) {
+            $repoItemMetaFieldValue = $repoItemMetaField->RepoItemMetaFieldValues()->filter(['IsRemoved' => 0])->first();
+
+            if ($repoItemMetaFieldValue) {
+                if ($text = $repoItemMetaFieldValue->Value) {
+                    return self::stripMarkdown($text);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private static function addModsStripMarkdown(RepoItem $repoItem, ProtocolNode $context, SimpleXMLElement $parentNode = null) {
+        $text = self::getContextRawTextValue($repoItem, $context);
+        if (is_null($text) || $text === '') {
+            return $parentNode;
+        }
+
+        return self::addNode($parentNode, self::stripMarkdown($text), $context);
+    }
+
+    private static function getCSVStripMarkdown(RepoItem $repoItem, ProtocolNode $context) {
+        $repoItems = self::getRepoItemsForSubContext($repoItem, $context);
+        if (count($repoItems)) {
+            $originalMetaFieldId = $context->MetaFieldID;
+            $context->MetaFieldID = $context->SubMetaFieldID;
+
+            $values = [];
+            foreach ($repoItems as $subRepoItem) {
+                $text = self::getContextRawTextValue($subRepoItem, $context);
+                if (!is_null($text) && $text !== '') {
+                    $values[] = self::stripMarkdown($text);
+                }
+            }
+
+            $context->MetaFieldID = $originalMetaFieldId;
+            return $values;
+        }
+
+        $text = self::getContextRawTextValue($repoItem, $context);
+        return is_null($text) ? null : self::stripMarkdown($text);
+    }
+
+    private static function getContextRawTextValue(RepoItem $repoItem, ProtocolNode $context): ?string {
+        $repoItemMetaField = self::getRepoItemMetaField($repoItem, $context);
+        if (!$repoItemMetaField) {
+            return null;
+        }
+
+        $repoItemMetaFieldValue = $repoItemMetaField->RepoItemMetaFieldValues()
+            ->filter(['IsRemoved' => 0])
+            ->first();
+
+        if (!$repoItemMetaFieldValue) {
+            return null;
+        }
+
+        $value = $repoItemMetaFieldValue->Value ?? $repoItemMetaFieldValue->getRelatedObjectTitle() ?? null;
+        if (is_null($value)) {
+            return null;
+        }
+
+        return $value;
+    }
+
+    private static function stripMarkdown($text) {
+        // Links: [label](url) -> url
+        $text = preg_replace('/\[([^\]]*?)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/', '$2', $text);
+
+        // Remove bullet markers at start of items
+        $text = preg_replace('/(?:^|\s)-\s+/', ' ', $text);
+
+        // Remove underline: ++text++ -> text
+        $text = preg_replace('/\+\+(.*?)\+\+/', '$1', $text);
+
+        // Remove bold first: **text** -> text
+        $text = preg_replace('/\*\*(.*?)\*\*/', '$1', $text);
+
+        // Remove italic after that: *text* -> text
+        $text = preg_replace('/\*(.*?)\*/', '$1', $text);
+
+        // Normalize whitespace
+        $text = preg_replace('/\s+/', ' ', $text);
+
+        return trim($text);
+    }
+
+    private static function getJSONParseShareControlUrl(RepoItem $repoItem, ProtocolNode $context) {
+        $repoItemMetaField = self::getRepoItemMetaField($repoItem, $context);
+
+        if ($repoItemMetaField) {
+            $repoItemMetaFieldValue = $repoItemMetaField->RepoItemMetaFieldValues()
+                ->filter(['IsRemoved' => 0])
+                ->first();
+
+            if ($repoItemMetaFieldValue && $repoItemMetaFieldValue->Value) {
+                $downloadService = ShareControlDownloadService::create();
+
+                if ($downloadService->isShareControlUrl($repoItemMetaFieldValue->Value)) {
+                    return Environment::getEnv('FRONTEND_BASE_URL') . '/link/' . $repoItem->Uuid;
+                }
+
+                return $repoItemMetaFieldValue->Value;
+            }
+        }
+
+        return null;
     }
 }

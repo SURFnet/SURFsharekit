@@ -2,25 +2,26 @@
 
 use SilverStripe\Admin\LeftAndMainExtension;
 use SilverStripe\Control\Director;
+use SilverStripe\Core\Environment;
 
 class EnvironmentBannerLeftAndMainExtension extends LeftAndMainExtension {
     public function isLive() {
-        return Director::isLive();
+        return Environment::getEnv('APPLICATION_ENVIRONMENT') == 'live';
     }
 
     public function isDev() {
-        return Director::isDev();
+        return Environment::getEnv('APPLICATION_ENVIRONMENT') == 'dev';
     }
 
     public function isTest() {
-        return Director::isTest();
+        return Environment::getEnv('APPLICATION_ENVIRONMENT') == 'test';
     }
 
     public function isStaging() {
-        return Director::get_environment_type() === 'staging';
+        return Environment::getEnv('APPLICATION_ENVIRONMENT') == 'staging';
     }
 
     public function isAcceptance() {
-        return Director::get_environment_type() === 'acceptance';
+        return Environment::getEnv('APPLICATION_ENVIRONMENT') == 'acc';
     }
 }

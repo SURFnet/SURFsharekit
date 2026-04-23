@@ -12,7 +12,7 @@ use SurfSharekit\Models\Helper\Constants;
  */
 class LostPasswordExtension extends Extension {
     function forgotPassword(Member $member) {
-        if ($member->isDefaultAdmin()) {
+        if ($member->isMainAdmin()) {
             return true;
         } else if ($member->Groups()->filter('Roles.Title', RoleConstant::WORKSADMIN)->count() > 0) {
             return true;

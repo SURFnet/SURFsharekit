@@ -5,7 +5,7 @@ Name: zooma-log
 SilverStripe\Core\Injector\Injector:
   Psr\Log\LoggerInterface:
     calls:
-      LogFileHandler: [ pushHandler, [ %$LogFileHandler ] ]
+      LogFileHandler: [ pushHandler, [ "%$LogFileHandler" ] ]
   LogFileHandler:
     class: Monolog\Handler\StreamHandler
     constructor:

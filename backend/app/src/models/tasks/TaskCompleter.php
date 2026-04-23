@@ -25,4 +25,12 @@ class TaskCompleter {
             WHERE AssociationUuid = '$task->AssociationUuid'
         ");
     }
+
+    public function completeTasksByTypeForRepoItem(string $taskType, int $repoItemID, string $action) {
+        $completedBy = Security::getCurrentUser();
+        DB::prepared_query("
+            UPDATE SurfSharekit_Task SET State = 'DONE', Action = ?, CompletedByID = ?, CompletedByUuid = ?
+            WHERE RepoItemID = ? AND Type = ? AND State = 'INITIAL'
+        ", [$action, $completedBy->ID, $completedBy->Uuid, $repoItemID, $taskType]);
+    }
 }

@@ -14,7 +14,8 @@ class CustomEventDimension {
     const REPO_ITEM_LINK_ID = "RepoItemLinkId";
     const UTM_SOURCE = "UtmSource";
     const UTM_CONTENT = "UtmContent";
-    
+    const REPO_ITEM_LINK_URL = "RepoItemLinkUrl";
+
     private int $id;
     private int $slot;
     

@@ -2,10 +2,10 @@
 
 namespace SurfSharekit\Models;
 
-use SilverStripe\AssetAdmin\Forms\UploadField;
-use SilverStripe\Assets\Image;
+use SilverStripe\EnvironmentExport\Exportable;
 use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\ReadonlyField;
+use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Versioned\Versioned;
 
@@ -15,6 +15,7 @@ use SilverStripe\Versioned\Versioned;
  * DataObject representing a single option on a (@see MetaField)
  */
 class MetaFieldOption extends DataObject {
+    use Exportable;
 
     private static $extensions = [
         Versioned::class . '.versioned',
@@ -60,6 +61,14 @@ class MetaFieldOption extends DataObject {
     ];
 
     private static $indexes = [
+        'MetaFieldTreeLookup' => [
+            'type' => 'index',
+            'columns' => ['MetaFieldID', 'IsRemoved', 'MetaFieldOptionID']
+        ],
+        'MetaFieldParentLookup' => [
+            'type' => 'index',
+            'columns' => ['MetaFieldOptionID', 'IsRemoved']
+        ],
         'FulltextSearchOption' => [
             'type' => 'fulltext',
             'columns' => ['Label_EN', 'Label_NL']
@@ -114,6 +123,11 @@ class MetaFieldOption extends DataObject {
     }
 
     protected function onBeforeWrite() {
+        if ($this->ImportTaskWrite) {
+            parent::onBeforeWrite();
+            return;
+        }
+
         if (!$this->isInDB() && !$this->SetCustomSortOrder) {
             $maxSortOrder = MetaFieldOption::get()->filter('MetaFieldID', $this->MetaFieldID)->max('SortOrder');
             if ($maxSortOrder) {
@@ -129,6 +143,11 @@ class MetaFieldOption extends DataObject {
 
     protected function onAfterWrite() {
         parent::onAfterWrite();
+
+        if ($this->ImportTaskWrite) {
+            return;
+        }
+
         $this->updateRelevantRepoItems();
         $this->MetaField()->removeCacheWhereNeeded();
     }
@@ -155,8 +174,10 @@ class MetaFieldOption extends DataObject {
         if ($this->isInDB()) {
             $fields->insertBefore("Value", new ReadonlyField("Uuid", "Uuid", $this->Uuid));
         }
+        $key = $this->Metafield()->MetaFieldType()->Key ?? "";
+        $key = strtolower($key);
 
-        if (strtolower($this->Metafield()->MetaFieldType()->Key) == 'dropdown') {
+        if ($key == 'dropdown') {
             $fields->addFieldToTab(
                 'Root.Main',
                 DropdownField::create('Icon', 'Icon')
@@ -167,7 +188,7 @@ class MetaFieldOption extends DataObject {
                         'ClosedAccess' => 'Niet toegankelijk',
                     ])
             );
-        } else if (strtolower($this->Metafield()->MetaFieldType()->Key) == 'rightofusedropdown') {
+        } else if ($key == 'rightofusedropdown') {
             $fields->addFieldToTab(
                 'Root.Main',
                 DropdownField::create('Icon', 'Icon')
@@ -191,7 +212,7 @@ class MetaFieldOption extends DataObject {
 
 
         // Check if Metafield type is Dropdown
-        if ($this->MetaField() && !in_array(strtolower($this->MetaField()->MetaFieldType()->Key), ['dropdown', 'rightofusedropdown'])) {
+        if ($this->MetaField() && !in_array($key, ['dropdown', 'rightofusedropdown'])) {
             $fields->removeByName('Icon');
         }
 
@@ -200,5 +221,9 @@ class MetaFieldOption extends DataObject {
 //        $fields = MetaField::ensureDropdownField($this, $fields);
 //        $fields->addFieldToTab('Root.Main', $parentField);
         return $fields;
+    }
+
+    public static function updateDataListForExport(DataList &$dataList) {
+        $dataList = $dataList->filter('MetaField.MetaFieldType.Key:not', 'DropdownTag');
     }
 }

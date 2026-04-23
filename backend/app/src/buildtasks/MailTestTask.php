@@ -10,7 +10,7 @@ class MailTestTask extends BuildTask
 
     public function run($request) {
         $email = SharekitEmail::create();
-        $email->setTo('menno@zooma.nl');
+        $email->setTo($request->getVar("email") ?? 'menno@zooma.nl');
         $email->setData([
             'GroupName' => "TestGroup",
             'PersonName' => "TestPerson"

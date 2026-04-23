@@ -10,6 +10,7 @@ use RepoItemJsonApiDescription;
 use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Security\PermissionProvider;
+use SilverStripe\Security\Security;
 use SurfSharekit\Api\InstituteScoper;
 use SurfSharekit\Api\PermissionFilter;
 use SurfSharekit\Models\Helper\Logger;
@@ -91,12 +92,25 @@ class BulkAction extends DataObject implements PermissionProvider {
         return $result;
     }
 
-    function canView($member = null, $context = []) {
-        return $this->createdBy()->canSanitize();
+    public function canView($member = null) {
+        if ($member === null) {
+            $member = Security::getCurrentUser();
+        }
+
+        if ($member) {
+            return $member->ID == $this->CreatedByID && $member->canSanitize();
+        }
+        return false;
     }
 
-    function canCreate($member = null, $context = []) {
-        return $this->createdBy()->canSanitize();
-    }
+    public function canEdit($member = null) {
+        if ($member === null) {
+            $member = Security::getCurrentUser();
+        }
 
+        if ($member) {
+            return $member->ID == $this->CreatedByID && $member->canSanitize();
+        }
+        return false;
+    }
 }

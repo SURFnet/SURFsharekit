@@ -2,6 +2,7 @@
 
 namespace SurfSharekit\Models;
 
+use SilverStripe\EnvironmentExport\Exportable;
 use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Versioned\Versioned;
@@ -10,6 +11,7 @@ use SilverStripe\Versioned\Versioned;
  * @method DataList TemplateSections
  */
 class TemplateStep extends DataObject {
+    use Exportable;
 
     private static $extensions = [
         Versioned::class . '.versioned',

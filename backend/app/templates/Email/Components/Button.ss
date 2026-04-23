@@ -1,4 +1,4 @@
-<table style="border: none; background: #2D364F; border-radius: 15px 2px 15px 15px;" cellpadding="0" cellspacing="0">
+<p><table style="border: none; background: #2D364F; border-radius: 15px 2px 15px 15px;" cellpadding="0" cellspacing="0">
     <tr>
         <td style="height: 12px"></td>
         <td style="height: 12px"></td>
@@ -18,7 +18,7 @@
         <td style="height: 12px"></td>
         <td style="height: 12px"></td>
     </tr>
-</table>
+</table></p>
 
 
 <%--<div style="padding: 24px 0">--%>

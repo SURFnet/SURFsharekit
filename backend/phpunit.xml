@@ -1,8 +1,13 @@
 <phpunit bootstrap="phpunitbootstrap.php" colors="true">
-    <testsuite name="Default">
-        <directory>app/tests</directory>
-    </testsuite>
-    <testsuite name="upload-api">
-        <directory>app/tests/api/upload</directory>
-    </testsuite>
+    <testsuites>
+        <testsuite name="Default">
+            <directory>app/tests</directory>
+        </testsuite>
+        <testsuite name="ShareControl">
+            <directory>app/tests/ShareControl</directory>
+        </testsuite>
+        <testsuite name="upload-api">
+            <directory>app/tests/api/upload</directory>
+        </testsuite>
+    </testsuites>
 </phpunit>

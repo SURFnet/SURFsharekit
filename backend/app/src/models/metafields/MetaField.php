@@ -6,6 +6,7 @@ use Exception;
 use SilverStripe\Control\Controller;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Control\HTTPResponse_Exception;
+use SilverStripe\EnvironmentExport\Exportable;
 use SilverStripe\Forms\CompositeField;
 use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\FieldList;
@@ -27,7 +28,6 @@ use SilverStripe\Versioned\Versioned;
 use SurfSharekit\Action\CustomAction;
 use SurfSharekit\Models\Helper\Constants;
 use SurfSharekit\Models\Helper\Logger;
-use SurfSharekit\Tasks\GetMetafieldOptionsFromJsonTask;
 use Symbiote\GridFieldExtensions\GridFieldOrderableRows;
 
 /**
@@ -39,6 +39,7 @@ use Symbiote\GridFieldExtensions\GridFieldOrderableRows;
  * to be filled in (@see RepoItemMetaField)
  */
 class MetaField extends DataObject {
+    use Exportable;
 
     private static $extensions = [
         Versioned::class . '.versioned'
@@ -137,7 +138,7 @@ class MetaField extends DataObject {
 
         /** @var DropdownField $metaFieldTypeField */
         $metaFieldTypeField = $fields->dataFieldByName('MetaFieldTypeID');
-        $metaFieldTypeField->setSource(MetaFieldType::get()->sort('Title')->map('ID', 'Title'));
+        $metaFieldTypeField->setSource(MetaFieldType::get()->sort('Title'));
         $metaFieldTypeField->setEmptyString('Select a metafield type');
         $metaFieldTypeField->setHasEmptyDefault(false);
         $metaFieldTypeField->setDescription('Changing the field type may cause unexpected results in the existing metafield');
@@ -283,11 +284,20 @@ class MetaField extends DataObject {
 
     public function onAfterWrite() {
         parent::onAfterWrite();
+
+        if ($this->ImportTaskWrite) {
+            return;
+        }
+
         $this->removeCacheWhereNeeded();
     }
 
     public function onBeforeWrite() {
         parent::onBeforeWrite();
+
+        if ($this->ImportTaskWrite) {
+            return;
+        }
 
         // Validate JsonKey
         if (!$this->isValidJsonKey($this->JsonKey)) {

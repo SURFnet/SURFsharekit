@@ -82,26 +82,26 @@ class ExternalRepoItemJsonApiDescription extends DataObjectJsonApiDescription {
         }
         $joinedQuery = $objectsToDescribe
             //join answers
-            ->leftJoin('SurfSharekit_RepoItemMetaField', "${randomTempTableName}SurfSharekit_RepoItemMetaField.RepoItemID = SurfSharekit_RepoItem.ID", "${randomTempTableName}SurfSharekit_RepoItemMetaField")
-            ->leftJoin('SurfSharekit_RepoItemMetaFieldValue', "${randomTempTableName}SurfSharekit_RepoItemMetaField.ID = ${randomTempTableName}SurfSharekit_RepoItemMetaFieldValue.RepoItemMetaFieldID", "${randomTempTableName}SurfSharekit_RepoItemMetaFieldValue")
-            ->leftJoin('SurfSharekit_MetaField', "${randomTempTableName}SurfSharekit_RepoItemMetaField.MetaFieldID = ${randomTempTableName}SurfSharekit_MetaField.ID", "${randomTempTableName}SurfSharekit_MetaField")
-            ->leftJoin('SurfSharekit_MetaFieldOption', "${randomTempTableName}SurfSharekit_RepoItemMetaFieldValue.MetaFieldOptionID = ${randomTempTableName}SurfSharekit_MetaFieldOption.ID", "${randomTempTableName}SurfSharekit_MetaFieldOption")
-            ->leftJoin('SurfSharekit_ProtocolNode', "${randomTempTableName}SurfSharekit_ProtocolNode.MetaFieldID = ${randomTempTableName}SurfSharekit_MetaField.ID", "${randomTempTableName}SurfSharekit_ProtocolNode")
-            ->leftJoin('SurfSharekit_Protocol', "${randomTempTableName}SurfSharekit_ProtocolNode.ProtocolID = ${randomTempTableName}SurfSharekit_Protocol.ID", "${randomTempTableName}SurfSharekit_Protocol")
-            ->where(["${randomTempTableName}SurfSharekit_Protocol.SystemKey" => 'JSON:API', "${randomTempTableName}SurfSharekit_Protocol.ID" => $this->describingProtocol->ID]);
+            ->leftJoin('SurfSharekit_RepoItemMetaField', "{$randomTempTableName}SurfSharekit_RepoItemMetaField.RepoItemID = SurfSharekit_RepoItem.ID", "{$randomTempTableName}SurfSharekit_RepoItemMetaField")
+            ->leftJoin('SurfSharekit_RepoItemMetaFieldValue', "{$randomTempTableName}SurfSharekit_RepoItemMetaField.ID = {$randomTempTableName}SurfSharekit_RepoItemMetaFieldValue.RepoItemMetaFieldID", "{$randomTempTableName}SurfSharekit_RepoItemMetaFieldValue")
+            ->leftJoin('SurfSharekit_MetaField', "{$randomTempTableName}SurfSharekit_RepoItemMetaField.MetaFieldID = {$randomTempTableName}SurfSharekit_MetaField.ID", "{$randomTempTableName}SurfSharekit_MetaField")
+            ->leftJoin('SurfSharekit_MetaFieldOption', "{$randomTempTableName}SurfSharekit_RepoItemMetaFieldValue.MetaFieldOptionID = {$randomTempTableName}SurfSharekit_MetaFieldOption.ID", "{$randomTempTableName}SurfSharekit_MetaFieldOption")
+            ->leftJoin('SurfSharekit_ProtocolNode', "{$randomTempTableName}SurfSharekit_ProtocolNode.MetaFieldID = {$randomTempTableName}SurfSharekit_MetaField.ID", "{$randomTempTableName}SurfSharekit_ProtocolNode")
+            ->leftJoin('SurfSharekit_Protocol', "{$randomTempTableName}SurfSharekit_ProtocolNode.ProtocolID = {$randomTempTableName}SurfSharekit_Protocol.ID", "{$randomTempTableName}SurfSharekit_Protocol")
+            ->where(["{$randomTempTableName}SurfSharekit_Protocol.SystemKey" => 'JSON:API', "{$randomTempTableName}SurfSharekit_Protocol.ID" => $this->describingProtocol->ID]);
 
         $fieldParts = explode('.', $attribute);
         if (count($fieldParts) === 2) {
             $joinedQuery = $joinedQuery
-                ->leftJoin('SurfSharekit_ProtocolNode', "${randomTempTableName}SurfSharekit_ProtocolNode.ParentNodeID = ${randomTempTableName}ParentProtocolNode.ID", "${randomTempTableName}ParentProtocolNode")
-                ->where(["${randomTempTableName}SurfSharekit_ProtocolNode.NodeTitle" => $fieldParts[1]])
-                ->where(["${randomTempTableName}ParentProtocolNode.NodeTitle" => $fieldParts[0]]);
+                ->leftJoin('SurfSharekit_ProtocolNode', "{$randomTempTableName}SurfSharekit_ProtocolNode.ParentNodeID = {$randomTempTableName}ParentProtocolNode.ID", "{$randomTempTableName}ParentProtocolNode")
+                ->where(["{$randomTempTableName}SurfSharekit_ProtocolNode.NodeTitle" => $fieldParts[1]])
+                ->where(["{$randomTempTableName}ParentProtocolNode.NodeTitle" => $fieldParts[0]]);
         } else if (count($fieldParts) > 2) {
             throw new Exception("Cannot filter on $attribute, only one nested attribute allowed");
         } else {
             $joinedQuery = $joinedQuery
-                ->where(["${randomTempTableName}SurfSharekit_ProtocolNode.NodeTitle" => $attribute])
-                ->where(["${randomTempTableName}SurfSharekit_ProtocolNode.ParentNodeID" => 0]);
+                ->where(["{$randomTempTableName}SurfSharekit_ProtocolNode.NodeTitle" => $attribute])
+                ->where(["{$randomTempTableName}SurfSharekit_ProtocolNode.ParentNodeID" => 0]);
         }
 
         $dateComparisonWithModifier = function ($value, $modifier) use (&$dateComparisonWithModifier, $randomTempTableName) {
@@ -116,9 +116,9 @@ class ExternalRepoItemJsonApiDescription extends DataObjectJsonApiDescription {
                 return $orFilterList;
             }
 
-            return ["${randomTempTableName}SurfSharekit_MetaFieldOption.Value $modifier '$value'", "${randomTempTableName}SurfSharekit_RepoItemMetaFieldValue.Value $modifier '$value'",
-                "Date(${randomTempTableName}SurfSharekit_MetaFieldOption.Value) $modifier Date('$value')", "Date(${randomTempTableName}SurfSharekit_RepoItemMetaFieldValue.Value) $modifier Date('$value')",
-                "${randomTempTableName}SurfSharekit_ProtocolNode.HardcodedValue $modifier '$value'"];
+            return ["{$randomTempTableName}SurfSharekit_MetaFieldOption.Value $modifier '$value'", "{$randomTempTableName}SurfSharekit_RepoItemMetaFieldValue.Value $modifier '$value'",
+                "Date({$randomTempTableName}SurfSharekit_MetaFieldOption.Value) $modifier Date('$value')", "Date({$randomTempTableName}SurfSharekit_RepoItemMetaFieldValue.Value) $modifier Date('$value')",
+                "{$randomTempTableName}SurfSharekit_ProtocolNode.HardcodedValue $modifier '$value'"];
         };
 
         if (is_array($value)) {

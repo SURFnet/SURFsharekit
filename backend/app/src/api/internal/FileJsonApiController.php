@@ -5,11 +5,16 @@ namespace SurfSharekit\Api;
 use Exception;
 use PersonImageJsonApiDescription;
 use Ramsey\Uuid\Uuid;
+use SilverStripe\api\internal\descriptions\BlueprintExportFileJsonApiDesciption;
+use SilverStripe\api\internal\descriptions\EnvironmentExportFileJsonApiDesciption;
 use SilverStripe\api\internal\descriptions\ExportItemFileJsonApiDescription;
 use SilverStripe\Assets\File;
+use SilverStripe\constants\UtmContent;
 use SilverStripe\Control\Controller;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Core\Environment;
+use SilverStripe\EnvironmentExport\DataObjects\BlueprintExportFile;
+use SilverStripe\EnvironmentExport\DataObjects\EnvironmentExportFile;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Security\Security;
 use SilverStripe\Versioned\Versioned;
@@ -20,6 +25,7 @@ use SurfSharekit\Models\PersonImage;
 use SurfSharekit\Models\RepoItemFile;
 use SurfSharekit\Models\ReportFile;
 use SurfSharekit\Piwik\CustomEventDimension;
+use SurfSharekit\Piwik\Events\DownloadFileEvent;
 use SurfSharekit\Piwik\Tracker\PiwikTracker;
 use UuidExtension;
 
@@ -61,6 +67,8 @@ class FileJsonApiController extends JsonApiController {
             ReportFile::class => new \ReportFileJsonApiDescription(),
             RepoItemFile::class => new \RepoItemFileJsonApiDescription(),
             ExportItem::class => new ExportItemFileJsonApiDescription(),
+            EnvironmentExportFile::class => new EnvironmentExportFileJsonApiDesciption(),
+            BlueprintExportFile::class => new BlueprintExportFileJsonApiDesciption()
         ];
     }
 
@@ -141,19 +149,20 @@ class FileJsonApiController extends JsonApiController {
             }
 
             $repoItem = $objectToDescribe->RepoItem();
+            $utmSource = Controller::curr()->getRequest()->getVar("utm_source");
             // check if repoItem exists (repoItem does not exist for just uploaded files)
             if(!is_null($repoItem) && $repoItem->exists()) {
-                PiwikTracker::trackEvent(
+                $downloadEvent = new DownloadFileEvent(
+                    $objectToDescribe->Uuid,
+                    $repoItem->Uuid,
+                    $repoItem->RepoType,
+                    $repoItem->Institute->RootInstitute->Uuid,
+                    $utmSource ?? ""
+                );
+
+                PiwikTracker::trackDownload(
                     Controller::join_links(Environment::getEnv("SS_BASE_URL"), $this->getRequest()->getURL()),
-                    "Downloads",
-                    "download",
-                    "download",
-                    [
-                        CustomEventDimension::REPO_ITEM_FILE_ID => $objectToDescribe->Uuid, // repo_item_file_id
-                        CustomEventDimension::REPO_ITEM_ID => $repoItem->Uuid, // repo_item_id
-                        CustomEventDimension::REPO_TYPE => $repoItem->RepoType, // repo_type
-                        CustomEventDimension::ROOT_INSTITUTE_ID => $repoItem->Institute->RootInstitute->Uuid, // root_institute_id
-                    ]
+                    $downloadEvent
                 );
             }
 
@@ -200,7 +209,7 @@ class FileJsonApiController extends JsonApiController {
     }
 
     public static function getObjectOfTypeById($objectClass, $objectId) {
-        if ($objectClass === ExportItem::class) {
+        if ($objectClass === ExportItem::class || $objectClass === EnvironmentExportFile::class || $objectClass === BlueprintExportFile::class) {
             return Versioned::get_by_stage(File::class, Versioned::DRAFT)->where([
                 'Uuid' => $objectId
             ])->first();

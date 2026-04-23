@@ -26,8 +26,8 @@ class UploadApiFileController extends UploadApiAuthController {
 
     public function uploadFile(HTTPRequest $request) {
         // Set configuration for the duration of this script execution
-        ini_set('max_input_time', 300);
-        ini_set('max_execution_time', 300);
+        ini_set('max_input_time', 3600);
+        ini_set('max_execution_time', 3600);
 
         $fileUploadService = FileUploadService::create();
         $uploadedFile = array_values($_FILES)[0] ?? null;
@@ -41,8 +41,8 @@ class UploadApiFileController extends UploadApiAuthController {
     }
 
     public function replaceFile(HTTPRequest $request) {
-        ini_set('max_input_time', 300);
-        ini_set('max_execution_time', 300);
+        ini_set('max_input_time', 3600);
+        ini_set('max_execution_time', 3600);
 
         // file id uit url halen
         $fileUuid = $request->param("Uuid");

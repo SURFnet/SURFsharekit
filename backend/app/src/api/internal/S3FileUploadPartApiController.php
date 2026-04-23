@@ -64,20 +64,15 @@ class S3FileUploadPartApiController extends CORSController {
         $method = $this->__('REQUEST_METHOD', $_SERVER);
         $url = $this->__('X-Proxy-Url', $headers);
 
-        /** @var S3Client $s3Client */
-        $s3Client = Injector::inst()->create('Aws\\S3\\S3Client');
-        $s3Base = $s3Client->getEndpoint();
-        $s3Host = $s3Base->getHost();
-
         if( ! $url) {
             http_response_code(400) and exit("X-Proxy-Url header missing");
         }
 
-        $urlData = parse_url($url);
-        $urlHost = $urlData['host'];
-
-        if(stripos($urlHost, $s3Host) === false) {
-            http_response_code(400) and exit("X-Proxy-Url not allowed");
+        if (Environment::getenv('APPLICATION_ENVIRONMENT') != 'local') {
+            $pattern = '/^https:\/\/objectstore\.surf\.nl(\/.*)?$/';
+            if (!preg_match($pattern, $url)) {
+                http_response_code(400) and exit("X-Proxy-Url not allowed");
+            }
         }
 
         if( ! parse_url($url, PHP_URL_SCHEME)) {

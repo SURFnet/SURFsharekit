@@ -1,12 +1,24 @@
 <?php
 
 namespace SurfSharekit\Piwik\Tracker;
-use Exception;
+use http\Env;
 use SilverStripe\Core\Environment;
 use SilverStripe\Piwik\PiwikCustomDimensionMapping;
+use SurfSharekit\Piwik\Events\DownloadEvent;
 use SurfSharekit\Piwik\CustomEventDimension;
 
 class PiwikTracker {
+
+    public static function trackDownload(string $url, DownloadEvent $downloadEvent) {
+        PiwikTracker::trackEvent(
+            $url,
+            "Downloads",
+            "download",
+            "download",
+            $downloadEvent->getDimensions()
+        );
+    }
+
     public static function trackEvent(
         $url,
         $category,
@@ -17,6 +29,11 @@ class PiwikTracker {
         \DateTime $forceVisitDataTime = null,
         $forceUserId = false
     ) {
+        $trackingEnabled = Environment::getEnv("PIWIK_ENABLED");
+        if (!$trackingEnabled) {
+            return;
+        }
+
         $tracker = new \MatomoTracker(Environment::getEnv("PIWIK_SITE_ID"), Environment::getEnv("PIWIK_URL"));
         $tracker->setUrl($url);
         $tracker->setUrlReferrer(!empty($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : $url);

@@ -12,10 +12,11 @@ use SurfSharekit\Models\MetaFieldOption;
 use SurfSharekit\Models\NestingUtil;
 
 class GetMetafieldOptionsFromJsonTask extends BuildTask {
-    protected $title = 'Get metafield options from json url';
-    protected $description = 'This task is responsible for converting the json data into metafield options';
+    protected $title = 'Generate MetafieldOptions based on skos formatting';
+    protected $description = 'This task is responsible for converting the json data , that has been structured like skos, into metafield options, so that tree-multiselect components can use them';
 
     public function run($request) {
+        set_time_limit(0);
         try {
             $this->synchronizeMetaFieldOptionTrees();
             $this->synchronizeMetaFieldOptionSubTrees();

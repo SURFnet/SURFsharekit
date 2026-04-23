@@ -184,12 +184,24 @@ class SearchApiController extends JsonApiController {
                 return $this->createJsonApiBodyResponseFrom(static::invalidFiltersJsonApiBodyError('Use filter[isRemoved] only with values 1 or 0'), 400);
             }
 
+            $filterOnIsArchived = isset($this->filters['isArchived']) ? $this->filters['isArchived'] : null;
+            if ($filterOnIsArchived && !($filterOnIsArchived == 1 || $filterOnIsArchived == 0)) {
+                return $this->createJsonApiBodyResponseFrom(static::invalidFiltersJsonApiBodyError('Use filter[isArchived] only with values 1 or 0'), 400);
+            }
+
             $repoItems = InstituteScoper::getAll(RepoItemSummary::class);
             $repoItemDescription = new RepoItemSummaryJsonApiDescription();
             $repoItems = $repoItemDescription->applyGeneralFilter($repoItems);
             $repoItems = $repoItems->whereAny(["SurfSharekit_RepoItem.RepoType = 'PublicationRecord'", "SurfSharekit_RepoItem.RepoType = 'ResearchObject'", "SurfSharekit_RepoItem.RepoType = 'LearningObject'", "SurfSharekit_RepoItem.RepoType = 'Dataset'", "SurfSharekit_RepoItem.RepoType = 'Project'"]);
             if ($filterOnIsRemoved != null) {
                 $repoItems = $repoItems->where(['SurfSharekit_RepoItem.IsRemoved' => $filterOnIsRemoved]);
+            }
+            // Filter on status archived and boolean isarchived
+            if ($filterOnIsArchived != null) {
+                $repoItems = $repoItems->where([
+                    'SurfSharekit_RepoItem.Status' => 'Archived',
+                    'SurfSharekit_RepoItem.IsArchived' => $filterOnIsArchived
+                ]);
             }
             $repoItems = $repoItemDescription->applyFilter($repoItems, "search", $searchQuery);
             $repoItems = $repoItems->setQueriedColumns(['ID', 'ClassName', 'LastEdited']);

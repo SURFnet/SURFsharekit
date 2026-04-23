@@ -2,11 +2,14 @@
 
 namespace SurfSharekit\Api;
 
+use SilverStripe\Control\Cookie;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Core\Environment;
 use SilverStripe\Security\Member;
 use SilverStripe\Security\Security;
 use SurfSharekit\Models\Helper\Logger;
+use SurfSharekit\Models\LogItem;
+use const SurfSharekit\Models\AUTHENTICATION_LOG;
 
 /**
  * Class LoginProtectedApiController
@@ -18,6 +21,8 @@ use SurfSharekit\Models\Helper\Logger;
 abstract class LoginProtectedApiController extends CORSController {
     const ALLOW_APITOKEN_VERIFICATION_WITHOUT_HASH = true;
     const IGNORE_TOKEN_EXPIRATION = false;
+
+    protected $authenticationEnabled = true;
 
     private $statusRedirectsTo;
 
@@ -31,14 +36,14 @@ abstract class LoginProtectedApiController extends CORSController {
      */
     public function beforeHandleRequest(HTTPRequest $request) {
         parent::beforeHandleRequest($request);
-        if (Security::getCurrentUser()) {
+        if (Security::getCurrentUser() || !$this->authenticationEnabled) {
             return;
         }
         $this->setUserFromRequest($request);
     }
 
     protected function getMissingAuthorizationHeaderMessage() {
-        return 'Missing Authorization Bearer token in header';
+        return 'Missing sharekit-access-token cookie';
     }
 
     protected function getIncorrectBearerTokenMessage() {
@@ -58,7 +63,7 @@ abstract class LoginProtectedApiController extends CORSController {
     }
 
     protected function userHasValidLogin(Member $member) {
-        if ($member->isDefaultAdmin()) {
+        if ($member->isMainAdmin()) {
             return true;
         }
 
@@ -85,27 +90,33 @@ abstract class LoginProtectedApiController extends CORSController {
                 $requestedUrl === "/api/$possiblePath/repoItems/v1/docs" ||
                 $requestedUrl === "/api/$possiblePath/repoItems/v1/docs?json=1" ||
                 $requestedUrl === "/api/$possiblePath/persons/v1/docs" ||
-                $requestedUrl === "/api/$possiblePath/persons/v1/docs?json=1"
+                $requestedUrl === "/api/$possiblePath/persons/v1/docs?json=1" ||
+                $requestedUrl === "/api/$possiblePath/institutes/v1/docs" ||
+                $requestedUrl === "/api/$possiblePath/institutes/v1/docs?json=1"
             ){
                 return;
             }
         }
 
-        $authorizationToken = $request->getHeader('Authorization');
-        if (!$authorizationToken) {
+        $token = Cookie::get('sharekit-access-token');
+        $authHeader = $request->getHeader('Authorization');
+
+        if (!$token && !$authHeader) {
             $this->getResponse()->setStatusCode(401);
             $this->getResponse()->setBody($this->getMissingAuthorizationHeaderMessage());
             return;
         }
 
-        $bearerParts = explode(' ', $authorizationToken);
-        if (sizeof($bearerParts) != 2) {
-            $this->getResponse()->setStatusCode(401);
-            $this->getResponse()->setBody($this->getIncorrectBearerTokenMessage());
-            return;
+        if (!$token && $authHeader) {
+            $bearerParts = explode(' ', $authHeader);
+            if (sizeof($bearerParts) != 2 || strtolower($bearerParts[0]) !== 'bearer') {
+                $this->getResponse()->setStatusCode(401);
+                $this->getResponse()->setBody($this->getIncorrectBearerTokenMessage());
+                return;
+            }
+            $token = $bearerParts[1];
         }
-
-        $token = $bearerParts[1];
+        
         /***
          * @var Member $member
          */
@@ -115,7 +126,7 @@ abstract class LoginProtectedApiController extends CORSController {
             $apiTokenField = 'ApiTokenAcc';
         }
 
-        $member = Member::get()->filter($apiTokenField, hash('sha512', $token))->first(); //bottleneck 1 (between 150 and 200 ms) https://docs.silverstripe.org/en/4/developer_guides/performance/caching/
+        $member = Member::get()->filter($apiTokenField, hash('sha512', $token))->first();
         if (!$member && static::ALLOW_APITOKEN_VERIFICATION_WITHOUT_HASH) {
             $member = Member::get()->filter($apiTokenField, $token)->first();
         }

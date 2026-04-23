@@ -21,7 +21,8 @@ class TemplateMetaFieldJsonApiDescription extends DataObjectJsonApiDescription {
         'Description_EN' => 'descriptionEN',
         'Description_NL' => 'descriptionNL',
         'InfoText_EN' => 'infoTextEN',
-        'InfoText_NL' => 'infoTextNL'
+        'InfoText_NL' => 'infoTextNL',
+        'DependencyKey' => 'dependencyKey'
     ];
 
     public $attributeToFieldMap = [
@@ -37,7 +38,8 @@ class TemplateMetaFieldJsonApiDescription extends DataObjectJsonApiDescription {
         'descriptionEN' => 'Description_EN',
         'descriptionNL' => 'Description_NL',
         'infoTextEN' => 'InfoText_EN',
-        'infoTextNL' => 'InfoText_NL'
+        'infoTextNL' => 'InfoText_NL',
+        'dependencyKey' => 'DependencyKey'
     ];
 
     public $hasOneToRelationMap = [

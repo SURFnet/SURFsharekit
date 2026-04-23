@@ -2,6 +2,7 @@
 
 namespace SurfSharekit\Api\Upload\Controllers;
 
+use Exception;
 use SilverStripe\api\RequestFilter;
 use SilverStripe\api\ResponseHelper;
 use SilverStripe\api\Upload\Data\Persons\CreatePersonRequest;
@@ -53,32 +54,46 @@ class UploadApiPersonController extends UploadApiAuthController {
         return ResponseHelper::responseSuccess($personResponse->toJson());
     }
 
+    private function validatePersonFilters($filter) {
+        // Each filter in this list must be an exact match filter (so either the default or [EQ])
+        $mandatoryExactMatchList = ["email", "name", "institute", "orcid", "dai", "isni", "surname", "organisationId"];
+        foreach ($mandatoryExactMatchList as $filterField) {
+            if (isset($filter[$filterField]) && is_array($filter[$filterField]) && !isset($filter[$filterField]['EQ'])) {
+                throw new BadRequestException(ApiErrorConstant::GA_BR_003, ucfirst($filterField) . " filter must use exact match [EQ] operator");
+            }
+        }
+    }
+
     public function getPersons(HTTPRequest $request) {
         $personService = PersonService::create();
         $persons = $personService->getPersons();
 
         if (null !== $filter = $request->getVar('filter')) {
             if (is_string($filter)) {
+                $filterData = json_decode($filter, true);
+                $this->validatePersonFilters($filterData);
                 $persons = JsonNestedFilter::filterDataList([
-                    "surname" => "Surname",
                     "email" => "Email",
+                    "surname" => "Surname",
                     "dai" => "PersistentIdentifier",
                     "isni" => "ISNI",
                     "orcid" => "ORCID",
                     "organisationId" => "HogeschoolID"
                 ], $filter, $persons);
             } else {
+                $this->validatePersonFilters($filter);
                 $persons = RequestFilter::filterDataList($persons, $filter, [
                     'email' => '`Member`.`Email`',
                     'name' => "REPLACE(CONCAT(`Member`.`FirstName`,' ',COALESCE(`Member`.`SurnamePrefix`,''),' ', `Member`.`Surname`),'  ',' ')",
-                    'institute' => 'SurfSharekit_Institute.Uuid',
                     'orcid' => 'ORCID',
                     'dai' => 'PersistentIdentifier',
                     'isni' => 'ISNI',
-                    'lastname' => 'Surname',
+                    'surname' => 'Surname',
                     'organisationId' => 'HogeschoolID'
                 ]);
             }
+        } else {
+            $persons = $persons->filter("ID", 0); //Empty list
         }
 
         return ResponseHelper::responsePaginatedDataList($request, $persons, function (Person $person) {

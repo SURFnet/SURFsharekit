@@ -1,3 +1,65 @@
 SilverStripe\Core\Injector\Injector:
   SilverStripe\ORM\ManyManyList:
     class: ManyManyListExtended
+
+SilverStripe\Assets\File:
+  allowed_extensions:
+    - json
+    - apkg
+    - svg
+    - epub
+    - imscc
+    - imscp
+    - md
+    - sav
+    - scorm
+    - h5p
+    - psd
+    - story
+
+SilverStripe\MimeValidator\MimeUploadValidator:
+  MimeTypes:
+    json:
+      - 'json/application'
+      - 'text/plain'
+    apkg:
+      - 'application/x-gzip'
+      - 'application/zip'
+
+SilverStripe\ErrorPage\ErrorPage:
+  enable_static_file: false
+
+Silverstripe\Security\Member:
+  require_sudo_mode: false
+Silverstripe\Security\Group:
+  require_sudo_mode: false
+Silverstripe\Security\Permission:
+  require_sudo_mode: false
+Silverstripe\Security\PermissionRole:
+  require_sudo_mode: false
+
+---
+Name: surf-allowed-hosts
+After: requestprocessors
+Except:
+  environment: 'dev'
+---
+SilverStripe\Core\Injector\Injector:
+  SilverStripe\Control\Middleware\AllowedHostsMiddleware:
+    properties:
+      AllowedHosts:
+        - "api.dev.surfsharekit.nl"
+        - "api.test.surfsharekit.nl"
+        - "api.acc.surfsharekit.nl"
+        - "api.surfsharekit.nl"
+---
+Name: surf-allowed-hosts-dev
+After: requestprocessors
+Only:
+  environment: 'dev'
+---
+SilverStripe\Core\Injector\Injector:
+  SilverStripe\Control\Middleware\AllowedHostsMiddleware:
+    properties:
+      AllowedHosts:
+        - "*"

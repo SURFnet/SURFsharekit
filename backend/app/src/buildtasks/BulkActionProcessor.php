@@ -85,9 +85,9 @@ class BulkActionProcessor extends BuildTask {
                 break;
             case "ARCHIVE":
                 Logger::infoLog("[PROCESSING] - Performing 'ARCHIVE' action on RepoItem ($repoItem->Uuid)", 'BulkActionProcessor', 'performActionOnRepoItem');
+                $repoItem->Status = "Archived";
                 $repoItem->IsArchived = true;
                 $repoItem->IsPublic = false;
-                $repoItem->IsArchivedUpdated = true;
                 $repoItem->SkipValidation = true;
                 $repoItem->write();
                 break;

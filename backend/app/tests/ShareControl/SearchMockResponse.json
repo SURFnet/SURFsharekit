@@ -1,0 +1,1122 @@
+[
+    {
+        "uuid": "b2e08b20-e12f-40c1-bd90-be36fd92bcea",
+        "ibronId": "ibron-surf-acc-1",
+        "sourceId": "surfsharekit-acc-learning-materials",
+        "type": "LEARNING_MATERIAL",
+        "originalIdentifier": "d42d1f32-3231-4023-934d-0245286a6194",
+        "firstHarvested": "2025-04-29T09:15:12.065822Z",
+        "lastModified": "2025-05-07T12:17:24.740383Z",
+        "sskRepoItemUuid": null,
+        "lastModifiedInSource": "2017-12-01T13:46:57Z",
+        "deletedBySource": false,
+        "title": "Interview: Maurice Specht | 2.2 Nieuwe vormen van lokale democratie | omooc Challenging government",
+        "subTitle": null,
+        "abstract_": "Interview: Maurice Specht | 2.2 Nieuwe vormen van lokale democratie | omooc Challenging government",
+        "language": "nl",
+        "keywords": [
+            "Bestuurskunde",
+            "Interview",
+            "MOOC"
+        ],
+        "authors": [],
+        "files": [],
+        "availabilities": [
+            {
+                "nlbronId": "nlbron-public-learning-materials",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            },
+            {
+                "nlbronId": "nlbron-surf-acc-copyright",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            }
+        ],
+        "courseId": null,
+        "purgeAfter": null,
+        "purged": false,
+        "expiryDateForNlBron": "2028-04-13T09:15:12.065822Z",
+        "sourceObjects": {}
+    },
+    {
+        "uuid": "582ab49c-0766-44b8-8275-a79c8e7daf3d",
+        "ibronId": "ibron-surf-acc-1",
+        "sourceId": "surfsharekit-acc-learning-materials",
+        "type": "LEARNING_MATERIAL",
+        "originalIdentifier": "8a1fe649-5b47-4955-92c6-aabcf4e18b1b",
+        "firstHarvested": "2025-04-29T09:15:12.157520Z",
+        "lastModified": "2025-05-07T12:17:24.767127Z",
+        "sskRepoItemUuid": null,
+        "lastModifiedInSource": "2017-12-01T13:44:16Z",
+        "deletedBySource": false,
+        "title": "Reportage: buurtbegroting | 2.1 Nieuwe vormen van lokale democratie | omooc Challenging government",
+        "subTitle": null,
+        "abstract_": "Reportage: buurtbegroting | 2.1 Nieuwe vormen van lokale democratie | omooc Challenging government",
+        "language": "nl",
+        "keywords": [
+            "Bestuurskunde",
+            "MOOC",
+            "Reportage"
+        ],
+        "authors": [],
+        "files": [],
+        "availabilities": [
+            {
+                "nlbronId": "nlbron-public-learning-materials",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            },
+            {
+                "nlbronId": "nlbron-surf-acc-copyright",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            }
+        ],
+        "courseId": null,
+        "purgeAfter": null,
+        "purged": false,
+        "expiryDateForNlBron": "2028-04-13T09:15:12.157520Z",
+        "sourceObjects": {}
+    },
+    {
+        "uuid": "c62b2fff-db82-4587-92cb-5aa67fd86bee",
+        "ibronId": "ibron-surf-acc-1",
+        "sourceId": "surfsharekit-acc-learning-materials",
+        "type": "LEARNING_MATERIAL",
+        "originalIdentifier": "50a8c2b1-924d-4dce-abb2-098a86a53c60",
+        "firstHarvested": "2025-04-29T09:15:12.316120Z",
+        "lastModified": "2025-05-07T12:17:24.778044Z",
+        "sskRepoItemUuid": null,
+        "lastModifiedInSource": "2017-12-01T13:32:10Z",
+        "deletedBySource": false,
+        "title": "Interview: Marcel Boogers | 1.2 Botsende bestuurslagen | omooc Challenging government",
+        "subTitle": null,
+        "abstract_": "Interview: Marcel Boogers | 1.2 Botsende bestuurslagen | omooc Challenging government",
+        "language": "nl",
+        "keywords": [
+            "Bestuurskunde",
+            "Interview"
+        ],
+        "authors": [],
+        "files": [],
+        "availabilities": [
+            {
+                "nlbronId": "nlbron-public-learning-materials",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            },
+            {
+                "nlbronId": "nlbron-surf-acc-copyright",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            }
+        ],
+        "courseId": null,
+        "purgeAfter": null,
+        "purged": false,
+        "expiryDateForNlBron": "2028-04-13T09:15:12.316120Z",
+        "sourceObjects": {}
+    },
+    {
+        "uuid": "3027ad2e-6114-48aa-8a98-7379cb33c301",
+        "ibronId": "ibron-surf-acc-1",
+        "sourceId": "surfsharekit-acc-learning-materials",
+        "type": "LEARNING_MATERIAL",
+        "originalIdentifier": "56d94a21-5b15-434e-999e-1b0cd642fabc",
+        "firstHarvested": "2025-04-29T09:15:12.382975Z",
+        "lastModified": "2025-05-07T12:17:24.791038Z",
+        "sskRepoItemUuid": null,
+        "lastModifiedInSource": "2017-12-01T13:26:41Z",
+        "deletedBySource": false,
+        "title": "Reportage: projectenbureau Drenthe | 1.1 Botsende bestuurslagen | omooc Challenging government",
+        "subTitle": null,
+        "abstract_": "Reportage uit de praktijk. Onderdeel van drieslag 1. Botsende bestuurslagen. Moet het huis van Thorbecke worden verbouwd?",
+        "language": "nl",
+        "keywords": [
+            "Bestuurskunde",
+            "Reportage"
+        ],
+        "authors": [],
+        "files": [],
+        "availabilities": [
+            {
+                "nlbronId": "nlbron-public-learning-materials",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            },
+            {
+                "nlbronId": "nlbron-surf-acc-copyright",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            }
+        ],
+        "courseId": null,
+        "purgeAfter": null,
+        "purged": false,
+        "expiryDateForNlBron": "2028-04-13T09:15:12.382975Z",
+        "sourceObjects": {}
+    },
+    {
+        "uuid": "2811b96f-54d8-49c8-b58c-95e88a416219",
+        "ibronId": "ibron-surf-acc-1",
+        "sourceId": "surfsharekit-acc-learning-materials",
+        "type": "LEARNING_MATERIAL",
+        "originalIdentifier": "9a22aa70-20fc-47eb-a510-45cd5fbff256",
+        "firstHarvested": "2025-04-29T09:15:12.481607Z",
+        "lastModified": "2025-05-07T12:17:24.803742Z",
+        "sskRepoItemUuid": null,
+        "lastModifiedInSource": "2017-12-01T13:13:58Z",
+        "deletedBySource": false,
+        "title": "Introductiefilm MOOC Challenging Government",
+        "subTitle": null,
+        "abstract_": "Introductiefilm MOOC",
+        "language": "nl",
+        "keywords": [
+            "Bestuurskunde",
+            "HBO",
+            "MOOC"
+        ],
+        "authors": [],
+        "files": [],
+        "availabilities": [
+            {
+                "nlbronId": "nlbron-public-learning-materials",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            },
+            {
+                "nlbronId": "nlbron-surf-acc-copyright",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            }
+        ],
+        "courseId": null,
+        "purgeAfter": null,
+        "purged": false,
+        "expiryDateForNlBron": "2028-04-13T09:15:12.481607Z",
+        "sourceObjects": {}
+    },
+    {
+        "uuid": "54f9f848-15bb-4507-a3ba-5d802d5091a1",
+        "ibronId": "ibron-surf-acc-1",
+        "sourceId": "surfsharekit-acc-learning-materials",
+        "type": "LEARNING_MATERIAL",
+        "originalIdentifier": "65177bac-bc86-4779-9e57-1d2e159aab4c",
+        "firstHarvested": "2025-04-29T08:49:45.440865Z",
+        "lastModified": "2025-05-07T12:17:24.818675Z",
+        "sskRepoItemUuid": null,
+        "lastModifiedInSource": "2025-04-30T11:17:14Z",
+        "deletedBySource": true,
+        "title": null,
+        "subTitle": null,
+        "abstract_": null,
+        "language": null,
+        "keywords": [],
+        "authors": [],
+        "files": [],
+        "availabilities": [
+            {
+                "nlbronId": "nlbron-public-learning-materials",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            },
+            {
+                "nlbronId": "nlbron-surf-acc-copyright",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            }
+        ],
+        "courseId": null,
+        "purgeAfter": "2025-04-30T11:17:14Z",
+        "purged": true,
+        "expiryDateForNlBron": "2028-04-13T08:49:45.440865Z",
+        "sourceObjects": {}
+    },
+    {
+        "uuid": "69048aec-869d-4bb4-86c3-86908385aa4e",
+        "ibronId": "ibron-surf-acc-1",
+        "sourceId": "surfsharekit-acc-learning-materials",
+        "type": "LEARNING_MATERIAL",
+        "originalIdentifier": "01af4269-2a35-48aa-9707-89259ff69446",
+        "firstHarvested": "2025-04-29T09:06:01.371991Z",
+        "lastModified": "2025-05-07T12:17:24.827673Z",
+        "sskRepoItemUuid": null,
+        "lastModifiedInSource": "2021-06-06T17:30:21Z",
+        "deletedBySource": false,
+        "title": "English pronunciation: The TRAP vowel",
+        "subTitle": null,
+        "abstract_": "Videos, drills and analytical exercises on the TRAP-vowel. Many languages do not have the TRAP-vowel in their inventory. Therefore, speakers will substitute another vowel that comes closest. A tricky vowel!",
+        "language": "en",
+        "keywords": [
+            "TRAP-BATH split",
+            "vowels"
+        ],
+        "authors": [
+            {
+                "uuid": "36f65e8a-2f22-473a-8114-98a00c0d3ec0",
+                "fullName": "Laura Rupp",
+                "middleName": null,
+                "firstName": null,
+                "lastName": null,
+                "email": "l.m.rupp@vu.nl",
+                "roleTerm": null,
+                "originalIdentifier": "1f84abbe-47f7-4425-a738-3b624df0251e"
+            }
+        ],
+        "files": [],
+        "availabilities": [
+            {
+                "nlbronId": "nlbron-public-learning-materials",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            },
+            {
+                "nlbronId": "nlbron-surf-acc-copyright",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            }
+        ],
+        "courseId": null,
+        "purgeAfter": null,
+        "purged": false,
+        "expiryDateForNlBron": "2028-04-13T09:06:01.371991Z",
+        "sourceObjects": {}
+    },
+    {
+        "uuid": "47f1758e-e886-4e86-9970-4c9a4c8eb773",
+        "ibronId": "ibron-surf-acc-1",
+        "sourceId": "surfsharekit-acc-learning-materials",
+        "type": "LEARNING_MATERIAL",
+        "originalIdentifier": "3f77016b-10d3-4033-9ead-e05d4a2f1623",
+        "firstHarvested": "2025-04-29T09:07:44.919135Z",
+        "lastModified": "2025-05-07T12:17:24.841147Z",
+        "sskRepoItemUuid": null,
+        "lastModifiedInSource": "2021-01-25T19:36:59Z",
+        "deletedBySource": false,
+        "title": "Street Law - Lesplan Kroongetuigen",
+        "subTitle": null,
+        "abstract_": "In deze Street Law les leren de deelnemers wat een kroongetuigen is en maken zij kennis met de zaak rond Nabil B. Zij discussiëren over argumenten voor en tegen het gebruik van kroongetuigen.",
+        "language": "nl",
+        "keywords": [
+            "Burgerschapsonderwijs",
+            "Community Service Learning",
+            "Deelnemende hogescholen",
+            "Interactieve\nwerkvormen",
+            "lesplan",
+            "Lievens",
+            "Recht",
+            "Rechtsgeleerdheid",
+            "Reneman",
+            "street law",
+            "Vaardighedenonderwijs",
+            "Voortgezet\nOnderwijs",
+            "Vrije\nUniversiteit Amsterdam"
+        ],
+        "authors": [
+            {
+                "uuid": "3d071d81-6bfd-49dd-beac-0b42385ac64f",
+                "fullName": "Marcelle Reneman",
+                "middleName": null,
+                "firstName": null,
+                "lastName": null,
+                "email": "a.m.reneman@vu.nl",
+                "roleTerm": "Docent",
+                "originalIdentifier": "40e07036-147b-44dd-a263-0fb9af4100b8"
+            },
+            {
+                "uuid": "cd00de16-6e30-4a36-b606-a98567ad4224",
+                "fullName": "Johan Lievens",
+                "middleName": null,
+                "firstName": null,
+                "lastName": null,
+                "email": "j.lievens@vu.nl",
+                "roleTerm": "Docent",
+                "originalIdentifier": "cbb31bec-9d25-4875-bbc4-724c8bbc0705"
+            }
+        ],
+        "files": [
+            {
+                "uuid": "4f3dc0ce-ffaf-46f5-96d1-6d023760edd9",
+                "fileName": "Lesplan Street Law les Kroongetuigen",
+                "accessRight": "openaccess",
+                "originalUrl": null,
+                "downloadUrl": "https://api.acc.nlbron.nl/nlbron-public-learning-materials/items/47f1758e-e886-4e86-9970-4c9a4c8eb773/files/4f3dc0ce-ffaf-46f5-96d1-6d023760edd9",
+                "resourceMimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "originalIdentifier": null,
+                "lastVerified": "2025-04-29T09:50:06.272338Z",
+                "fileNotFoundFirstVerifiedAt": null
+            }
+        ],
+        "availabilities": [
+            {
+                "nlbronId": "nlbron-public-learning-materials",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            },
+            {
+                "nlbronId": "nlbron-surf-acc-copyright",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            }
+        ],
+        "courseId": null,
+        "purgeAfter": null,
+        "purged": false,
+        "expiryDateForNlBron": "2028-04-13T09:07:44.919135Z",
+        "sourceObjects": {}
+    },
+    {
+        "uuid": "327c57bf-fcf5-4774-a721-20e1fa93aa1e",
+        "ibronId": "ibron-surf-acc-1",
+        "sourceId": "surfsharekit-acc-learning-materials",
+        "type": "LEARNING_MATERIAL",
+        "originalIdentifier": "78169592-d487-4bbb-9146-d4d880bfdecf",
+        "firstHarvested": "2025-04-29T09:08:48.801498Z",
+        "lastModified": "2025-05-07T12:17:24.865113Z",
+        "sskRepoItemUuid": null,
+        "lastModifiedInSource": "2020-12-18T21:43:30Z",
+        "deletedBySource": false,
+        "title": "Public International Law: customary international law",
+        "subTitle": null,
+        "abstract_": "customary international law is one of the main sources of international law. Customary law should be distinguished form habits. In this lecture the differences are explained using examples from ICJ.",
+        "language": "en",
+        "keywords": [
+            "customary international",
+            "habit",
+            "Internation court of justice"
+        ],
+        "authors": [
+            {
+                "uuid": "aadb8b9c-0eed-4122-a6af-da01ae82078b",
+                "fullName": "Otto Spijkers",
+                "middleName": null,
+                "firstName": null,
+                "lastName": null,
+                "email": null,
+                "roleTerm": null,
+                "originalIdentifier": "b188bb90-3171-4828-bacf-b1cea814e943"
+            }
+        ],
+        "files": [],
+        "availabilities": [
+            {
+                "nlbronId": "nlbron-public-learning-materials",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            },
+            {
+                "nlbronId": "nlbron-surf-acc-copyright",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            }
+        ],
+        "courseId": null,
+        "purgeAfter": null,
+        "purged": false,
+        "expiryDateForNlBron": "2028-04-13T09:08:48.801498Z",
+        "sourceObjects": {}
+    },
+    {
+        "uuid": "bb353c8c-d649-4b06-9a86-8242d04b0b37",
+        "ibronId": "ibron-surf-acc-1",
+        "sourceId": "surfsharekit-acc-learning-materials",
+        "type": "LEARNING_MATERIAL",
+        "originalIdentifier": "67d6ce1c-55e4-406a-9c68-c4838d5c0a36",
+        "firstHarvested": "2025-04-29T09:08:48.868309Z",
+        "lastModified": "2025-05-07T12:17:24.875374Z",
+        "sskRepoItemUuid": null,
+        "lastModifiedInSource": "2020-12-18T21:43:30Z",
+        "deletedBySource": false,
+        "title": "Public International Law: International and national law",
+        "subTitle": null,
+        "abstract_": "The relationship between international and national law with the focus on the Netherlands will be explained",
+        "language": "en",
+        "keywords": [
+            "international law",
+            "national law the Netherlands"
+        ],
+        "authors": [
+            {
+                "uuid": "d14c5384-f393-49d9-96d4-b3a83190721e",
+                "fullName": "Otto Spijkers",
+                "middleName": null,
+                "firstName": null,
+                "lastName": null,
+                "email": null,
+                "roleTerm": null,
+                "originalIdentifier": "b188bb90-3171-4828-bacf-b1cea814e943"
+            }
+        ],
+        "files": [],
+        "availabilities": [
+            {
+                "nlbronId": "nlbron-public-learning-materials",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            },
+            {
+                "nlbronId": "nlbron-surf-acc-copyright",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            }
+        ],
+        "courseId": null,
+        "purgeAfter": null,
+        "purged": false,
+        "expiryDateForNlBron": "2028-04-13T09:08:48.868309Z",
+        "sourceObjects": {}
+    },
+    {
+        "uuid": "89134533-c2b5-485a-a65e-6b3fa95017df",
+        "ibronId": "ibron-surf-acc-1",
+        "sourceId": "surfsharekit-acc-learning-materials",
+        "type": "LEARNING_MATERIAL",
+        "originalIdentifier": "2ac2761e-7f19-4b93-ae1c-995129523166",
+        "firstHarvested": "2025-04-29T09:08:48.925225Z",
+        "lastModified": "2025-05-07T12:17:24.891472Z",
+        "sskRepoItemUuid": null,
+        "lastModifiedInSource": "2020-12-18T21:43:30Z",
+        "deletedBySource": false,
+        "title": "Public International Law: international economic law.",
+        "subTitle": null,
+        "abstract_": "What were the main historical steps for law in general and more specific for international trade law?",
+        "language": "en",
+        "keywords": [
+            "international economic law",
+            "international law",
+            "international trade law"
+        ],
+        "authors": [
+            {
+                "uuid": "81016c83-e844-41a7-bc58-257e44288214",
+                "fullName": "Otto Spijkers",
+                "middleName": null,
+                "firstName": null,
+                "lastName": null,
+                "email": null,
+                "roleTerm": null,
+                "originalIdentifier": "b188bb90-3171-4828-bacf-b1cea814e943"
+            }
+        ],
+        "files": [],
+        "availabilities": [
+            {
+                "nlbronId": "nlbron-public-learning-materials",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            },
+            {
+                "nlbronId": "nlbron-surf-acc-copyright",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            }
+        ],
+        "courseId": null,
+        "purgeAfter": null,
+        "purged": false,
+        "expiryDateForNlBron": "2028-04-13T09:08:48.925225Z",
+        "sourceObjects": {}
+    },
+    {
+        "uuid": "c3f11f40-2355-4d04-b046-6bab1c71f202",
+        "ibronId": "ibron-surf-acc-1",
+        "sourceId": "surfsharekit-acc-learning-materials",
+        "type": "LEARNING_MATERIAL",
+        "originalIdentifier": "ccf5bfd1-193a-41b8-96ce-944e0dd614d6",
+        "firstHarvested": "2025-04-29T09:09:19.317953Z",
+        "lastModified": "2025-05-07T12:17:24.903318Z",
+        "sskRepoItemUuid": null,
+        "lastModifiedInSource": "2020-12-18T17:59:29Z",
+        "deletedBySource": false,
+        "title": "06-15: Scale index construction and assessment - micro lecture LATENT TRAITS AND ITEMS",
+        "subTitle": null,
+        "abstract_": "In this micro lecture the following items will be explained regarding this lecture:\r\n\r\n- Learn more about the relationship between items and latent traits",
+        "language": "en",
+        "keywords": [
+            "1 pl model rasch model",
+            "2 pl model",
+            "3 pl model",
+            "difficulty",
+            "guessing",
+            "item",
+            "latent traits",
+            "scale",
+            "specificity discrimination"
+        ],
+        "authors": [
+            {
+                "uuid": "66a20d7f-7abd-4c39-b37e-16476a91ab46",
+                "fullName": "Henk van der Kolk",
+                "middleName": null,
+                "firstName": null,
+                "lastName": null,
+                "email": null,
+                "roleTerm": null,
+                "originalIdentifier": "56fa6734-4205-443d-816f-47e02e942fdc"
+            }
+        ],
+        "files": [],
+        "availabilities": [
+            {
+                "nlbronId": "nlbron-public-learning-materials",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            },
+            {
+                "nlbronId": "nlbron-surf-acc-copyright",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            }
+        ],
+        "courseId": null,
+        "purgeAfter": null,
+        "purged": false,
+        "expiryDateForNlBron": "2028-04-13T09:09:19.317953Z",
+        "sourceObjects": {}
+    },
+    {
+        "uuid": "a3e1e998-5d59-42d3-b7ca-1da0a6aefd76",
+        "ibronId": "ibron-surf-acc-1",
+        "sourceId": "surfsharekit-acc-learning-materials",
+        "type": "LEARNING_MATERIAL",
+        "originalIdentifier": "9afcb176-95f0-4e2f-9b23-5b9ed4042bdc",
+        "firstHarvested": "2025-04-29T09:10:22.368146Z",
+        "lastModified": "2025-05-07T12:17:24.916460Z",
+        "sskRepoItemUuid": null,
+        "lastModifiedInSource": "2020-11-27T14:20:59Z",
+        "deletedBySource": false,
+        "title": "Cursus C - Geesteswetenschappen",
+        "subTitle": null,
+        "abstract_": "LibGuide over het zoeken naar wetenschappelijke literatuur voor gevorderde studenten op het gebied van geesteswetenschappen. Met name geschikt voor studenten die aan hun scriptie beginnen.",
+        "language": "nl",
+        "keywords": [
+            "bouwsteenmethode",
+            "bronnen evalueren",
+            "geesteswetenschappen",
+            "humaniora",
+            "informatievaardigheden",
+            "letteren",
+            "onderzoeksopzet",
+            "probleemstelling",
+            "Scriptie",
+            "sneeuwbalmethode",
+            "tijdsplanning",
+            "zoekmethoden",
+            "zoekstrategie"
+        ],
+        "authors": [
+            {
+                "uuid": "8d6cdb57-5783-4f03-aae9-f53199e73405",
+                "fullName": "Universiteitsbibliotheek van de Vrije Universiteit",
+                "middleName": null,
+                "firstName": null,
+                "lastName": null,
+                "email": null,
+                "roleTerm": null,
+                "originalIdentifier": "a09615a2-0963-450b-96cb-12ef452eee7b"
+            }
+        ],
+        "files": [],
+        "availabilities": [
+            {
+                "nlbronId": "nlbron-public-learning-materials",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            },
+            {
+                "nlbronId": "nlbron-surf-acc-copyright",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            }
+        ],
+        "courseId": null,
+        "purgeAfter": null,
+        "purged": false,
+        "expiryDateForNlBron": "2028-04-13T09:10:22.368146Z",
+        "sourceObjects": {}
+    },
+    {
+        "uuid": "a2101bfe-bf9a-4f52-b453-03feb2c23aa6",
+        "ibronId": "ibron-surf-acc-1",
+        "sourceId": "surfsharekit-acc-learning-materials",
+        "type": "LEARNING_MATERIAL",
+        "originalIdentifier": "f3a610ff-1fa7-4482-9e1c-2291957dd11f",
+        "firstHarvested": "2025-04-29T09:10:22.431901Z",
+        "lastModified": "2025-05-07T12:17:24.938971Z",
+        "sskRepoItemUuid": null,
+        "lastModifiedInSource": "2020-11-27T14:19:32Z",
+        "deletedBySource": false,
+        "title": "Cursus B - Wijsbegeerte",
+        "subTitle": null,
+        "abstract_": "LibGuide over het zoeken naar wetenschappelijke literatuur voor tweedejaars studenten op het gebied van wijsbegeerte.",
+        "language": "nl",
+        "keywords": [
+            "bronvermelding",
+            "diepe web",
+            "encyclopedieën",
+            "evalueren van bronnen",
+            "filosofie",
+            "Google",
+            "informatievaardigheden",
+            "internet",
+            "Philosopher's Index",
+            "plagiaat",
+            "probleemstelling",
+            "referentiestijlen",
+            "refereren",
+            "soorten informatiebronnen",
+            "synoniemen",
+            "verwijzen",
+            "Web of Science",
+            "wijsbegeerte",
+            "wikipedia",
+            "zoektechnieken"
+        ],
+        "authors": [
+            {
+                "uuid": "47e6611b-a4fa-40f3-ad15-7ffa20e5c5a3",
+                "fullName": "Universiteitsbibliotheek van de Vrije Universiteit",
+                "middleName": null,
+                "firstName": null,
+                "lastName": null,
+                "email": null,
+                "roleTerm": null,
+                "originalIdentifier": "a09615a2-0963-450b-96cb-12ef452eee7b"
+            }
+        ],
+        "files": [],
+        "availabilities": [
+            {
+                "nlbronId": "nlbron-public-learning-materials",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            },
+            {
+                "nlbronId": "nlbron-surf-acc-copyright",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            }
+        ],
+        "courseId": null,
+        "purgeAfter": null,
+        "purged": false,
+        "expiryDateForNlBron": "2028-04-13T09:10:22.431901Z",
+        "sourceObjects": {}
+    },
+    {
+        "uuid": "2897e4c7-31ae-401f-aeb0-d67ca209d0b5",
+        "ibronId": "ibron-surf-acc-1",
+        "sourceId": "surfsharekit-acc-learning-materials",
+        "type": "LEARNING_MATERIAL",
+        "originalIdentifier": "6db2cd37-4a56-44cc-a1a1-67c37bc0ec7d",
+        "firstHarvested": "2025-04-29T09:10:22.492804Z",
+        "lastModified": "2025-05-07T12:17:24.951141Z",
+        "sskRepoItemUuid": null,
+        "lastModifiedInSource": "2020-11-27T14:18:46Z",
+        "deletedBySource": false,
+        "title": "Cursus A - Geesteswetenschappen",
+        "subTitle": null,
+        "abstract_": "LibGuide over het zoeken naar wetenschappelijke literatuur voor eerstejaars studenten op het gebied van geesteswetenschappen.",
+        "language": "nl",
+        "keywords": [
+            "artikelen",
+            "boeken",
+            "booleaanse operatoren",
+            "bronnen",
+            "bronuitgave",
+            "bronvermelding",
+            "CRAAP-test",
+            "geesteswetenschappen",
+            "informatievaardigheden",
+            "letteren",
+            "maskeren",
+            "peer review",
+            "referenties",
+            "trunceren",
+            "Websites",
+            "wetenschappelijke literatuur",
+            "wildcards",
+            "zoektechnieken"
+        ],
+        "authors": [
+            {
+                "uuid": "f6775cb8-24dc-4719-8460-73fbfe347bd0",
+                "fullName": "Universiteitsbibliotheek van de Vrije Universiteit",
+                "middleName": null,
+                "firstName": null,
+                "lastName": null,
+                "email": null,
+                "roleTerm": null,
+                "originalIdentifier": "a09615a2-0963-450b-96cb-12ef452eee7b"
+            }
+        ],
+        "files": [],
+        "availabilities": [
+            {
+                "nlbronId": "nlbron-public-learning-materials",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            },
+            {
+                "nlbronId": "nlbron-surf-acc-copyright",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            }
+        ],
+        "courseId": null,
+        "purgeAfter": null,
+        "purged": false,
+        "expiryDateForNlBron": "2028-04-13T09:10:22.492804Z",
+        "sourceObjects": {}
+    },
+    {
+        "uuid": "4d20d3d2-02ac-411d-94b1-0b569589f8eb",
+        "ibronId": "ibron-surf-acc-1",
+        "sourceId": "surfsharekit-acc-learning-materials",
+        "type": "LEARNING_MATERIAL",
+        "originalIdentifier": "6c0b40e5-bd19-44e8-85c8-07fd2151bc27",
+        "firstHarvested": "2025-04-29T09:10:22.551721Z",
+        "lastModified": "2025-05-07T12:17:24.961726Z",
+        "sskRepoItemUuid": null,
+        "lastModifiedInSource": "2020-11-27T14:17:58Z",
+        "deletedBySource": false,
+        "title": "Cursus B - Psychologie en Pedagogiek",
+        "subTitle": null,
+        "abstract_": "LibGuide over het zoeken naar wetenschappelijke literatuur voor tweedejaars studenten op het gebied van psychologie en pedagogiek.",
+        "language": "nl",
+        "keywords": [
+            "bronvermelding",
+            "diepe web",
+            "encyclopedieën",
+            "evalueren van bronnen",
+            "Google",
+            "informatievaardigheden",
+            "internet",
+            "Pedagogiek",
+            "plagiaat",
+            "probleemstelling",
+            "Psychologie",
+            "PsycINFO",
+            "PubMed",
+            "referentiestijlen",
+            "refereren",
+            "soorten informatiebronnen",
+            "Stappenplan",
+            "synoniemen",
+            "verwijzen",
+            "Web of Science",
+            "wikipedia",
+            "zoektechnieken"
+        ],
+        "authors": [
+            {
+                "uuid": "8928bf6b-9a07-4b18-a907-880651b2836e",
+                "fullName": "Universiteitsbibliotheek van de Vrije Universiteit",
+                "middleName": null,
+                "firstName": null,
+                "lastName": null,
+                "email": null,
+                "roleTerm": null,
+                "originalIdentifier": "a09615a2-0963-450b-96cb-12ef452eee7b"
+            }
+        ],
+        "files": [],
+        "availabilities": [
+            {
+                "nlbronId": "nlbron-public-learning-materials",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            },
+            {
+                "nlbronId": "nlbron-surf-acc-copyright",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            }
+        ],
+        "courseId": null,
+        "purgeAfter": null,
+        "purged": false,
+        "expiryDateForNlBron": "2028-04-13T09:10:22.551721Z",
+        "sourceObjects": {}
+    },
+    {
+        "uuid": "995d28d1-3c05-4920-83d6-a5304fd4bf5a",
+        "ibronId": "ibron-surf-acc-1",
+        "sourceId": "surfsharekit-acc-learning-materials",
+        "type": "LEARNING_MATERIAL",
+        "originalIdentifier": "665b7bb1-2316-42e9-a243-01e582ebf6e6",
+        "firstHarvested": "2025-04-29T09:10:22.618828Z",
+        "lastModified": "2025-05-07T12:17:24.979186Z",
+        "sskRepoItemUuid": null,
+        "lastModifiedInSource": "2020-11-27T14:09:26Z",
+        "deletedBySource": false,
+        "title": "Verpleegkundige Informatievaardigheden (gevorderd)",
+        "subTitle": null,
+        "abstract_": "LibGuide over het zoeken naar literatuur op het gebied van verpleegkunde voor gevorderden.",
+        "language": "nl",
+        "keywords": [
+            "EBP",
+            "Evidence-based practice",
+            "full text",
+            "informatievaardigheden",
+            "PICO",
+            "PubMed",
+            "verpleegkunde",
+            "zoekvraag"
+        ],
+        "authors": [
+            {
+                "uuid": "8b2d7e10-4ea2-4485-a750-62ee2fccd327",
+                "fullName": "Universiteitsbibliotheek van de Vrije Universiteit",
+                "middleName": null,
+                "firstName": null,
+                "lastName": null,
+                "email": null,
+                "roleTerm": null,
+                "originalIdentifier": "a09615a2-0963-450b-96cb-12ef452eee7b"
+            }
+        ],
+        "files": [],
+        "availabilities": [
+            {
+                "nlbronId": "nlbron-public-learning-materials",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            },
+            {
+                "nlbronId": "nlbron-surf-acc-copyright",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            }
+        ],
+        "courseId": null,
+        "purgeAfter": null,
+        "purged": false,
+        "expiryDateForNlBron": "2028-04-13T09:10:22.618828Z",
+        "sourceObjects": {}
+    },
+    {
+        "uuid": "26059d30-410d-4da5-aef3-2d4fa6188d5b",
+        "ibronId": "ibron-surf-acc-1",
+        "sourceId": "surfsharekit-acc-learning-materials",
+        "type": "LEARNING_MATERIAL",
+        "originalIdentifier": "6b8f4128-9d80-42e2-a0d2-d3e289502a00",
+        "firstHarvested": "2025-04-29T09:10:22.679595Z",
+        "lastModified": "2025-05-07T12:17:24.991978Z",
+        "sskRepoItemUuid": null,
+        "lastModifiedInSource": "2020-11-27T14:08:25Z",
+        "deletedBySource": false,
+        "title": "Verpleegkundige Informatievaardigheden (basis)",
+        "subTitle": null,
+        "abstract_": "Basiscursus zoeken naar literatuur op het gebied van verpleegkunde.",
+        "language": "nl",
+        "keywords": [
+            "Google",
+            "informatievaardigheden",
+            "literatuurbronnen",
+            "referenties",
+            "referenties beoordelen",
+            "verpleegkunde"
+        ],
+        "authors": [
+            {
+                "uuid": "56a9efba-bf04-4096-a47f-1aa093175b73",
+                "fullName": "Universiteitsbibliotheek van de Vrije Universiteit",
+                "middleName": null,
+                "firstName": null,
+                "lastName": null,
+                "email": null,
+                "roleTerm": null,
+                "originalIdentifier": "a09615a2-0963-450b-96cb-12ef452eee7b"
+            }
+        ],
+        "files": [],
+        "availabilities": [
+            {
+                "nlbronId": "nlbron-public-learning-materials",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            },
+            {
+                "nlbronId": "nlbron-surf-acc-copyright",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            }
+        ],
+        "courseId": null,
+        "purgeAfter": null,
+        "purged": false,
+        "expiryDateForNlBron": "2028-04-13T09:10:22.679595Z",
+        "sourceObjects": {}
+    },
+    {
+        "uuid": "8a34d54b-c16f-4462-b1bc-494977ed6684",
+        "ibronId": "ibron-surf-acc-1",
+        "sourceId": "surfsharekit-acc-learning-materials",
+        "type": "LEARNING_MATERIAL",
+        "originalIdentifier": "5661cf4c-e6ec-43ea-b761-886f6fe714bf",
+        "firstHarvested": "2025-04-29T09:10:22.738635Z",
+        "lastModified": "2025-05-07T12:17:25.001145Z",
+        "sskRepoItemUuid": null,
+        "lastModifiedInSource": "2020-11-27T14:07:24Z",
+        "deletedBySource": false,
+        "title": "Cursus B - Tandheelkunde",
+        "subTitle": null,
+        "abstract_": "Libguide over het zoeken naar wetenschappelijke literatuur op het gebied van tandheelkunde.",
+        "language": "nl",
+        "keywords": [
+            "bronvermelding",
+            "diepe web",
+            "encyclopedieën",
+            "evalueren van bronnen",
+            "Google",
+            "informatievaardigheden",
+            "internet",
+            "plagiaat",
+            "probleemstelling",
+            "PubMed",
+            "referentiestijlen",
+            "refereren",
+            "soorten informatiebronnen",
+            "synoniemen",
+            "Tandheelkunde",
+            "verwijzen",
+            "Web of Science",
+            "wikipedia",
+            "zoektechnieken"
+        ],
+        "authors": [
+            {
+                "uuid": "d144e64b-605d-43bf-bb20-e67eb110281e",
+                "fullName": "Universiteitsbibliotheek van de Vrije Universiteit",
+                "middleName": null,
+                "firstName": null,
+                "lastName": null,
+                "email": null,
+                "roleTerm": null,
+                "originalIdentifier": "a09615a2-0963-450b-96cb-12ef452eee7b"
+            }
+        ],
+        "files": [],
+        "availabilities": [
+            {
+                "nlbronId": "nlbron-public-learning-materials",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            },
+            {
+                "nlbronId": "nlbron-surf-acc-copyright",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            }
+        ],
+        "courseId": null,
+        "purgeAfter": null,
+        "purged": false,
+        "expiryDateForNlBron": "2028-04-13T09:10:22.738635Z",
+        "sourceObjects": {}
+    },
+    {
+        "uuid": "51f22be7-9296-4f5e-95ed-d9e8e4e060a1",
+        "ibronId": "ibron-surf-acc-1",
+        "sourceId": "surfsharekit-acc-learning-materials",
+        "type": "LEARNING_MATERIAL",
+        "originalIdentifier": "0d552c6c-b3cd-482b-a4e2-1f668112fd5e",
+        "firstHarvested": "2025-04-29T09:10:22.801044Z",
+        "lastModified": "2025-05-07T12:17:25.011690Z",
+        "sskRepoItemUuid": null,
+        "lastModifiedInSource": "2020-11-27T14:06:07Z",
+        "deletedBySource": false,
+        "title": "Grey Literature for Health Sciences",
+        "subTitle": null,
+        "abstract_": "LibGuide on so called grey literature in Health Sciences. Grey (or gray) literature is generally material not published commercially or indexed by major databases.",
+        "language": "en",
+        "keywords": [
+            "blogs",
+            "citing",
+            "clinical trials",
+            "documenting",
+            "evaluating",
+            "Google",
+            "Google Scholar",
+            "gray literature",
+            "grey literature",
+            "health sciences",
+            "informal communications",
+            "podcasts",
+            "search grey literature",
+            "white papers"
+        ],
+        "authors": [
+            {
+                "uuid": "39670a32-0822-4fdc-8972-a61f8707d57c",
+                "fullName": "Universiteitsbibliotheek van de Vrije Universiteit",
+                "middleName": null,
+                "firstName": null,
+                "lastName": null,
+                "email": null,
+                "roleTerm": null,
+                "originalIdentifier": "a09615a2-0963-450b-96cb-12ef452eee7b"
+            }
+        ],
+        "files": [],
+        "availabilities": [
+            {
+                "nlbronId": "nlbron-public-learning-materials",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            },
+            {
+                "nlbronId": "nlbron-surf-acc-copyright",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            }
+        ],
+        "courseId": null,
+        "purgeAfter": null,
+        "purged": false,
+        "expiryDateForNlBron": "2028-04-13T09:10:22.801044Z",
+        "sourceObjects": {}
+    }
+]

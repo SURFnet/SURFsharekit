@@ -1,0 +1,44 @@
+[
+    {
+        "uuid": null,
+        "ibronId": "ibron-surf-acc-1",
+        "sourceId": "surfsharekit-acc-learning-materials",
+        "type": "LEARNING_MATERIAL",
+        "originalIdentifier": "d42d1f32-3231-4023-934d-0245286a6194",
+        "firstHarvested": "2025-04-29T09:15:12.065822Z",
+        "lastModified": "2025-05-07T12:17:24.740383Z",
+        "sskRepoItemUuid": null,
+        "lastModifiedInSource": "2017-12-01T13:46:57Z",
+        "deletedBySource": false,
+        "title": "Interview: Maurice Specht | 2.2 Nieuwe vormen van lokale democratie | omooc Challenging government",
+        "subTitle": null,
+        "abstract_": "Interview: Maurice Specht | 2.2 Nieuwe vormen van lokale democratie | omooc Challenging government",
+        "language": "nl",
+        "keywords": [
+            "Bestuurskunde",
+            "Interview",
+            "MOOC"
+        ],
+        "authors": [],
+        "files": [],
+        "availabilities": [
+            {
+                "nlbronId": "nlbron-public-learning-materials",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            },
+            {
+                "nlbronId": "nlbron-surf-acc-copyright",
+                "startDate": null,
+                "endDate": null,
+                "months": null
+            }
+        ],
+        "courseId": null,
+        "purgeAfter": null,
+        "purged": false,
+        "expiryDateForNlBron": "2028-04-13T09:15:12.065822Z",
+        "sourceObjects": {}
+    }
+]

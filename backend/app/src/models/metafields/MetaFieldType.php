@@ -2,6 +2,7 @@
 
 namespace SurfSharekit\Models;
 
+use SilverStripe\EnvironmentExport\Exportable;
 use SilverStripe\Forms\RequiredFields;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Versioned\Versioned;
@@ -13,6 +14,7 @@ use SilverStripe\Versioned\Versioned;
  * This dataobject is used to validate inserted values and communicate fieldTypes to frontends
  */
 class MetaFieldType extends DataObject {
+    use Exportable;
 
     private static $extensions = [
         Versioned::class . '.versioned',

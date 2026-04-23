@@ -59,6 +59,7 @@ class SearchObject extends DataObject {
         $searchables[] = $repoItem->Uuid;
         $searchables[] = $repoItem->Title;
         $searchables[] = $repoItem->Owner()->FullName;
+        $searchables[] = $repoItem->Institute()->Title;
 
         foreach ($repoItem->RepoItemMetaFields()->filter(['MetaField.MakesRepoItemFindable' => true]) as $searchableMetafield) {
             foreach ($searchableMetafield->RepoItemMetaFieldValues()->filter(['IsRemoved' => 0]) as $answer) {

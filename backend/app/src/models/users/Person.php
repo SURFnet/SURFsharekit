@@ -2,23 +2,41 @@
 
 namespace SurfSharekit\Models;
 
-use League\Flysystem\Exception;
+use Exception;
 use Ramsey\Uuid\Uuid;
 use SilverStripe\Admin\SecurityAdmin;
 use SilverStripe\Control\Controller;
 use SilverStripe\Forms\CheckboxField;
+use SilverStripe\Forms\FieldList;
+use SilverStripe\Forms\Tab;
+use SilverStripe\Forms\TabSet;
+use SilverStripe\ORM\DataObject;
+use SilverStripe\ORM\FieldType\DBDatetime;
 use SilverStripe\ORM\ValidationException;
 use SilverStripe\Security\Member;
 use SilverStripe\Security\Permission;
 use SilverStripe\Security\Security;
+use SilverStripe\Services\Blueprint\BlueprintService;
 use SilverStripe\Versioned\Versioned;
+use SurfSharekit\Action\BlueprintCopyButton;
 use SurfSharekit\constants\RoleConstant;
 use SurfSharekit\Models\Helper\Constants;
 use SurfSharekit\Models\Helper\DateHelper;
+use SurfSharekit\Models\Helper\EmailHelper;
 use SurfSharekit\Models\Helper\Logger;
 use SurfSharekit\Models\Helper\MemberHelper;
 use UuidExtension;
 
+/**
+ * @property String Uuid
+ * @property String Initials
+ * @property String ORCID
+ * @property String InviteSentDate
+ * @property String $HasLoggedIn
+ * @property String ORCIDRegisterDate
+ * @property String HasFinishedOnboarding
+ * @property String OnboardingDate
+ */
 class Person extends Member {
 
     private static $extensions = [
@@ -33,6 +51,7 @@ class Person extends Member {
     private static $db = [
         "LinkedInUrl" => 'Varchar(255)',
         "TwitterUrl" => 'Varchar(255)',
+        "SocialMediaUrl" => 'Varchar(255)',
         "ResearchGateUrl" => 'Varchar(255)',
 
         "FormOfAddress" => 'Varchar(255)',
@@ -51,7 +70,14 @@ class Person extends Member {
 
         "HasLoggedIn" => 'Boolean(0)',
         "HasFinishedOnboarding" => 'Boolean(0)',
-        "DisableEmailChange" => 'Boolean(0)'
+        "DisableEmailChange" => 'Boolean(0)',
+
+        "GeneratedThroughBlueprint" => 'Boolean(0)',
+        "GeneratedBy" => "Varchar(255)",
+
+        "InviteSentDate" => "Datetime",
+        "ORCIDRegisterDate" => "Datetime",
+        "OnboardingDate" => "Datetime"
     ];
 
     private static $has_one = [
@@ -68,8 +94,16 @@ class Person extends Member {
         'RootInstitutes' => Institute::class
     ];
 
+    private const ACTION_ADD = 'ADD';
+
     public function getCMSFields() {
         $fields = parent::getCMSFields();
+
+        $fields->makeFieldReadonly(['GeneratedThroughBlueprint', 'GeneratedBy']);
+        if ($this->GeneratedThroughBlueprint == false) {
+            $fields->removeByName('GeneratedBy');
+        }
+
         $currentController = Controller::curr();
         if (!$currentController instanceof SecurityAdmin) {
             $fields->removeByName('ApiToken');
@@ -91,8 +125,13 @@ class Person extends Member {
             $fields->removeByName('Locale');
             $fields->removeByName('FailedLoginCount');
 
-            $fields->changeFieldOrder(['Uuid', 'FirstName', 'SurnamePrefix', 'Surname', 'LinkedInUrl', 'TwitterUrl', 'ResearchGateUrl']);
+            $fields->findTab('Root.Main')->Fields()->changeFieldOrder(['Uuid', 'FirstName', 'SurnamePrefix', 'Surname', 'LinkedInUrl', 'TwitterUrl', 'SocialMediaUrl', 'ResearchGateUrl']);
         }
+
+        $blueprintService = BlueprintService::create();
+        $personJson = $blueprintService->createBlueprintPreviewForDataobject($this);
+        $fields->addFieldsToTab('Root.Blueprint', BlueprintCopyButton::create($personJson));
+
         $skipEmailField = CheckboxField::create('SkipEmail', 'SkipEmail');
         $fields->insertAfter('Email', $skipEmailField);
         $fields->insertAfter('SkipEmail', $fields->dataFieldByName('DisableEmailChange'));
@@ -113,6 +152,50 @@ class Person extends Member {
 
     public function getIsEmailEditable() {
         return $this->ConextCode === null || $this->ConextCode === '';
+    }
+
+    public function trySendInvitationMail() {
+        Logger::debugLog("trySendInvitationMail for " . $this->Email . "\n");;
+        if (!$this->canSendInvitationMail()) return false;
+
+        // Try to find another user with the same mail and check its sent flag
+        /** @var Person $person */
+        $mail = $this->Email;
+        foreach (Person::get()->filter('Email', $mail) as $person) {
+            if (!$person->canSendInvitationMail()) {
+                return false;
+            }
+        }
+
+        EmailHelper::sendEmail([$this->Email], 'Email\\ActivateProfileInvitation', 'Profiel activeren SURFsharekit', []);
+
+        $this->InviteSentDate = DBDatetime::now()->Rfc2822();
+        $this->write();
+
+        return true;
+    }
+
+    public function canSendInvitationMail() {
+        Logger::debugLog("canSendInvitationMail for " . $this->Email . "\n");;
+        // Check if the account is inactive
+        if ($this->HasLoggedIn) return false;
+
+        // Check if the person mail belongs to an institute
+        $emailParts = explode('@', $this->Email);
+        $emailDomain = count($emailParts) === 2 ? $emailParts[1] : '';
+        if (!Institute::get()->find('ConextCode', $emailDomain)) {
+            return false;
+        }
+
+        // Check if the previous mail is at least 2 years ago or never sent
+        if (!$this->InviteSentDate) return true;
+
+        /** @var DBDatetime $date */
+        $date = $this->dbObject('InviteSentDate');
+        $timestamp = $date->getTimestamp();
+        $curTimestamp = DBDatetime::now()->getTimestamp();
+
+        return ($curTimestamp - $timestamp > 365 * 24 * 60 * 60); // 365 days
     }
 
     public function onBeforeWrite() {
@@ -138,6 +221,17 @@ class Person extends Member {
         if (!$this->IsLoggingIn && $this->isChanged('IsRemoved') && !$this->canDelete(Security::getCurrentUser())) {
             throw new Exception("No permission to delete this person");
         }
+
+        // If the mail of an account gets changed, it's valid to send one again
+        if (!$this->HasLoggedIn && isset($this->getChangedFields(true, DataObject::CHANGE_VALUE)['Email'])) {
+            $this->InviteSentDate = null;
+        }
+
+        // Set onboarding date if onboarded
+        if ($this->isChanged("HasFinishedOnboarding") && $this->HasFinishedOnboarding) {
+            $this->OnboardingDate = DBDatetime::now();
+        }
+
         parent::onBeforeWrite();
     }
 
@@ -167,6 +261,14 @@ class Person extends Member {
                 ScopeCache::removeCachedDataList(Person::class);
             }
         }
+
+        // Only do this on creation
+        if ($this->isChanged('ID')) {
+            foreach ($this->Groups() as $group) {
+                $group->Members()->add($this);
+            }
+        }
+
 
 //        if ($this->isChanged('ID')) { //implied onAfterCreate
 //            if ($this->PersonID != 0) { //created by someone
@@ -214,33 +316,32 @@ class Person extends Member {
      * @param $instituteUUID
      * This method is called when creating a new person using the API
      */
-    function setBaseDiscipline($instituteUUID) {
+    function setBaseDiscipline($instituteUUIDs) {
         if (!$this->ConextRoles) {
             throw new Exception("No conext roles set for this person");
         }
-        if (!$this->IsStudent) {
-            throw new Exception("Person is not a student");
-        }
-        if (!UUID::isValid($instituteUUID)) {
-            throw new Exception('Discipline is not a valid institute ID');
-        }
-        $discipline = UuidExtension::getByUuid(Institute::class, $instituteUUID);
-        if (!$discipline || !$discipline->exists()) {
-            throw new Exception("Institute $instituteUUID is not an existing Institute");
-        }
-        if ($discipline->Level != 'discipline') {
-            throw new Exception("Institute is not a discipline");
-        }
-        $studentGroupOfDiscipline = $discipline->Groups()->filter(['Roles.Title' => RoleConstant::STUDENT])->first();
-        if (!$studentGroupOfDiscipline || !$studentGroupOfDiscipline->exists()) {
-            throw new Exception("Discipline doesn't have a student group");
-        }
-        if ($this->HasFinishedOnboarding || ($this->HasFinishedOnboarding && !$this->isChanged('HasFinishedOnboarding'))) {
-            throw new Exception("Discipline can only be set during onboarding");
-        }
 
-        $this->write();
-        $studentGroupOfDiscipline->Members()->add($this); //Add to discipline student group
+        foreach ($instituteUUIDs as $instituteUUID) {
+            if (!UUID::isValid($instituteUUID)) {
+                throw new Exception('Discipline is not a valid institute ID');
+            }
+            $discipline = UuidExtension::getByUuid(Institute::class, $instituteUUID);
+            if (!$discipline || !$discipline->exists()) {
+                throw new Exception("Institute $instituteUUID is not an existing Institute");
+            }
+
+            $role = $this->getIsStaffOrEmployee() ? RoleConstant::STAFF : RoleConstant::STUDENT;
+            $groupOfDiscipline = $discipline->Groups()->filter(['Roles.Title' => $role])->first();
+            if (!$groupOfDiscipline || !$groupOfDiscipline->exists()) {
+                throw new Exception($discipline->Title . " doesn't have a " . $role . " group");
+            }
+            if ($this->HasFinishedOnboarding || ($this->HasFinishedOnboarding && !$this->isChanged('HasFinishedOnboarding'))) {
+                throw new Exception("Discipline can only be set during onboarding");
+            }
+
+            $this->write();
+            $groupOfDiscipline->Members()->add($this); //Add to discipline student group
+        }
     }
 
     function getLoggedInUserPermissions() {
@@ -267,7 +368,7 @@ class Person extends Member {
         if ($member == null) {
             return false;
         }
-        if ($member->isDefaultAdmin()) {
+        if ($member->isMainAdmin()) {
             return true;
         }
 
@@ -339,6 +440,31 @@ class Person extends Member {
         return $this->Groups()->count();
     }
 
+    public function getRepoCount() {
+        try {
+            $repoItemSummaries = RepoItemSummary::get();
+
+            // Apply filters using RepoItemSummaryJsonApiDescription
+            $jsonApiDescription = new \RepoItemSummaryJsonApiDescription();
+            $repoItemSummaries = $jsonApiDescription->applyGeneralFilter($repoItemSummaries);
+
+            // Apply isRemoved filter
+            $repoItemSummaries = $jsonApiDescription->applyFilter($repoItemSummaries, 'isRemoved', ['EQ' => 'false']);
+
+            // Apply repoType filter
+            $repoItemSummaries = $jsonApiDescription->applyFilter($repoItemSummaries, 'repoType', ['NEQ' => 'Project']);
+
+            // Apply search filter with UUID
+            $repoItemSummaries = $jsonApiDescription->applyFilter($repoItemSummaries, 'search', ['EQ' => $this->Uuid]);
+
+            return $repoItemSummaries->count();
+        } catch (\Exception $e) {
+            \SurfSharekit\Models\Helper\Logger::errorLog("Error in getRepoCount: " . $e->getMessage());
+            return 0;
+        }
+
+    }
+
     public function getFamilyName() {
         $namesArray = [];
         $lastName = $this->getLastName();
@@ -355,13 +481,17 @@ class Person extends Member {
         return null;
     }
 
-    public function getIsStudent() {
-        return stripos($this->ConextRoles, 'student') !== false;
+    public function getIsStudent(): bool {
+        return stripos($this->ConextRoles ?? "", 'student') !== false;
+    }
+
+    public function getIsOnlyStudent(): bool {
+        return $this->ConextRoles === 'student';
     }
 
     public function getIsStaffOrEmployee() {
-        return stripos($this->ConextRoles, 'staff') !== false ||
-            stripos($this->ConextRoles, 'employee') !== false ||
+        return stripos($this->ConextRoles ?? "", 'staff') !== false ||
+            stripos($this->ConextRoles ?? "", 'employee') !== false ||
             !$this->getIsStudent();
     }
 
@@ -409,13 +539,13 @@ class Person extends Member {
 
     public function getName() {
         $nameValues = [];
-        if (!empty($firstName = trim($this->FirstName))) {
+        if (!empty($firstName = trim($this->FirstName ?? ""))) {
             $nameValues[] = $firstName;
         }
-        if (!empty($surnamePrefix = trim($this->SurnamePrefix))) {
+        if (!empty($surnamePrefix = trim($this->SurnamePrefix ?? ""))) {
             $nameValues[] = $surnamePrefix;
         }
-        if (!empty($surname = trim($this->Surname))) {
+        if (!empty($surname = trim($this->Surname ?? ""))) {
             $nameValues[] = $surname;
         }
 
@@ -510,5 +640,24 @@ class Person extends Member {
 
     function getLastEditedLocal() {
         return DateHelper::localDatetimeFromUTC($this->LastEdited);
+    }
+
+    // Special case: after 30 days each student should re-onboard
+    public function getCanSkipOnboarding() {
+        if ($this->getIsOnlyStudent()) {
+            if (!$this->OnboardingDate) {
+                return false;
+            }
+            $onboardingDate = DBDatetime::create()->setValue($this->OnboardingDate);
+            $thirtyDaysAgo = DBDatetime::now()->modify('-30 days');
+            $canSkip = $onboardingDate->getTimestamp() > $thirtyDaysAgo->getTimestamp();
+            if (!$canSkip && $this->HasFinishedOnboarding) {
+                $this->HasFinishedOnboarding = false;
+                $this->write();
+            }
+            return $canSkip && $this->HasFinishedOnboarding;
+        } else {
+            return $this->HasFinishedOnboarding;
+        }
     }
 }

@@ -9,6 +9,7 @@ use SilverStripe\ORM\DataExtension;
 use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Security\Group;
+use SilverStripe\Security\Member;
 use SilverStripe\Security\Permission;
 use SilverStripe\Security\PermissionProvider;
 use SilverStripe\Security\PermissionRole;
@@ -19,9 +20,15 @@ use SurfSharekit\Models\Helper\Constants;
 use SurfSharekit\Models\Helper\Logger;
 
 /**
- * Class MemberPermisionExtension
+ * Class NotificationCategory
  * @package SurfSharekit\Models
- * Extension on the SilverStripe Member DataObject to add Relationally permissions
+ * @property String Title
+ * @property String LabelNL
+ * @property String LabelEN
+ * @property Int SortOrder
+ * @property Int NotificationVersionID
+ * @method NotificationVersion NotificationVersion
+ * @method HasManyList<Notification> Notifications
  */
 class MemberPermisionExtension extends DataExtension implements PermissionProvider {
     use RelationaryPermissionProviderTrait;
@@ -46,6 +53,10 @@ class MemberPermisionExtension extends DataExtension implements PermissionProvid
     public function canCreate($member = null, $context = []) {
         return true;
     }
+    
+    public function isMainAdmin(): bool {
+        return Permission::check('ADMIN', member: $this->owner);
+    }
 
     public function canView($member = null, $context = []) {
         if ($member == null) {
@@ -54,7 +65,7 @@ class MemberPermisionExtension extends DataExtension implements PermissionProvid
         if ($member == null) {
             return false;
         }
-        if ($member->isDefaultAdmin()) {
+        if ($member->isMainAdmin()) {
             return true;
         }
         if ($member->isWorksAdmin()) {
@@ -62,7 +73,7 @@ class MemberPermisionExtension extends DataExtension implements PermissionProvid
         }
 
         // for persons with no institutes
-        if ($this->owner->RootInstitutes()->count() === 0) {
+        if ($this->owner->ClassName == Person::class && $this->owner->RootInstitutes()->count() === 0) {
             return !!Permission::checkMember($member, 'PERSON_CLAIM_OTHER');
         }
 
@@ -101,7 +112,7 @@ class MemberPermisionExtension extends DataExtension implements PermissionProvid
         if (!$member) {
             return false;
         }
-        if ($member->isDefaultAdmin()) {
+        if (Permission::check('ADMIN', "any", $member)) {
             return true;
         }
 
@@ -110,7 +121,7 @@ class MemberPermisionExtension extends DataExtension implements PermissionProvid
         }
 
         // for persons with no institutes
-        if ($this->owner->RootInstitutes()->count() === 0) {
+        if ($this->owner->ClassName == Person::class && $this->owner->RootInstitutes()->count() === 0) {
             return !!Permission::checkMember($member, 'PERSON_CLAIM_OTHER');
         }
 
@@ -146,6 +157,12 @@ class MemberPermisionExtension extends DataExtension implements PermissionProvid
         }
 
         return false;
+    }
+
+    public function hasPermissionToViewReports(?Member $member = null): bool
+    {
+        $member ??= Security::getCurrentUser();
+        return $member && Permission::check('FRONTEND_VIEW_REPORTS');
     }
 
     public function onBeforeWrite() {

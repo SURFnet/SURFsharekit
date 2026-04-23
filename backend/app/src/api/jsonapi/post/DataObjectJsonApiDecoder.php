@@ -6,7 +6,9 @@ use SilverStripe\Security\Group;
 use SilverStripe\Security\Member;
 use SilverStripe\Security\Security;
 use SilverStripe\View\ViewableData;
+use SurfSharekit\Api\Exceptions\ApiException;
 use SurfSharekit\Api\JsonApi;
+use SurfSharekit\Models\Helper\Logger;
 use Zooma\SilverStripe\Models\ApiObject;
 
 /**
@@ -61,7 +63,7 @@ class DataObjectJsonApiDecoder {
                 } catch (Exception $e2) {
                     $this->errorLog[] = [
                         JsonApi::TAG_ERROR_TITLE => 'Write exception',
-                        JsonApi::TAG_ERROR_DETAIL => $e->getMessage(),
+                        JsonApi::TAG_ERROR_DETAIL => $this->getExceptionDetail($e) ?: $this->getExceptionDetail($e2),
                         JsonApi::TAG_ERROR_CODE => 'DOJAD_028'
                     ];
                 }
@@ -160,7 +162,7 @@ class DataObjectJsonApiDecoder {
                         } catch (Exception $e) {
                             $this->errorLog[] = [
                                 JsonApi::TAG_ERROR_TITLE => "Couldn't set property $jsonKey",
-                                JsonApi::TAG_ERROR_DETAIL => $e->getMessage(),
+                                JsonApi::TAG_ERROR_DETAIL => $this->getExceptionDetail($e),
                                 JsonApi::TAG_ERROR_CODE => 'DOJAD_003'
                             ];
                         }
@@ -422,7 +424,9 @@ class DataObjectJsonApiDecoder {
                     return;
                 }
 
-                $dataObject->setField($hasOneField . 'ID', null);    //remove preexisting relationship
+                if (!$postedRelationshipData) {
+                    $dataObject->setField($hasOneField . 'ID', null);    //remove preexisting relationship
+                }
 
                 if ($postedRelationshipData) {
                     if (!$this->validatePostedRelationshipIdentifier($postedRelationshipData, $relatedDescription->type_plural, $postedRelationshipName)) {
@@ -514,6 +518,19 @@ class DataObjectJsonApiDecoder {
     }
 
     /**
+     * @param Exception $exception
+     * @return string
+     * Utility method to get the detail of an exception
+     */
+    private function getExceptionDetail(Exception $exception): string {
+        if ($exception instanceof ApiException) {
+            $apiError = $exception->getApiError();
+            return $apiError->getMessage() ?: $apiError->getDescription();
+        }
+        return $exception->getMessage();
+    }
+
+    /**
      * @param array $arr
      * @return bool
      * Utility method to check if array only uses integers as keys or not
@@ -592,7 +609,7 @@ class DataObjectJsonApiDecoder {
         } catch (Exception $e) {
             $this->errorLog[] = [
                 JsonApi::TAG_ERROR_TITLE => 'Invalid relationship editing action',
-                JsonApi::TAG_ERROR_DETAIL => $e->getMessage(),
+                JsonApi::TAG_ERROR_DETAIL => $this->getExceptionDetail($e),
                 JsonApi::TAG_ERROR_CODE => 'DOJAD_026'
             ];
         }

@@ -215,7 +215,7 @@ class GroupPermissionExtension extends DataExtension implements PermissionProvid
         if ($member == null) {
             return false;
         }
-        if ($member->isDefaultAdmin()) {
+        if ($member->isMainAdmin()) {
             return true;
         }
         if ($member->isWorksAdmin()) {
@@ -284,7 +284,7 @@ class GroupPermissionExtension extends DataExtension implements PermissionProvid
         if ($member == null) {
             return false;
         }
-        if ($member->isDefaultAdmin()) {
+        if ($member->isMainAdmin()) {
             return true;
         }
         if ($this->owner->InstituteID == 0) {
@@ -424,7 +424,7 @@ class GroupPermissionExtension extends DataExtension implements PermissionProvid
 
     static function getPermissionCases() {
         $member = Security::getCurrentUser();
-        $permissionRoles = PermissionRole::get();
+        $permissionRoles = PermissionRole::get()->toArray();
 
         $findIDOfPermissionRole = function ($roleTitle) use ($permissionRoles) {
             foreach ($permissionRoles as $permissionRole) {

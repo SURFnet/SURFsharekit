@@ -2,6 +2,7 @@
 
 namespace SurfSharekit\Models;
 
+use SilverStripe\EnvironmentExport\Exportable;
 use SilverStripe\Forms\DropdownField;
 use SilverStripe\ORM\DataObject;
 
@@ -12,6 +13,8 @@ use SilverStripe\ORM\DataObject;
  * DataObject representing a single value added to a @see Protocol
  */
 class ProtocolFilter extends DataObject {
+    use Exportable;
+
     private static $table_name = 'SurfSharekit_ProtocolFilter';
 
     private static $db = [

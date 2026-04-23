@@ -15,7 +15,7 @@ class GenerateDefaultGroupsTask extends BuildTask{
     function run($request) {
         set_time_limit(0);
 
-        $rootInstitutes = Institute::get()->filter(['InstituteId'=> 0]);
+        $rootInstitutes = Institute::get()->filter(['InstituteID' => 0]);
         /** @var Institute $rootInstitute */
         foreach($rootInstitutes as $rootInstitute){
             $this->forceWriteSubInstitutes($rootInstitute);

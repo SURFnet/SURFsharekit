@@ -142,7 +142,7 @@ class OaipmhApiController extends LoginProtectedApiController {
     }
 
     protected function userHasValidLogin(Member $member) {
-        if ($member->isDefaultAdmin()) {
+        if ($member->isMainAdmin()) {
             return true;
         } else if (ApiMemberExtension::hasApiUserRole($member)) {
             return true;

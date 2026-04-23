@@ -17,7 +17,8 @@ class PiwikCustomDimensionMapping {
         CustomEventDimension::ROOT_INSTITUTE_ID => [11, 4],
         CustomEventDimension::UTM_SOURCE => [12, 5],
         CustomEventDimension::UTM_CONTENT => [13, 6],
-        CustomEventDimension::REPO_ITEM_LINK_ID => [14, 7]
+        CustomEventDimension::REPO_ITEM_LINK_ID => [14, 7],
+        CustomEventDimension::REPO_ITEM_LINK_URL => [16, 8]
     ];
 
     private static array $tstMapping = [
@@ -28,6 +29,7 @@ class PiwikCustomDimensionMapping {
         CustomEventDimension::UTM_SOURCE => [5, 5],
         CustomEventDimension::UTM_CONTENT => [6, 6],
         CustomEventDimension::REPO_ITEM_LINK_ID => [7, 7],
+        CustomEventDimension::REPO_ITEM_LINK_URL => [8, 8]
     ];
 
     private static array $accMapping = [
@@ -38,6 +40,7 @@ class PiwikCustomDimensionMapping {
         CustomEventDimension::UTM_SOURCE => [12, 5],
         CustomEventDimension::UTM_CONTENT => [13, 6],
         CustomEventDimension::REPO_ITEM_LINK_ID => [14, 7],
+        CustomEventDimension::REPO_ITEM_LINK_URL => [15, 8]
     ];
 
     private static array $prdMapping = [
@@ -48,6 +51,7 @@ class PiwikCustomDimensionMapping {
         CustomEventDimension::UTM_SOURCE => [12, 5],
         CustomEventDimension::UTM_CONTENT => [13, 6],
         CustomEventDimension::REPO_ITEM_LINK_ID => [14, 7],
+        CustomEventDimension::REPO_ITEM_LINK_URL => [16, 8]
     ];
 
     public static function getDevMapping(): array {
@@ -70,19 +74,24 @@ class PiwikCustomDimensionMapping {
         $environment = Environment::getEnv("APPLICATION_ENVIRONMENT");
         $values = null;
         switch ($environment) {
-            case ApplicationEnvironment::DEV: {
+            case ApplicationEnvironment::LOCAL:
+            case ApplicationEnvironment::DEV:
+            {
                 $values = PiwikCustomDimensionMapping::$devMapping[$eventName] ?? null;
                 break;
             }
-            case ApplicationEnvironment::TST: {
+            case ApplicationEnvironment::TST:
+            {
                 $values = PiwikCustomDimensionMapping::$tstMapping[$eventName] ?? null;
                 break;
             }
-            case ApplicationEnvironment::ACC: {
+            case ApplicationEnvironment::ACC:
+            {
                 $values = PiwikCustomDimensionMapping::$accMapping[$eventName] ?? null;
                 break;
             }
-            case ApplicationEnvironment::PRD: {
+            case ApplicationEnvironment::PRD:
+            {
                 $values = PiwikCustomDimensionMapping::$prdMapping[$eventName] ?? null;
                 break;
             }

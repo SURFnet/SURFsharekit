@@ -77,7 +77,7 @@
         "tags": [
           "File"
         ],
-        "summary": "Upload file (limit of 5GB).",
+        "summary": "Upload file (limit of 10GB).",
         "description": "The UUID inside the response can be used inside the request body of the /create endpoint. Use GET /format to fetch the expected request body format.",
         "requestBody": {
           "required": true,

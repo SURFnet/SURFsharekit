@@ -4,7 +4,8 @@ namespace SurfSharekit\Models;
 
 use Exception;
 use RelationaryPermissionProviderTrait;
-use SilverStripe\extensions\Gridfield\Column\GridfieldSecretaryColumn;
+use SilverStripe\Control\Controller;
+use SilverStripe\EnvironmentExport\Exportable;
 use SilverStripe\Forms\CheckboxField;
 use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\GridField\GridField;
@@ -14,7 +15,9 @@ use SilverStripe\Forms\GridField\GridFieldDataColumns;
 use SilverStripe\Forms\GridField\GridFieldDeleteAction;
 use SilverStripe\Forms\GridField\GridFieldSortableHeader;
 use SilverStripe\Forms\HiddenField;
+use SilverStripe\Forms\LiteralField;
 use SilverStripe\Forms\ReadonlyField;
+use SilverStripe\Forms\TextareaField;
 use SilverStripe\Forms\TextField;
 use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
@@ -28,15 +31,22 @@ use SilverStripe\Security\Permission;
 use SilverStripe\Security\PermissionProvider;
 use SilverStripe\Security\Security;
 use SilverStripe\Versioned\GridFieldArchiveAction;
+use SilverStripe\Services\Blueprint\BlueprintService;
 use SilverStripe\Versioned\Versioned;
+use SurfSharekit\Action\BlueprintCopyButton;
 use SurfSharekit\Api\InstituteScoper;
+use SurfSharekit\constants\RepoItemTypeConstant;
 use SurfSharekit\constants\RoleConstant;
 use SurfSharekit\helper\InstituteGroupManager;
+use SurfSharekit\Models\Helper\Logger;
 use SurfSharekit\Models\Helper\PermissionRoleHelper;
 
 /***
  * Class Institute
  * @package SurfSharekit\Models
+ * @property Bool IBronEnabled
+ * @property String IBronName
+ *
  * @method Institute Institute()
  * @method InstituteImage InstituteImage()
  * @method HasManyList Institutes()
@@ -44,6 +54,7 @@ use SurfSharekit\Models\Helper\PermissionRoleHelper;
  */
 class Institute extends DataObject implements PermissionProvider {
     use RelationaryPermissionProviderTrait;
+    use Exportable;
 
     private static $extensions = [
         Versioned::class . '.versioned',
@@ -67,7 +78,11 @@ class Institute extends DataObject implements PermissionProvider {
         'IsRemoved' => 'Boolean(0)',
         'IsHidden' => 'Boolean(0)',
         'UpdateInstituteLabels' => 'Boolean(0)',
-        'Description' => 'Text'
+        'Description' => 'Text',
+        "GeneratedThroughBlueprint" => 'Boolean(0)',
+        "GeneratedBy" => "Varchar(255)",
+        "IBronEnabled" => "Boolean(0)",
+        "IBronName" => "Varchar(255)"
     ];
 
     private static $has_one = [
@@ -153,7 +168,11 @@ class Institute extends DataObject implements PermissionProvider {
         }
 
         $fields->insertBefore('Title', CheckboxField::create('UpdateInstituteLabels', 'Update labels'));
-        $fields->makeFieldReadonly('UpdateInstituteLabels');
+        $fields->makeFieldReadonly(['UpdateInstituteLabels', 'GeneratedThroughBlueprint', 'GeneratedBy']);
+
+        if ($this->GeneratedThroughBlueprint == false) {
+            $fields->removeByName('GeneratedBy');
+        }
 
         /** @var Institute $parentInstitute */
         $parentInstitute = $this->Institute();
@@ -270,6 +289,15 @@ class Institute extends DataObject implements PermissionProvider {
             $fields->removeByName('ROR');
         }
 
+        // Blueprint logic
+        $blueprintService = BlueprintService::create();
+        $instituteJson = $blueprintService->createBlueprintPreviewForDataobject($this);
+
+        $fields->addFieldsToTab('Root.Blueprint', BlueprintCopyButton::create($instituteJson));
+
+        $fields->dataFieldByName("IBronEnabled")->setTitle("IBron enabled");
+        $fields->dataFieldByName("IBronName")->setTitle("IBron name");
+
         return $fields;
     }
 
@@ -283,7 +311,16 @@ class Institute extends DataObject implements PermissionProvider {
         $normalPermissions = $this->provideRelationaryPermissions(Institute::SAME_LEVEL, 'their own institute', $allActionsOnExistingObject);
         $scopedPermissions = $this->provideRelationaryPermissions(Institute::LOWER_LEVEL, 'institutes below their own level', array_merge(['CREATE'], $allActionsOnExistingObject));
 
-        return array_merge($normalPermissions, $scopedPermissions);
+        return array_merge($normalPermissions, $scopedPermissions, [
+            "CAN_REQUEST_LMS_ITEM" => [
+                'name' => 'Can request LMS items',
+                'category' => 'Institute'
+            ],
+            "CAN_MOVE_REPO_ITEM" => [
+                'name' => 'Can change publishing institute',
+                'category' => 'Institute'
+            ]
+        ]);
     }
 
     public function canCreate($member = null, $context = []) {
@@ -378,6 +415,10 @@ class Institute extends DataObject implements PermissionProvider {
             return true;
         }
 
+        if ($this->IsRemoved && !$member->isWorksAdmin()) {
+            return false;
+        }
+
         foreach ($member->ScopedGroups($this->dataObj()->getRelatedInstitute()->ID) as $group) {
             if ($this->checkRelationPermission(Institute::SAME_LEVEL, 'EDIT', $member, [Group::class => $group])
                 || $this->checkRelationPermission(Institute::LOWER_LEVEL, 'EDIT', $member, [Group::class => $group])) {
@@ -441,6 +482,11 @@ class Institute extends DataObject implements PermissionProvider {
     }
 
     protected function onBeforeWrite() {
+        if ($this->ImportTaskWrite) {
+            parent::onBeforeWrite();
+            return;
+        }
+
         if ($this->InstituteID == 0 && !in_array($this->Level, ['organisation', 'consortium'])) {
             throw new ValidationException('Cannot have a root institute without level organisation or consortium, ID = ' . $this->ID);
         }
@@ -506,6 +552,10 @@ class Institute extends DataObject implements PermissionProvider {
         }
 
         InstituteGroupManager::createDefaultGroups($this);
+
+        if ($this->ImportTaskWrite) {
+            return;
+        }
 
         $this->ensureTemplatesExist();
         if ($this->isChanged('ID')) { //implied onAfterCreate
@@ -632,7 +682,10 @@ class Institute extends DataObject implements PermissionProvider {
             'canCreateProject' => $this->canCreateRepoItem('Project'),
             'canEdit' => $this->canEdit($loggedInMember),
             'canDelete' => $this->canDelete($loggedInMember),
-            'canCreateSubInstitute' => $this->canCreateSubInstitute($loggedInMember)
+            'canCreateSubInstitute' => $this->canCreateSubInstitute($loggedInMember),
+            'canRequestLmsItem' => $this->canRequestLmsItem($loggedInMember),
+            'canMoveRepoItem' => $this->canMoveRepoItem($loggedInMember)
+
         ];
     }
 
@@ -658,6 +711,44 @@ class Institute extends DataObject implements PermissionProvider {
             if (in_array($groupScopeToThis, [InstituteScoper::SAME_LEVEL, InstituteScoper::HIGHER_LEVEL])) {
                 $permissions = ScopeCache::getPermissionsFromRequestCache($group);
                 if (in_array('INSTITUTE_CREATE_LOWERLEVEL', $permissions)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    function canRequestLmsItem($member, $context = []) {
+        $member = $member ?: Security::getCurrentUser();
+        if (!$member) {
+            return false;
+        }
+
+        foreach ($member->ScopedGroups($this->dataObj()->getRelatedInstitute()->ID) as $group) {
+            $groupScopeToThis = InstituteScoper::getScopeLevel($this->ID, $group->InstituteID);
+            if (in_array($groupScopeToThis, [InstituteScoper::SAME_LEVEL, InstituteScoper::HIGHER_LEVEL])) {
+                $permissions = ScopeCache::getPermissionsFromRequestCache($group);
+                if (in_array('CAN_REQUEST_LMS_ITEM', $permissions)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    function canMoveRepoItem($member, $context = []) {
+        $member = $member ?: Security::getCurrentUser();
+        if (!$member) {
+            return false;
+        }
+
+        foreach ($member->ScopedGroups($this->dataObj()->getRelatedInstitute()->ID) as $group) {
+            $groupScopeToThis = InstituteScoper::getScopeLevel($this->ID, $group->InstituteID);
+            if (in_array($groupScopeToThis, [InstituteScoper::SAME_LEVEL, InstituteScoper::HIGHER_LEVEL])) {
+                $permissions = ScopeCache::getPermissionsFromRequestCache($group);
+                if (in_array('CAN_MOVE_REPO_ITEM', $permissions)) {
                     return true;
                 }
             }
@@ -863,14 +954,31 @@ class Institute extends DataObject implements PermissionProvider {
        foreach ($removeFrom as $group) {
            /** @var Group $group */
            if ($group->Members()->find('ID', $person->ID) !== null) {
-               // MB: 2024-06-27 temporary disable removal of user groups
-              // $group->Members()->remove($person);
+               Logger::infoLog("PersonGroupSync - Would have removed Person with ID $person->ID from Group $group->Title with ID $group->ID");
+               // $group->Members()->remove($person);
            }
        }
    }
 
+    public static function getActiveUsersForInstituteTree(string $rootInstituteUuid): DataList {
+        $flatInstituteTree = Institute::getAllChildInstitutes($rootInstituteUuid, true);
+        $instituteTreeIDs = $flatInstituteTree->getIDList();
+        $placeholders = '(' . implode(',', array_fill(0, count($instituteTreeIDs), '?')) . ')';
+        return Person::get()
+            ->innerJoin("Group_Members", "GM.MemberID = SurfSharekit_Person.ID", "GM")
+            ->innerJoin("Group", "GM.GroupID = G.ID", "G")
+            ->where([
+                "G.InstituteID IN $placeholders" => $instituteTreeIDs,
+                "HasLoggedIn" => 1
+            ]);
+    }
+
     public function validate() {
         $result = parent::validate();
+
+        if ($this->ImportTaskWrite) {
+            return $result;
+        }
 
         if ($this->InstituteID == 0 && $this->ROR) {
             $rorRegex = '/^https:\/\/ror\.org\/0[a-hj-km-np-tv-z0-9]{6}[0-9]{2}$/';
@@ -881,6 +989,23 @@ class Institute extends DataObject implements PermissionProvider {
         }
 
         return $result;
+    }
+
+    public function getTotalPublicationsCount(): int {
+        $request = Controller::curr()->getRequest();
+        $totalPublicationsFrom = $request->getVar("totalPublicationsFrom");
+        $totalPublicationsUntil = $request->getVar("totalPublicationsUntil");
+
+        $dateFilters = [];
+        if (!empty($totalPublicationsFrom)) {
+            $dateFilters['Created:GreaterThanOrEqual'] = $totalPublicationsFrom;
+        }
+
+        if (!empty($totalPublicationsUntil)) {
+            $dateFilters['Created:LessThanOrEqual'] = $totalPublicationsUntil;
+        }
+
+        return $this->RepoItems()->filter(["RepoType" => RepoItemTypeConstant::PRIMARY_TYPES, "IsRemoved" => false])->filter($dateFilters)->count();
     }
 
 }

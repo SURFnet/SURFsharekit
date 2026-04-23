@@ -21,10 +21,7 @@ class ExternalPersonJsonApiDescription extends DataObjectJsonApiDescription{
 
     public function __construct($channel = null) {
 
-        $describingProtocolFilter = ['SystemKey' => 'JSON:API'];
-        if (!is_null($channel)) {
-            $describingProtocolFilter['ID'] = $channel->ProtocolID;
-        }
+        $describingProtocolFilter = ['SystemKey' => 'JSON:API', 'Title'=>'External JSON:API'];
 
         $this->channel = $channel;
         $this->protocol = Protocol::get()->filter($describingProtocolFilter)->first();
@@ -43,7 +40,8 @@ class ExternalPersonJsonApiDescription extends DataObjectJsonApiDescription{
             'PersistentIdentifier' => 'dai',
             'TwitterUrl' => 'twitterUrl',
             'LinkedInUrl' => 'linkedInUrl',
-            'ResearchGateUrl' => 'researchGateUrl'
+            'ResearchGateUrl' => 'researchGateUrl',
+            'RootInstitutesSummary' => 'rootInstitutes'
         ];
 
         $this->attributeToFieldMap = [
@@ -73,6 +71,7 @@ class ExternalPersonJsonApiDescription extends DataObjectJsonApiDescription{
         $objectsToDescribe = parent::applyGeneralFilter($objectsToDescribe);
 
         $description = new ExternalRepoItemChannelJsonApiDescription($this->channel);
+        $description->protocol = $this->protocol;
         $repoItemsToDescribe = $description->getAllItemsToDescribe(RepoItem::get(), false);
         $repoItemIDList = $repoItemsToDescribe->getIDList();
 

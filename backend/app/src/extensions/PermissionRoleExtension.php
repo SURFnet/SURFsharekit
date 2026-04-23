@@ -10,6 +10,14 @@ use SilverStripe\Security\PermissionRole;
 use SurfSharekit\constants\RoleConstant;
 use SurfSharekit\Models\Helper\Logger;
 
+/**
+ * @mixin PermissionRole
+ * @property String Label_NL
+ * @property String Label_EN
+ * @property String UpdateGroupLabels
+ * @property String Key
+ * @property String IsDefault
+ */
 class PermissionRoleExtension extends DataExtension {
     private static $db = [
         'Label_NL' => 'Varchar(255)',

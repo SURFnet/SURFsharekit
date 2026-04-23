@@ -95,7 +95,8 @@ class NotificationEventCreator {
         $statusesToCreateEventFor = [
             'Submitted',
             'Declined',
-            'Approved'
+            'Approved',
+            'Published'
         ];
 
         $oldStatus = $object->getChangedFields()['Status']['before'] ?? null;

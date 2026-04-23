@@ -19,6 +19,7 @@ class PersonJsonApiDescription extends DataObjectJsonApiDescription {
         'Email' => 'email',
         "LinkedInUrl" => "linkedInUrl",
         "TwitterUrl" => "twitterUrl",
+        "SocialMediaUrl" => "socialMediaUrl",
         "ResearchGateUrl" => "researchGateUrl",
         'HasLoggedIn' => 'hasLoggedIn',
         'IsRemoved' => 'isRemoved',
@@ -31,11 +32,12 @@ class PersonJsonApiDescription extends DataObjectJsonApiDescription {
         "SecondaryEmail" => 'secondaryEmail',
         "PersistentIdentifier" => 'persistentIdentifier',
         "ORCID" => "orcid",
+        "ORCIDRegisterDate" => "orcidRegisterDate",
         "ISNI" => "isni",
         "HogeschoolID" => "hogeschoolId",
         "GroupCount" => 'groupCount',
         "Position" => 'position',
-        "HasFinishedOnboarding" => 'hasFinishedOnboarding',
+        "CanSkipOnboarding" => 'hasFinishedOnboarding',
         "IsEmailEditable" => 'isEmailEditable',
         "InstituteTitles" => 'institutes',
         "LastEdited" => "lastEdited",
@@ -43,6 +45,7 @@ class PersonJsonApiDescription extends DataObjectJsonApiDescription {
         "DisableEmailChange" => "disableEmailChange",
         'LastEditorSummary' => 'lastEditor',
         'CreatorSummary' => 'creator',
+        'ConextRoles' => 'conextRoles'
     ];
 
     public $hasOneToRelationMap = [
@@ -77,6 +80,7 @@ class PersonJsonApiDescription extends DataObjectJsonApiDescription {
         'isRemoved' => 'IsRemoved',
         'linkedInUrl' => 'LinkedInUrl',
         'twitterUrl' => 'TwitterUrl',
+        'socialMediaUrl' => 'SocialMediaUrl',
         'researchGateUrl' => 'ResearchGateUrl',
         'city' => 'City',
         'skipEmail' => 'SkipEmail',
@@ -88,13 +92,14 @@ class PersonJsonApiDescription extends DataObjectJsonApiDescription {
         "secondaryEmail" => 'SecondaryEmail',
         "persistentIdentifier" => 'PersistentIdentifier',
         "orcid" => 'ORCID',
+        "orcidRegisterDate" => 'ORCIDRegisterDate',
         "isni" => 'ISNI',
         "hogeschoolId" => 'HogeschoolID',
         "position" => 'Position',
         "institute" => 'BaseInstitute',
         "isInstituteKnown" => "IsInstituteKnown",
-        "discipline" => 'BaseDiscipline',
-        "hasFinishedOnboarding" => 'HasFinishedOnboarding',
+        "disciplines" => 'BaseDiscipline',
+        "hasFinishedOnboarding" => 'HasFinishedOnboarding'
     ];
 
     public function getFilterableAttributesToColumnMap(): array {

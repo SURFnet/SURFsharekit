@@ -22,6 +22,7 @@ use SurfSharekit\Api\Exceptions\BadRequestException;
 use SurfSharekit\Api\Exceptions\ForbiddenException;
 use SurfSharekit\Api\Exceptions\NotFoundException;
 use SurfSharekit\Api\Exceptions\NotImplementedException;
+use SurfSharekit\Models\Helper\AfterCommit;
 use SurfSharekit\Models\Helper\Authentication;
 use SurfSharekit\Models\Institute;
 use SurfSharekit\Models\MetaField;
@@ -29,6 +30,7 @@ use SurfSharekit\Models\Person;
 use SurfSharekit\Models\RepoItem;
 use SurfSharekit\Models\RepoItemMetaFieldValue;
 use SurfSharekit\Models\TaskCreator;
+use SurfSharekit\Services\Discover\DiscoverUploadService;
 
 class UploadApiRepoItemController extends UploadApiAuthController {
 
@@ -78,6 +80,7 @@ class UploadApiRepoItemController extends UploadApiAuthController {
         $repoItem = $repoItemService->createRepoItem($createRepoItemRequest->owner, $createRepoItemRequest->institute, $createRepoItemRequest->repoItemType);
         $repoItemService->addMetaData($repoItem, $createRepoItemRequest->metadata, $rootInstituteUuid);
         DB::get_conn()->transactionEnd();
+        AfterCommit::flushIfOutermost();
 
         $responseBody = (new CreateRepoItemResponse($repoItem->Uuid))->toJson();
 
@@ -122,7 +125,53 @@ class UploadApiRepoItemController extends UploadApiAuthController {
     }
 
     public function getRepoItem(HTTPRequest $request) {
+        $response = static::getRepoItemResponse($request);
+        return ResponseHelper::responseSuccess($response->toJson());
+    }
 
+    public function patchRepoItem(HTTPRequest $request) {
+        $repoItemData = static::getRepoItemResponse($request);
+        $patchDataList = json_decode($request->getBody(), true);
+        if (!$patchDataList) {
+            throw new BadRequestException(ApiErrorConstant::GA_BR_007);
+        }
+        if (!isset($patchDataList['metadata'])) {
+            throw new BadRequestException(ApiErrorConstant::GA_BR_004);
+        }
+
+        $requestMetaFields = $patchDataList['metadata'];
+        $existingMetaFields = $repoItemData->metadata;
+
+        // Everything that exists in both the request body and the repo item
+        $metaFieldsToPatch = array_intersect_key($requestMetaFields, $existingMetaFields);
+        // New keys present in patch data
+        $newMetaFields = array_diff_key($requestMetaFields, $existingMetaFields);
+
+        $token = Authentication::getJWT($request);
+        $allowedMetaFields = (new DiscoverUploadService())->getMetafields($token->institute, $token->allowedRepoTypes);
+
+        // Check if all meta fields in the body correspond to valid options
+        $invalidNewFields = array_diff_key($newMetaFields, $allowedMetaFields->map('JsonKey', 'JsonType')->toArray());
+        if (count($invalidNewFields)) {
+            throw new BadRequestException(ApiErrorConstant::GA_BR_004);
+        }
+
+        /** @var RepoItem $repoItem */
+        $repoItem  = RepoItem::get()->find('UUID', $repoItemData->id);
+        if ($repoItem->Status != "Draft") {
+            throw new BadRequestException(ApiErrorConstant::UA_BR_012);
+        }
+
+        $service = RepoItemService::create();
+        $service->addMetaData($repoItem, $newMetaFields, $token->institute);
+        $service->replaceMetaData($repoItem, $metaFieldsToPatch, $token->institute);
+        $metaData = $service->getMetaData($repoItem, $token->institute);
+
+        $response = new GetRepoItemResponse($repoItem->Uuid, $metaData["title"] ?? "", $repoItem->RepoType, $metaData);
+        return ResponseHelper::responseSuccess($response->toJson());
+    }
+
+    private static function getRepoItemResponse(HTTPRequest $request) {
         $token = Authentication::getJWT($request);
         $repoItemService = RepoItemService::create();
 
@@ -134,18 +183,12 @@ class UploadApiRepoItemController extends UploadApiAuthController {
             if ($repoItem && $repoItem->exists() && $repoItem instanceof RepoItem) {
                 $responses = $repoItemService->getMetaData($repoItem, $token->institute);
 
-                $response = new GetRepoItemResponse($repoItem->Uuid, $repoItem->Title, $repoItem->RepoType, $responses);
-                return ResponseHelper::responseSuccess($response->toJson());
+                return new GetRepoItemResponse($repoItem->Uuid, $repoItem->Title, $repoItem->RepoType, $responses);
             }
 
             throw new BadRequestException(ApiErrorConstant::UA_NF_002);
         }
         throw new BadRequestException(ApiErrorConstant::GA_BR_002);
-    }
-
-    public function patchRepoItem(HTTPRequest $request) {
-        // TODO: implement
-        throw new NotImplementedException(ApiErrorConstant::GA_NI_001);
     }
 
     public function getRepoItemStatus(HTTPRequest $request) {
@@ -241,6 +284,7 @@ class UploadApiRepoItemController extends UploadApiAuthController {
             $channelService->enableChannelForRepoItem($repoItem, $channelMetaField);
         }
         DB::get_conn()->transactionEnd();
+        AfterCommit::flushIfOutermost();
 
         return $this->getResponse()->setStatusCode(200);
     }

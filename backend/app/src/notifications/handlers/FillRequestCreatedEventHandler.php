@@ -34,25 +34,4 @@ class FillRequestCreatedEventHandler extends NotificationEventHandler {
         }
     }
 
-    private function getAllPersonsToMail(RepoItem $repoItem): array {
-        foreach (Constants::ALL_REPOTYPES as $type) {
-            $typeUpper = strtoupper($type);
-            $clauses[] = "(SurfSharekit_RepoItem.RepoType = '$type' AND (Permission.Code = 'REPOITEM_PUBLISH_$typeUpper' OR PermissionRoleCode.Code = 'REPOITEM_PUBLISH_$typeUpper'))";
-        }
-
-        $personsToMail = Person::get()
-            ->innerJoin('Group_Members', 'Group_Members.MemberID = SurfSharekit_Person.ID')
-            ->innerJoin('Group', 'Group_Members.GroupID = Group.ID')
-            ->innerJoin('(' . InstituteScoper::getInstitutesOfUpperScope([$repoItem->InstituteID])->sql() . ')', 'gi.ID = Group.InstituteID', 'gi')
-            //get parents of groups
-            ->leftJoin('Group_Roles', 'Group_Roles.GroupID = Group.ID')
-            //join on permissions
-            ->leftJoin('PermissionRoleCode', 'PermissionRoleCode.RoleID = Group_Roles.PermissionRoleID')
-            ->leftJoin('Permission', 'Permission.GroupID = Group_Roles.GroupID')
-            ->innerJoin('SurfSharekit_RepoItem', "SurfSharekit_RepoItem.ID = $repoItem->ID")
-            ->whereAny($clauses)
-            ->leftJoin('SurfSharekit_PersonConfig', 'SurfSharekit_Person.PersonConfigID = SurfSharekit_PersonConfig.ID');
-
-        return $personsToMail->columnUnique('Email');
-    }
 }

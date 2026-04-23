@@ -8,6 +8,7 @@ use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\ValidationException;
 use SilverStripe\Security\Security;
+use SurfSharekit\ApiCache\ApiCacheController;
 use SurfSharekit\Models\Cache_RecordNode;
 use SurfSharekit\Models\ExportItem;
 use SurfSharekit\Models\Helper\Logger;
@@ -187,87 +188,9 @@ class DataObjectCSVFileEncoder {
         return true;
     }
 
-    public static function getCSVRowFor($repoItem, bool $purgeCache, $describingProtocol) {
+    public static function getCSVRowFor($repoItem, bool $purgeCache, $describingProtocol): array {
         Logger::debugLog("CSV : " . $repoItem->Uuid . ' : purge=' . $purgeCache);
-        $rowData = [$repoItem->getField('Uuid'), $repoItem->getField('RepoType'), $repoItem->Institute()->Title, $repoItem->getField('Status')];
-        if (!$purgeCache) {
-            $cachedNode = Cache_RecordNode::get()->where(['ProtocolID' => $describingProtocol->ID, 'RepoItemID' => ($repoItem->ID), 'CachedLastEdited' => $repoItem->LastEdited])->first();
-            if ($cachedNode) {
-                Logger::debugLog("HIT : " . $repoItem->Uuid);
-                $rowData = json_decode($cachedNode->getField('Data'));
-                return $rowData;
-            } else {
-                Logger::debugLog("MISS : " . $repoItem->Uuid);
-            }
-        }
-        $metaFieldLastDescribed = new MetaField();
-        $subMetaFieldLastDescribedId = new MetaField();
-        $sameMetaFieldCount = 0;
-
-        foreach ($describingProtocol->ProtocolNodes()->filter('ParentNodeID', 0) as $node) {
-            if ($node->MetaField()->ID > 0 && $node->MetaField()->ID == $metaFieldLastDescribed->ID && $node->SubMetaFieldID == $subMetaFieldLastDescribedId) {
-                $sameMetaFieldCount++;
-            } else {
-                $sameMetaFieldCount = 0;
-            }
-
-            $metaFieldLastDescribed = $node->MetaField();
-            $subMetaFieldLastDescribedId = $node->SubMetaFieldID;
-            $jsonDescription = $node->describeUsing($repoItem, 'json');
-            if (is_array($jsonDescription)) {
-                $valueIndex = 0;
-                $setValue = false;
-                foreach ($jsonDescription as $desc) {
-                    if ($sameMetaFieldCount == $valueIndex) {
-                        if (is_array($desc)) {
-                            $str = '';
-                            foreach ($desc as $key => $value) {
-                                if ($key && $value) {
-                                    // seperate with hard return
-                                    if (strlen($str) > 0) {
-                                        $str = $str . "\r\n";
-                                    }
-                                    // seperate labels from values
-                                    $str = $str . $key . ':' . $value;
-                                }
-                            }
-                            $desc = $str;
-                        }
-                        $rowData[] = $desc;
-                        $setValue = true;
-                        break;
-                    }
-                    $valueIndex++;
-                }
-                if (!$setValue) {
-                    $rowData[] = '';
-                }
-            } else {
-                if ($sameMetaFieldCount == 0) {
-                    $rowData[] = $jsonDescription;
-                } else {
-                    $rowData[] = '';
-                }
-            }
-        }
-        $cachedNode = Cache_RecordNode::get()->where(['ProtocolID' => $describingProtocol->ID, 'RepoItemID' => ($repoItem->ID)])->first();
-        if (is_null($cachedNode)) {
-            $cachedNode = Cache_RecordNode::create();
-            Logger::debugLog("CSV : " . $repoItem->Uuid . ' create cache');
-            $cachedNode->setField('RepoItemID', $repoItem->ID);
-            $cachedNode->setField('ProtocolID', $describingProtocol->ID);
-        } else {
-            Logger::debugLog("CSV : " . $repoItem->Uuid . ' update cache');
-        }
-
-        $cachedNode->setField('Data', json_encode($rowData));
-        $cachedNode->setField('ProtocolVersion', $describingProtocol->Version);
-        $cachedNode->setField('CachedLastEdited', $repoItem->LastEdited);
-        try {
-            $cachedNode->write();
-        } catch (ValidationException $e) {
-            Logger::debugLog($e->getMessage());
-        }
-        return $rowData;
+        $res = ApiCacheController::getRepoItemData($describingProtocol, $repoItem, $purgeCache);
+        return json_decode($res, true)??[];
     }
 }

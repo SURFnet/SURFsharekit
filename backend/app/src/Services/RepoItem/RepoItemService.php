@@ -68,7 +68,7 @@ class RepoItemService implements IRepoItemService {
             }
 
             // Get every type of RepoItemMetaFields
-            $metaFieldResponses[strtolower($metaField->JsonKey)] = $processor->convertValueToJson($repoItemMetaField);
+            $metaFieldResponses[$metaField->JsonKey] = $processor->convertValueToJson($repoItemMetaField);
 
             $metaFieldProcessorCache[$metaField->JsonKey] = $processor;
         }
@@ -107,6 +107,50 @@ class RepoItemService implements IRepoItemService {
 
             $metaFieldProcessorCache[$fieldName] = $processor;
             $repoItemMetaField = $this->findOrCreateRepoItemMetaField($repoItem, $metaField);
+            $processor->save($repoItemMetaField);
+        }
+    }
+
+    public function replaceMetaData(RepoItem $repoItem, array $metaData = [], ?string $rootInstituteUuid = null): void {
+        /** @var MetaFieldProcessor[] $metaFieldProcessorCache */
+        $metaFieldProcessorCache = [];
+
+        foreach ($metaData as $fieldName => $value) {
+            /** @var MetaField $metaField */
+            if (null === $metaField = MetaField::get()->find('JsonKey', $fieldName)) {
+                throw new BadRequestException(ApiErrorConstant::GA_BR_004, "$fieldName is not an existing MetaField");
+            }
+
+            // Check if MetaFieldType.Key is in the blacklist
+            if (in_array($metaField->MetaFieldType->Key, static::$metaFieldBlacklist)) {
+                continue; // Skip this iteration if the key is blacklisted
+            }
+
+            $processor = $metaFieldProcessorCache[$fieldName] ?? null;
+            if (!$processor) {
+                /** @var MetaFieldProcessor $processorClass */
+                $processorClass = MetaFieldProcessor::resolveMetaFieldProcessorClassByMetaFieldType($metaField->MetaFieldType()->Key);
+                $processor = $processorClass::create($repoItem, $metaField, $value, $rootInstituteUuid);
+            }
+
+            $validationResult = $processor->validate();
+            if ($validationResult->hasErrors()) {
+                Throw new BadRequestException(ApiErrorConstant::GA_BR_001,
+                    "$fieldName: " . implode(', ', $validationResult->getErrors())
+                );
+            }
+
+            $metaFieldProcessorCache[$fieldName] = $processor;
+            $repoItemMetaField = $this->findOrCreateRepoItemMetaField($repoItem, $metaField);
+
+            // Remove all answers before adding new
+            $currentRepoItemMetaFieldValues = $repoItemMetaField->RepoItemMetaFieldValues()->filter(["IsRemoved" => false]);
+            foreach ($currentRepoItemMetaFieldValues as $repoItemMetaFieldValue) {
+                $repoItemMetaFieldValue->IsRemoved = true;
+                $repoItemMetaFieldValue->DeleteFromUploadApiPatch = true;
+                $repoItemMetaFieldValue->write();
+            }
+
             $processor->save($repoItemMetaField);
         }
     }

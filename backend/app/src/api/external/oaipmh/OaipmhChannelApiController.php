@@ -54,7 +54,7 @@ class OaipmhChannelApiController extends OaipmhApiController {
         $currentMember = Security::getCurrentUser();
         if ($currentMember && $this->channel->Members()->filter(['ID' => $currentMember->ID])->first()) {
             return true;
-        } elseif ($currentMember->isDefaultAdmin()) {
+        } elseif ($currentMember->isMainAdmin()) {
             return true;
         }
         return false;

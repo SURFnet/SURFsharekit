@@ -39,6 +39,6 @@ class TextMetaFieldProcessor extends MetaFieldProcessor
     }
 
     public function convertValueToJson(RepoItemMetaField $repoItemMetaField) {
-        return $repoItemMetaField->RepoItemMetaFieldValues()->first()->Value;
+        return $repoItemMetaField->RepoItemMetaFieldValues()->filter(["IsRemoved" => false])->first()->Value;
     }
 }

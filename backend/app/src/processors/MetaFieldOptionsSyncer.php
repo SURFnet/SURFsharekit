@@ -61,25 +61,25 @@ class MetaFieldOptionsSyncer {
 
     private function createMetaFieldOption($metaFieldOption, $sortOrder, $parentMetaFieldOptionId = null): MetaFieldOption {
         if (array_key_exists('skos:prefLabel',$metaFieldOption)) {
-            $labelArray = $metaFieldOption['skos:prefLabel'];
-            if (array_key_exists('@value', $labelArray)) {
-                $labelValue = $labelArray['@value'];
-                if ($labelValue) {
-                    $newMetaFieldOption = new MetaFieldOption();
-                    $newMetaFieldOption->Value = $metaFieldOption['@id'];
-                    $newMetaFieldOption->Label_NL = $labelValue;
-                    $newMetaFieldOption->Label_EN = $labelValue;
-                    $newMetaFieldOption->MetaFieldID = $this->metaField->ID;
-                    $newMetaFieldOption->MetaFieldOptionID = $parentMetaFieldOptionId;
-                    $newMetaFieldOption->SortOrder = $sortOrder;
-                    $newMetaFieldOption->SetCustomSortOrder = true;
-                    $newMetaFieldOption->write();
-                    return $newMetaFieldOption;
-                } else {
-                    throw new Exception("Label value does not contain valid value");
-                }
+            $labelValue = $this->getPreferredLabelValue($metaFieldOption['skos:prefLabel']);
+            if ($labelValue) {
+                $newMetaFieldOption = new MetaFieldOption();
+                $newMetaFieldOption->Value = $metaFieldOption['@id'];
+                $newMetaFieldOption->Label_NL = $labelValue;
+                $newMetaFieldOption->Label_EN = $labelValue;
+                $newMetaFieldOption->MetaFieldID = $this->metaField->ID;
+                $newMetaFieldOption->MetaFieldOptionID = $parentMetaFieldOptionId;
+                $newMetaFieldOption->SortOrder = $sortOrder;
+                $newMetaFieldOption->SetCustomSortOrder = true;
+
+                $altLabelText = $this->formatAltLabelsAsDescription($metaFieldOption);
+                $newMetaFieldOption->Description_EN = $altLabelText;
+                $newMetaFieldOption->Description_NL = $altLabelText;
+
+                $newMetaFieldOption->write();
+                return $newMetaFieldOption;
             } else {
-                throw new Exception("Value key missing");
+                throw new Exception("Label value does not contain valid value");
             }
         } else {
             throw new Exception("Label key missing");
@@ -88,29 +88,134 @@ class MetaFieldOptionsSyncer {
 
     private function updateMetaFieldOption($metaFieldOption, $existingMetaFieldOption, $sortOrder, $parentMetaFieldOptionId = null): MetaFieldOption {
         if (array_key_exists('skos:prefLabel',$metaFieldOption)) {
-            $labelArray = $metaFieldOption['skos:prefLabel'];
-            if (array_key_exists('@value', $labelArray)) {
-                $labelValue = $labelArray['@value'];
-                if ($labelValue) {
-                   $existingMetaFieldOption->Value = $metaFieldOption['@id'];
-                   $existingMetaFieldOption->Label_NL = $labelValue;
-                   if ($existingMetaFieldOption->Label_EN){
-                       $existingMetaFieldOption->Label_EN = $labelValue;
-                   }
-                   $existingMetaFieldOption->MetaFieldID = $this->metaField->ID;
-                   $existingMetaFieldOption->MetaFieldOptionID = $parentMetaFieldOptionId;
-                   $existingMetaFieldOption->SortOrder = $sortOrder;
-                   $existingMetaFieldOption->SetCustomSortOrder = true;
-                   $existingMetaFieldOption->write();
-                   return $existingMetaFieldOption;
-                } else {
-                    throw new Exception("Label value does not contain valid value");
-                }
+            $labelValue = $this->getPreferredLabelValue($metaFieldOption['skos:prefLabel']);
+            if ($labelValue) {
+               $existingMetaFieldOption->Value = $metaFieldOption['@id'];
+               $existingMetaFieldOption->Label_NL = $labelValue;
+               if ($existingMetaFieldOption->Label_EN){
+                   $existingMetaFieldOption->Label_EN = $labelValue;
+               }
+               $existingMetaFieldOption->MetaFieldID = $this->metaField->ID;
+               $existingMetaFieldOption->MetaFieldOptionID = $parentMetaFieldOptionId;
+               $existingMetaFieldOption->SortOrder = $sortOrder;
+               $existingMetaFieldOption->SetCustomSortOrder = true;
+
+               $altLabelText = $this->formatAltLabelsAsDescription($metaFieldOption);
+               $existingMetaFieldOption->Description_EN = $altLabelText;
+               $existingMetaFieldOption->Description_NL = $altLabelText;
+
+               $existingMetaFieldOption->write();
+               return $existingMetaFieldOption;
             } else {
-                throw new Exception("Value key missing");
+                throw new Exception("Label value does not contain valid value");
             }
         } else {
             throw new Exception("Label key missing");
         }
+    }
+
+    private function getPreferredLabelValue($prefLabel): ?string {
+        // Existing sources can provide either an object with @value or a language array.
+        if (is_array($prefLabel) && array_key_exists('@value', $prefLabel)) {
+            return $prefLabel['@value'] ?: null;
+        }
+
+        if (!is_array($prefLabel)) {
+            return null;
+        }
+
+        $firstAvailable = null;
+        foreach ($prefLabel as $label) {
+            if (!is_array($label) || !array_key_exists('@value', $label)) {
+                continue;
+            }
+
+            $value = $label['@value'];
+            if (!$value) {
+                continue;
+            }
+
+            if ($firstAvailable === null) {
+                $firstAvailable = $value;
+            }
+
+            $language = strtolower((string)($label['@language'] ?? ''));
+            if ($language === 'la') {
+                return $value;
+            }
+        }
+
+        foreach ($prefLabel as $label) {
+            if (!is_array($label) || !array_key_exists('@value', $label)) {
+                continue;
+            }
+
+            $value = $label['@value'];
+            if (!$value) {
+                continue;
+            }
+
+            $language = strtolower((string)($label['@language'] ?? ''));
+            if ($language === 'en') {
+                return $value;
+            }
+        }
+
+        return $firstAvailable;
+    }
+
+    /**
+     * Flattens skos:altLabel (JSON-LD language-tagged literals or plain strings) into one line:
+     * "first - second - third"
+     */
+    private function formatAltLabelsAsDescription(array $metaFieldOption): ?string {
+        if (!array_key_exists('skos:altLabel', $metaFieldOption)) {
+            return null;
+        }
+
+        $altLabels = $metaFieldOption['skos:altLabel'];
+
+        if (is_string($altLabels)) {
+            $trimmed = trim($altLabels);
+            return $trimmed !== '' ? $trimmed : null;
+        }
+
+        if (!is_array($altLabels)) {
+            return null;
+        }
+
+        $values = [];
+
+        // Single literal object: { "@language": "en", "@value": "..." }
+        if (array_key_exists('@value', $altLabels)) {
+            $v = $altLabels['@value'];
+            if ($v !== null && $v !== '') {
+                return (string) $v;
+            }
+            return null;
+        }
+
+        foreach ($altLabels as $label) {
+            if (is_string($label)) {
+                $t = trim($label);
+                if ($t !== '') {
+                    $values[] = $t;
+                }
+                continue;
+            }
+            if (!is_array($label) || !array_key_exists('@value', $label)) {
+                continue;
+            }
+            $v = $label['@value'];
+            if ($v !== null && $v !== '') {
+                $values[] = (string) $v;
+            }
+        }
+
+        if (count($values) === 0) {
+            return null;
+        }
+
+        return implode(' - ', $values);
     }
 }

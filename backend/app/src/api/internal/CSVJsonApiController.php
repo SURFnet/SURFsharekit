@@ -224,7 +224,7 @@ class CSVJsonApiController extends JsonApiController {
             set_time_limit(0); // increase time limit when purging
         } else {
             $purgeCache = false;
-            set_time_limit(600);
+            set_time_limit(7200);  // increase time limit since background task
         }
 
         if ($requestVars && isset($requestVars['reportType'])) {

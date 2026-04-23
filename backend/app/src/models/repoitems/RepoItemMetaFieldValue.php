@@ -13,8 +13,12 @@ use SurfSharekit\Models\Helper\Logger;
 /**
  * Class RepoItemMetaFieldValue
  * @package SurfSharekit\Models
+ * @property String Value
  * @method RepoitemMetaField RepoitemMetaField()
  * @method MetaFieldOption MetaFieldOption()
+ * @method RepoItem RepoItem()
+ * @method RepoItemFile RepoItemFile()
+ * @method Person Person()
  * @method Institute Institute()
  * DataObject representing a part of a @see RepoItemMetaField
  * e.g. the question 'What languages does this RepoItem contain?' could have more than one @see RepoItemMetaFieldValue, but only one RepoItemMetaField
@@ -165,6 +169,7 @@ class RepoItemMetaFieldValue extends DataObject {
                 $repoItemToDelete = RepoItem::get()->byID($this->RepoItemID);
                 if ($repoItemToDelete && in_array($repoItemToDelete->RepoType, Constants::SECONDARY_REPOTYPES)) {
                     $repoItemToDelete->IndirectDelete = true;
+                    $repoItemToDelete->DeleteFromUploadApiPatch = $this->DeleteFromUploadApiPatch;
                     $repoItemToDelete->delete();
                 }
             }

@@ -133,12 +133,40 @@ abstract class DataObjectJsonApiDescription {
         }
         if (is_array($sortableAttributeToColumnMap[$sortField])) {
             foreach ($sortableAttributeToColumnMap[$sortField] as $field) {
-                $objectsToDescribe = $objectsToDescribe->sort($field, $ascOrDesc);
+                $sortDir = $this->getSortDirection($field, $ascOrDesc);
+                $objectsToDescribe = $objectsToDescribe->sort($field, $sortDir);
             }
             return $objectsToDescribe;
         } else {
-            return $objectsToDescribe->sort($sortableAttributeToColumnMap[$sortField], $ascOrDesc);
+            $field = $sortableAttributeToColumnMap[$sortField];
+            $sortDir = $this->getSortDirection($field, $ascOrDesc);
+            return $objectsToDescribe->sort($field, $sortDir);
         }
+    }
+
+    /**
+     * Extracts a fixed sort direction from a sort field. E.g. 'Created DESC' results in 'DESC'.
+     * If the sort field includes a sort direction, the field name will replace the contents of $sortField.
+     *
+     * @param $sortField String Column to sort on. If it includes a direction, it will be removed.
+     * @param $default String If $sortField has no direction, use this as sort direction.
+     * @return string
+     * @throws Exception
+     */
+    private function getSortDirection(string &$sortField, string $default) {
+        $split = explode(" ", $sortField);
+        $splitNum = count($split);
+        switch ($splitNum) {
+            case 1: $sortDirection = $default; break;
+            case 2: $sortDirection = strtoupper($split[1]); break;
+            default: $sortDirection = '';
+        }
+        if (!in_array($sortDirection, ['ASC', 'DESC'])) {
+            // We get here if the sort column map has invalid data, so it should be a 500
+            throw new Exception("Invalid sort field: $sortField");
+        }
+        $sortField = $split[0];
+        return $sortDirection;
     }
 
     /**

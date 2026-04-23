@@ -26,7 +26,7 @@ trait PermissionProviderTrait {
             return false;
         }
         $name = strtoupper($this->dataObj()->ClassName);
-        return Permission::check("${name}_VIEW") || ($this instanceof DataObject && parent::canView($member, $context));
+        return Permission::check("{$name}_VIEW") || ($this instanceof DataObject && parent::canView($member, $context));
     }
 
     /**
@@ -53,8 +53,8 @@ trait PermissionProviderTrait {
             return $obj->TemplateMetaField->Template->Institute;
         } else if ($obj instanceof RepoItem) {
             return $obj->Institute;
-        } else if ($obj instanceof RepoItemFile) {
-            return $obj->RepoItem()->Institute;
+        } else if ($obj instanceof RepoItemFile && null !== $repoItem = $obj->RepoItem()) {
+            return $repoItem->Institute;
         } else if ($obj instanceof RepoItemMetaField) {
             return $obj->RepoItem->Institute;
         } else if ($obj instanceof RepoItemMetaFieldValue) {
@@ -101,7 +101,7 @@ trait PermissionProviderTrait {
             return false;
         }
         $name = strtoupper($this->dataObj()->ClassName);
-        return Permission::check("${name}_EDIT") || ($this instanceof DataObject && parent::canView($member, $context));
+        return Permission::check("{$name}_EDIT") || ($this instanceof DataObject && parent::canView($member, $context));
     }
 
     public function canDelete($member = null, $context = []) {
@@ -109,7 +109,7 @@ trait PermissionProviderTrait {
             return false;
         }
         $name = strtoupper($this->dataObj()->ClassName);
-        return Permission::check("${name}_DELETE") || ($this instanceof DataObject && parent::canView($member, $context));
+        return Permission::check("{$name}_DELETE") || ($this instanceof DataObject && parent::canView($member, $context));
     }
 
     public function canCreate($member = null, $context = []) {
@@ -118,7 +118,7 @@ trait PermissionProviderTrait {
         }
 
         $name = strtoupper($this->dataObj()->ClassName);
-        return Permission::check("${name}_CREATE") || Permission::check('ADMIN') || ($this instanceof DataObject && parent::canView($member, $context));
+        return Permission::check("{$name}_CREATE") || Permission::check('ADMIN') || ($this instanceof DataObject && parent::canView($member, $context));
     }
 
     /**
@@ -129,10 +129,10 @@ trait PermissionProviderTrait {
         $name = strtoupper($this->dataObj()->ClassName);
         $namelc = strtolower($name);
         return [
-            "${name}_VIEW" => "View $namelc Items",
-            "${name}_EDIT" => "Edit $namelc Items",
-            "${name}_DELETE" => "Delete $namelc Items",
-            "${name}_CREATE" => "Create $namelc Items"
+            "{$name}_VIEW" => "View $namelc Items",
+            "{$name}_EDIT" => "Edit $namelc Items",
+            "{$name}_DELETE" => "Delete $namelc Items",
+            "{$name}_CREATE" => "Create $namelc Items"
         ];
     }
 }

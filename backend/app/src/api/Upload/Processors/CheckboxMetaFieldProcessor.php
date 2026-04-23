@@ -23,6 +23,6 @@ class CheckboxMetaFieldProcessor extends MetaFieldProcessor
     }
 
     public function convertValueToJson(RepoItemMetaField $repoItemMetaField): bool {
-        return !$repoItemMetaField->RepoItemMetaFieldValues()->first()->IsRemoved;
+        return !$repoItemMetaField->RepoItemMetaFieldValues()->filter(["IsRemoved" => false])->first()->IsRemoved;
     }
 }

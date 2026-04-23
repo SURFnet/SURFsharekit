@@ -4,7 +4,10 @@ use SilverStripe\Control\Email\Email;
 use SurfSharekit\Models\BulkAction;
 use SurfSharekit\Models\Event;
 use SurfSharekit\Models\Helper\EmailHelper;
+use SurfSharekit\models\notifications\NotificationType;
 use SurfSharekit\Models\PersonConfig;
+use SurfSharekit\notifications\NotificationAction;
+use SurfSharekit\notifications\NotificationKeyGenerator;
 
 class SanitizationProcessEndEventHandler extends NotificationEventHandler {
 
@@ -17,7 +20,8 @@ class SanitizationProcessEndEventHandler extends NotificationEventHandler {
             if ($createdBy->exists()) {
                 /** @var PersonConfig $personConfig */
                 $personConfig = $createdBy->PersonConfig();
-                if ($personConfig && $personConfig->exists() && $personConfig->isNotificationEnabled("SanitizationResult")){
+                $notificationKey = NotificationKeyGenerator::generate("SanitizationResult", '', NotificationType::EMAIL);
+                if ($personConfig && $personConfig->exists() && $personConfig->isNotificationEnabled($notificationKey)){
                     switch ($relatedObject->ProcessStatus) {
                         case 'COMPLETED':
                             $this->sendCompletedMail($relatedObject);

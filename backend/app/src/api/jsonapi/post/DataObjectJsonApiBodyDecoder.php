@@ -5,6 +5,7 @@ use SilverStripe\Security\Security;
 use SurfSharekit\Api\InternalJsonApiController;
 use SurfSharekit\Api\JsonApi;
 use SurfSharekit\Api\JsonApiOperations;
+use SurfSharekit\Models\Helper\AfterCommit;
 use SurfSharekit\Models\Helper\Logger;
 
 /**
@@ -148,22 +149,33 @@ class DataObjectJsonApiBodyDecoder {
                 $dataObject = $deco->updateObjectRelationFromDataJson($objectClass, $requestBody, $updateableObject, $relationshipUpdating, $editMode ?: DataObjectJsonApiDecoder::$REPLACE);
                 if (count($deco->errorLog) > 0) {
                     DB::get_conn()->transactionRollback();
+                    AfterCommit::clear();
                     return [
                         JsonApi::TAG_ERRORS => $deco->errorLog
                     ];
                 }
                 try {
-                    //Also force-write the 'changed' object to make sure the onafter write is called for  related objects
+                    // Force-write to trigger onAfterWrite for related objects.
+                    // Skip content validation since this is a relationship-only update.
                     Logger::debugLog("Force write $dataObject->Uuid");
+
+                    $dataObject->SkipValidation = true;
                     $dataObject->write(false, false, true);
                 } catch (Exception $e) {
+                    DB::get_conn()->transactionRollback();
+                    AfterCommit::clear();
+
                     return [JsonApi::TAG_ERRORS => [[
                         JsonApi::TAG_ERROR_TITLE => 'Relationship update exception',
                         JsonApi::TAG_ERROR_DETAIL => $e->getMessage(),
                         JsonApi::TAG_ERROR_CODE => 'DOJABD_014'
                     ]]];
+                } finally {
+                    // Ensure SkipValidation is reset even if the write fails or an exception occurs.
+                    $dataObject->SkipValidation = false;
                 }
                 DB::get_conn()->transactionEnd();
+                AfterCommit::flushIfOutermost();
                 return $dataObject::get_by_id($dataObject->ID); //to make sure nothing is done from cache
             } else if ($jsonData = $requestBody[JsonApi::TAG_DATA]) {
                 DB::get_conn()->transactionStart();
@@ -172,10 +184,12 @@ class DataObjectJsonApiBodyDecoder {
                         try {
                             if (!$dataObject->canCreate(Security::getCurrentUser())) {
                                 DB::get_conn()->transactionRollback();
+                                AfterCommit::clear();
                                 return InternalJsonApiController::noPermissionJsonApiBodyError("You do not have the correct create permissions for this action");
                             }
                         } catch (Exception $e) {
                             DB::get_conn()->transactionRollback();
+                            AfterCommit::clear();
                             return [JsonApi::TAG_ERRORS => [[
                                 JsonApi::TAG_ERROR_TITLE => 'Creation exception',
                                 JsonApi::TAG_ERROR_DETAIL => $e->getMessage(),
@@ -184,9 +198,11 @@ class DataObjectJsonApiBodyDecoder {
                         }
                     }
                     DB::get_conn()->transactionEnd();
+                    AfterCommit::flushIfOutermost();
                     return $dataObject::get_by_id($dataObject->ID); //to make sure nothing is done from cache
                 }
                 DB::get_conn()->transactionRollback();
+                AfterCommit::clear();
                 return [
                     JsonApi::TAG_ERRORS => $deco->errorLog
                 ];

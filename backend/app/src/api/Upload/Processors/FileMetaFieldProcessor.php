@@ -30,6 +30,6 @@ class FileMetaFieldProcessor extends MetaFieldProcessor
     }
 
     public function convertValueToJson(RepoItemMetaField $repoItemMetaField) {
-        return $repoItemMetaField->RepoItemMetaFieldValues()->first()->RepoItemFileUuid;
+        return $repoItemMetaField->RepoItemMetaFieldValues()->filter(["IsRemoved" => false])->first()->RepoItemFileUuid;
     }
 }

@@ -4,9 +4,11 @@ namespace SurfSharekit\Models;
 
 use DataObjectJsonApiEncoder;
 use Exception;
+use SilverStripe\EnvironmentExport\Exportable;
 use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\NumericField;
 use SilverStripe\Forms\RequiredFields;
+use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\DB;
 use SilverStripe\Security\Member;
@@ -34,10 +36,12 @@ use SurfSharekit\Models\Helper\Logger;
  * @property String Description_NL Dutch description, overrides parent description and/or metafield description
  * @property String InfoText_EN English info text, overrides parent label and/or metafield info text
  * @property String InfoText_NL Dutch info text, overrides parent description and/or metafield info text
+ * @property String DependencyKey Optional key used by frontend to express field dependencies/visibility rules
  * Relationships
  * @method Template Template()
  */
 class TemplateMetaField extends DataObject {
+    use Exportable;
 
     private static $extensions = [
         Versioned::class . '.versioned',
@@ -62,7 +66,8 @@ class TemplateMetaField extends DataObject {
         'Description_EN' => 'Text',
         'Description_NL' => 'Text',
         'InfoText_EN' => 'Varchar(1024)',
-        'InfoText_NL' => 'Varchar(1024)'
+        'InfoText_NL' => 'Varchar(1024)',
+        'DependencyKey' => 'Varchar(255)'
     ];
 
     private static $has_one = [
@@ -100,6 +105,7 @@ class TemplateMetaField extends DataObject {
         "Description_NL" => "Description_NL",
         "InfoText_EN" => "InfoText_EN",
         "InfoText_NL" => "InfoText_NL",
+        "DependencyKey" => "DependencyKey",
         "IsRequired" => "IsRequired",
         "IsEnabled" => "IsEnabled",
         'IsReadOnly' => 'IsReadOnly',
@@ -157,9 +163,15 @@ class TemplateMetaField extends DataObject {
         if ($this->MetaField()->DefaultKey) { //Options are automatically generated
             $cmsFields->removeByName('DefaultMetaFieldOptionParts');
         }
+
+        $metaFieldTypeKey = strtolower($this->MetaField()->MetaFieldType()->Key ?? '');
+        if (in_array($metaFieldTypeKey, ['tree-multiselect', 'dropdowntag'])) {
+            // Default values are not supported for these field types
+            $cmsFields->removeByName('DefaultMetaFieldOptionParts');
+        }
         $cmsFields->removeByName('IsCopyable');
 
-        $cmsFields->changeFieldOrder(['TemplateSectionID', 'MetaFieldID', 'Label_NL', 'Label_EN', 'Description_NL', 'Description_EN', 'InfoText_NL', 'InfoText_EN', 'IsLocked', 'IsRequired', 'IsEnabled', 'IsReadOnly', 'IsHidden', 'SortOrder', 'IsSmallField', 'IsRemoved']);
+        $cmsFields->changeFieldOrder(['TemplateSectionID', 'MetaFieldID', 'Label_NL', 'Label_EN', 'Description_NL', 'Description_EN', 'InfoText_NL', 'InfoText_EN', 'DependencyKey', 'IsLocked', 'IsRequired', 'IsEnabled', 'IsReadOnly', 'IsHidden', 'SortOrder', 'IsSmallField', 'IsRemoved']);
 
         return $cmsFields;
     }
@@ -227,16 +239,17 @@ class TemplateMetaField extends DataObject {
             }
 
             // Custom sorting function based on MetaFieldOptionCategory->Sort value
-            $optionList = $optionList->sort(function ($a, $b) {
-                $categoryA = $a->MetaFieldOptionCategory();
-                $categoryB = $b->MetaFieldOptionCategory();
-
-                if ($categoryA->Sort == $categoryB->Sort) {
-                    return 0;
-                }
-
-                return ($categoryA->Sort < $categoryB->Sort) ? -1 : 1;
-            });
+            //TODO: @Gaj
+//            $optionList = $optionList->sort(function ($a, $b) {
+//                $categoryA = $a->MetaFieldOptionCategory();
+//                $categoryB = $b->MetaFieldOptionCategory();
+//
+//                if ($categoryA->Sort == $categoryB->Sort) {
+//                    return 0;
+//                }
+//
+//                return ($categoryA->Sort < $categoryB->Sort) ? -1 : 1;
+//            });
 
             // Now loop through the sorted $optionList
             foreach ($optionList as $option) {
@@ -300,6 +313,7 @@ class TemplateMetaField extends DataObject {
             'hidden' => $this->IsHidden ? 1 : 0,
             'copyable' => $this->IsCopyable,
             'replicatable' => $this->IsReplicatable,
+            'dependencyKey' => $this->DependencyKey,
             "attributeKey" => $metaField->AttributeKey,
             "options" => $options,
             "validationRegex" => $metaFieldType->ValidationRegex,
@@ -339,6 +353,10 @@ class TemplateMetaField extends DataObject {
 
     protected function onBeforeWrite() {
         parent::onBeforeWrite();
+        if ($this->ImportTaskWrite) {
+            return;
+        }
+
         if (!$this->isInDB() && !$this->SkipPropagation) {
             if ($template = $this->Template()) {
                 if ($template->InstituteID == 0) {
@@ -365,6 +383,10 @@ class TemplateMetaField extends DataObject {
 
     protected function onAfterWrite() {
         parent::onAfterWrite();
+        if ($this->ImportTaskWrite) {
+            return;
+        }
+
         if ($this->isInDB() && !$this->SkipPropagation) {
             $this->downPropagateFast();
         }
@@ -417,6 +439,7 @@ class TemplateMetaField extends DataObject {
             $currentMetaField->Description_NL,
             $currentMetaField->InfoText_EN,
             $currentMetaField->InfoText_NL,
+            $currentMetaField->DependencyKey,
             $memberID,
             $memberID,
             $currentMetaField->MetaFieldID,
@@ -453,6 +476,7 @@ Description_EN,
 Description_NL,
 InfoText_EN,
 InfoText_NL,
+DependencyKey,
 CreatedByID, 
 ModifiedByID
 )
@@ -492,6 +516,7 @@ t.UUID as TemplateUuid,
 ? as Description_NL,
 ? as InfoText_EN,
 ? as InfoText_NL,
+? as DependencyKey,
 ? as CreatedByID,
 ? as ModifiedByID
 FROM 
@@ -554,6 +579,7 @@ AND t.InstituteID in
                 $currentMetaField->Description_NL,
                 $currentMetaField->InfoText_EN,
                 $currentMetaField->InfoText_NL,
+                $currentMetaField->DependencyKey,
                 $currentMetaField->MetaFieldID,
                 $template->RepoType,
                 $template->InstituteID,
@@ -588,7 +614,8 @@ Label_NL = ?,
 Description_EN = ?,
 Description_NL = ?,
 InfoText_EN = ?,
-InfoText_NL = ?
+InfoText_NL = ?,
+DependencyKey = ?
 WHERE
 tm.MetaFieldID = ?
 AND
@@ -772,5 +799,9 @@ AND t.InstituteID in
             ->where(['SurfSharekit_TemplateMetaField.MetaFieldID' => $this->MetaFieldID]);
         Logger::debugLog("removed items: " . $items->count());
         $items->removeAll();
+    }
+
+    public static function updateDataListForExport(DataList &$dataList) {
+        $dataList = $dataList->filter('Template.InstituteID', 0);
     }
 }

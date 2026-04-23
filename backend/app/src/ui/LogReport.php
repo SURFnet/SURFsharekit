@@ -5,6 +5,7 @@ namespace Zooma\SilverStripe\ModelAdmin;
 use SilverStripe\Core\Environment;
 use SilverStripe\ORM\ArrayList;
 use SilverStripe\Reports\Report;
+use SilverStripe\View\ArrayData;
 
 class LogReport extends Report {
     public function title() {
@@ -69,9 +70,9 @@ class LogReport extends Report {
         fclose($f);
 
         foreach ($linesRead as $line) {
-            $result[] = [
+            $result[] = ArrayData::create([
                 'Text' => $line
-            ];
+            ]);
         }
 
         return $result;

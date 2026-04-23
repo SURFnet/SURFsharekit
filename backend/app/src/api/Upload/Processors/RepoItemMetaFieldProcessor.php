@@ -32,6 +32,6 @@ class RepoItemMetaFieldProcessor extends MetaFieldProcessor
     }
 
     public function convertValueToJson(RepoItemMetaField $repoItemMetaField) {
-        return $repoItemMetaField->RepoItemMetaFieldValues()->first()->RepoItemUuid;
+        return $repoItemMetaField->RepoItemMetaFieldValues()->filter(["IsRemoved" => false])->first()->RepoItemUuid;
     }
 }

@@ -2,12 +2,8 @@
 
 namespace SurfSharekit\Models;
 
-use Mimey\MimeTypes;
-use SilverStripe\Core\Injector\Injector;
 use SilverStripe\ORM\DataObject;
-use SilverStripe\Security\Security;
-use SurfSharekit\Extensions\DatabaseAdminExtension;
-use SurfSharekit\Models\Helper\Constants;
+use Symfony\Component\Mime\MimeTypes;
 
 class MimetypeObject extends DataObject {
 
@@ -27,7 +23,7 @@ class MimetypeObject extends DataObject {
     public function requireDefaultRecords() {
         parent::requireDefaultRecords();
 
-        $mimeTypes = new MimeTypes();
+        $mimeTypesObj = new MimeTypes();
         $fileExtensions = [
             "css", "ace", "arc", "arj",
             "asf", "au", "avi", "bmp", "bz2",
@@ -44,11 +40,13 @@ class MimetypeObject extends DataObject {
             "wma", "wmv", "xls", "xlsx", "xltx",
             "zip", "zipx", "ppsx", "mhtml", "mht",
             "odt", "sib", "zip", "epub", "imscc",
-            "imscp", "md", "sav", "scorm", "graphql"
+            "imscp", "md", "sav", "scorm", "graphql",
+            "h5p", "apkg", "svg", "psd"
         ];
 
         foreach ($fileExtensions as $fileExtension) {
-            $mimeType = $mimeTypes->getMimeType($fileExtension);
+            $mimeTypes = $mimeTypesObj->getMimeTypes($fileExtension);
+            $mimeType = $mimeTypes[0] ?? null;
             $existingMimetype = MimetypeObject::get()->filter('Extension', $fileExtension)->first();
 
             if (!$existingMimetype || $existingMimetype === null) {

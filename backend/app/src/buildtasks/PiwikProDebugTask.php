@@ -5,7 +5,7 @@ namespace SurfSharekit\Tasks;
 use SilverStripe\Core\Environment;
 use SilverStripe\Dev\BuildTask;
 use SilverStripe\Piwik\PiwikCustomDimensionMapping;
-use SurfSharekit\Piwik\Api\PiwikAPI;
+use SurfSharekit\Piwik\Api\PiwikClient;
 use SurfSharekit\Piwik\Api\PiwikFilter;
 use SurfSharekit\Piwik\CustomEventDimension;
 
@@ -14,7 +14,7 @@ class PiwikProDebugTask extends BuildTask
     private \stdClass $auth;
 
     public function run($request) {
-        $piwikApi = new PiwikAPI(
+        $piwikApi = new PiwikClient(
             Environment::getEnv('PIWIK_API_CLIENT_ID'),
             Environment::getEnv('PIWIK_API_CLIENT_SECRET'),
             Environment::getEnv('PIWIK_URL'),

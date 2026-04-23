@@ -12,7 +12,6 @@ class InstituteJsonApiDescription extends DataObjectJsonApiDescription {
     public $type_singular = 'institute';
     public $type_plural = 'institutes';
 
-    //GET information
     public $fieldToAttributeMap = [
         'Title' => 'title',
         'ConextCode' => 'conextCode',
@@ -25,17 +24,21 @@ class InstituteJsonApiDescription extends DataObjectJsonApiDescription {
         'Type' => 'type',
         'IsBaseScopeForUser' => 'isBaseScopeForUser',
         'ChildrenInstitutesCount' => 'childrenInstitutesCount',
-        'IsHidden' => 'isHidden'
+        'TotalPublicationsCount' => 'totalPublicationsCount',
+        'IsHidden' => 'isHidden',
+        "IBronEnabled" => "lmsEnabled"
     ];
 
     public $attributeToFieldMap = [
         'title' => 'Title',
         'conextCode' => 'ConextCode',
         'level' => 'Level',
+        'totalPublicationsCount' => 'TotalPublicationsCount',
         'abbreviation' => 'Abbreviation',
         'type' => 'Type',
         'isRemoved' => 'IsRemovedFromApi',
-        'isHidden' => 'IsHidden'
+        'isHidden' => 'IsHidden',
+        "lmsEnabled" => "IBronEnabled"
     ];
 
     public $hasOneToRelationMap = [
@@ -82,6 +85,7 @@ class InstituteJsonApiDescription extends DataObjectJsonApiDescription {
         return [
             'inactive' => '`SurfSharekit_Institute`.`IsRemoved`',
             'isHidden' => '`SurfSharekit_Institute`.`IsHidden`',
+            'lmsEnabled' => '`SurfSharekit_Institute`.`IBronEnabled`',
             'title' => '`SurfSharekit_Institute`.`Title`',
             'isRemoved' => '`SurfSharekit_Institute`.`IsRemoved`',
             'level' => '`SurfSharekit_Institute`.`Level`',
@@ -89,7 +93,8 @@ class InstituteJsonApiDescription extends DataObjectJsonApiDescription {
             'parent' => '`SurfSharekit_Institute`.`InstituteUuid`',
             'consortiumParent' => null,
             'distinctTemplates' => null,
-            'scope' => null
+            'scope' => null,
+            'organisation' => null
         ];
     }
 
@@ -106,7 +111,6 @@ class InstituteJsonApiDescription extends DataObjectJsonApiDescription {
                 if (!($modifier == '=' || $modifier == '!=')) {
                     throw new Exception('Only ?filter[consortiumParent][EQ] or ...[NEQ] supported');
                 }
-
                 return $datalist->innerJoin('SurfSharekit_Institute_ConsortiumChildren', '`SurfSharekit_Institute_ConsortiumChildren`.`ChildID` = `SurfSharekit_Institute`.`ID`')
                     ->leftJoin('SurfSharekit_Institute', 'SurfSharekit_Institute_ConsortiumChildren.`SurfSharekit_InstituteID` = `ConsortiumParent`.`ID`', 'ConsortiumParent')
                     ->where(["`ConsortiumParent`.`Uuid` $modifier ?" => $filterValue]);
@@ -125,6 +129,7 @@ class InstituteJsonApiDescription extends DataObjectJsonApiDescription {
                 return $datalist->filterAny(['Templates.AllowCustomization' => $filterValue, 'ID' => $member->extend('getInstituteIdentifiers')[0]]);
             };
         }
+
         if (in_array('scope', $fieldsToSearchIn)) {
             if (count($fieldsToSearchIn) > 1) {
                 throw new Exception('Cannot mix scope filter with another filter');
@@ -133,12 +138,30 @@ class InstituteJsonApiDescription extends DataObjectJsonApiDescription {
                 if (!($modifier == '=')) {
                     throw new Exception('Only ?filter[scope][EQ] supported');
                 }
-                $instituteUuids = explode(',', $filterValue);
-                $instituteIDs = Institute::get()->filter(['Uuid' => $instituteUuids])->column('ID');
-                $subInstituteFilter = InstituteScoper::getScopeFilter($instituteIDs);
-                return $datalist->where("SurfSharekit_Institute.ID IN ( $subInstituteFilter )");
+                $ids = Institute::get()->filter(['Uuid' => explode(',', $filterValue)])->column('ID');
+                $subFilter = InstituteScoper::getScopeFilter($ids);
+                return $datalist->where("`SurfSharekit_Institute`.`ID` IN ($subFilter)");
             };
         }
+        if (in_array('organisation', $fieldsToSearchIn)) {
+            return function (DataList $datalist, $filterValue, $modifier) {
+                $root = Institute::get()->filter(['Uuid' => $filterValue])->first();
+                if (!$root) return $datalist->filter(['ID' => -1]);
+                $rootID = $root->ID;
+
+                // 1. Find all IDs within the tree structure under this root
+                $subFilter = InstituteScoper::getScopeFilter([$rootID]);
+
+                // 2. Retrieve IDs where the user actually has EDIT permissions
+                // We use 'EDIT' here instead of the default to prevent DOJAD_023
+                $accessibleIDs = InstituteScoper::getAllCanEdit(Institute::class)->column('ID');
+
+                // 3. Only show the overlap: must be in the tree AND have permission to link publications
+                return $datalist->where("(`SurfSharekit_Institute`.`ID` IN ($subFilter) OR `SurfSharekit_Institute`.`ID` = $rootID)")
+                    ->filter(['ID' => $accessibleIDs ?: -1]);
+            };
+        }
+
         if (in_array('level', $fieldsToSearchIn)) {
             if (count($fieldsToSearchIn) > 1) {
                 throw new Exception('Cannot mix level filter with another filter');
@@ -147,21 +170,42 @@ class InstituteJsonApiDescription extends DataObjectJsonApiDescription {
                 if (!($modifier == '=')) {
                     throw new Exception('Only ?filter[level][EQ] supported');
                 }
-                $instituteLevels = explode(',', $filterValue);
-                return $datalist->filterAny("Level", $instituteLevels);
+                $levels = explode(',', $filterValue);
+                $accessibleInstitutes = InstituteScoper::getAll(Institute::class);
+
+                $rootIDs = [];
+                foreach ($accessibleInstitutes as $inst) {
+                    $curr = $inst;
+                    $safety = 0;
+                    // Climb to the absolute top-level parent
+                    while ($curr->InstituteID > 0 && $safety < 10) {
+                        $parent = $curr->Institute();
+                        if (!$parent || !$parent->exists()) break;
+                        $curr = $parent;
+                        $safety++;
+                    }
+                    // Only add if it is TRULY an organisation level
+                    if (strtolower($curr->Level) === 'organisation') {
+                        $rootIDs[] = $curr->ID;
+                    }
+                }
+                $uniqueRootIDs = array_unique($rootIDs);
+                $scopeFilter = InstituteScoper::getScopeFilter($uniqueRootIDs);
+                return $datalist->filter(['Level' => $levels])
+                    ->where("`SurfSharekit_Institute`.`ID` IN ($scopeFilter)");
             };
         }
+
         return parent::getFilterFunction($fieldsToSearchIn);
     }
 
     protected function getSortableAttributesToColumnMap(): array {
         $relevantInstitutes = InstituteScoper::getAll(Institute::class)->columnUnique('Uuid');
-        $relevantInstitutesWithQuotations = [];
-        foreach ($relevantInstitutes as $relevantInstitute) {
-            $relevantInstitutesWithQuotations[] = "'$relevantInstitute'";
-        }
-        $relevantRootInstitutes = implode(',', $relevantInstitutesWithQuotations);
-        return ['title' => 'Title',
-            'relevancy' => "(SurfSharekit_Institute.Uuid NOT IN ($relevantRootInstitutes)), Title"];
+        $quoted = array_map(fn($uuid) => "'$uuid'", $relevantInstitutes);
+        $list = implode(',', $quoted) ?: "''";
+        return [
+            'title' => 'Title',
+            'relevancy' => "(SurfSharekit_Institute.Uuid NOT IN ($list)), Title"
+        ];
     }
 }

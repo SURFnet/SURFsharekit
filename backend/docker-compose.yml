@@ -1,6 +1,6 @@
 version: '3.7'
 services:
-  silverstripe-7.4:
+  silverstripe-8.3:
     build:
       context: .
       dockerfile: Dockerfile
@@ -13,13 +13,13 @@ services:
       SS_DEFAULT_ADMIN_USERNAME: ${SS_DEFAULT_ADMIN_USERNAME}
       SS_DEFAULT_ADMIN_PASSWORD: ${SS_DEFAULT_ADMIN_PASSWORD}
       SS_ENVIRONMENT_TYPE: dev
-      APPLICATION_ENVIRONMENT: dev
+      APPLICATION_ENVIRONMENT: local
       SS_BASE_URL: http://localhost:8080
     links:
       - database
-    restart: always
+    restart: unless-stopped
     ports:
-      - 8080:80
+      - 8080:8080
     volumes:
       - .:/var/www/html
 
@@ -35,7 +35,7 @@ services:
 
   database:
     image: mariadb:10
-    restart: always
+    restart: unless-stopped
     ports:
       - 3306:3306
     environment:
@@ -43,5 +43,26 @@ services:
     volumes:
       - db-data:/var/lib/mysql
 
+  redis:
+    image: redis:8.4-alpine
+    command: "redis-server --requirepass ${REDIS_PASSWORD}"
+    restart: unless-stopped
+    ports:
+      - 6379:6379
+    volumes:
+      - redis-data:/data
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    platform: linux/amd64
+    restart: unless-stopped
+    environment:
+      - REDIS_HOSTS=local:redis:6379:0:${REDIS_PASSWORD}
+    ports:
+      - 8081:8081
+    depends_on:
+      - redis
+
 volumes:
   db-data:
+  redis-data:

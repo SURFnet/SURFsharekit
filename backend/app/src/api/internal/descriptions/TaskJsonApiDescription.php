@@ -117,6 +117,12 @@ class TaskJsonApiDescription extends DataObjectJsonApiDescription {
             };
         }
 
+        if (in_array('search', $fieldsToSearchIn)) {
+            return function (DataList $dataList, $filterValue, $modified) use ($fieldsToSearchIn) {
+                return $dataList->where(['Data like ?' => "%$filterValue%"]);
+            };
+        }
+
         return parent::getFilterFunction($fieldsToSearchIn);
     }
 

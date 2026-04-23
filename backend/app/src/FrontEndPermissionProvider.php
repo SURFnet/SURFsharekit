@@ -33,6 +33,10 @@ class FrontEndPermissionProvider implements PermissionProvider {
                 'name' => 'Shows removed items (bin) page in frontend menu',
                 'category' => 'Menu items'
             ],
+            'FRONTEND_VIEW_ARCHIVE' => [
+                'name' => 'Shows archive page in frontend menu',
+                'category' => 'Menu items'
+            ],
         ];
     }
 }

@@ -7,10 +7,13 @@ use DataObjectJsonApiEncoder;
 use Exception;
 use ExternalPersonJsonApiDescription;
 use ExternalRepoItemChannelJsonApiDescription;
+use Psr\Container\NotFoundExceptionInterface;
 use Ramsey\Uuid\Uuid;
+use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Dev\BuildTask;
 use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DB;
+use SilverStripe\Security\Member;
 use SimpleXMLElement;
 use SurfSharekit\Api\JsonApi;
 use SurfSharekit\Api\ListRecordsNode;
@@ -38,106 +41,113 @@ class RefreshCacheTask extends BuildTask
 
     private $instituteLists = [];
 
+    /**
+     * This function takes the chosen filters of the CacheClearRequest and then filters the provided $list to
+     * match records that contain all non-empty filters. Note that the DataList must already have Cache_RecordNode
+     * joined to the result for this function to work correctly.
+     *
+     * @param DataList $list
+     * @return DataList
+     * @throws Exception|NotFoundExceptionInterface
+     */
+    private function applyCacheClearRequestFilter(DataList $list): DataList {
+        $class = $list->dataClass();
+        $dataClassSingleton = Injector::inst()->get($class);
+        if (!($dataClassSingleton instanceof Cache_RecordNode) && !($dataClassSingleton instanceof RepoItem) && !($dataClassSingleton instanceof Member)) {
+            throw new Exception("Provided a DataList of class $class, expected instance of Cache_RecordNode, RepoItem or Member");
+        }
+
+        if ($this->getProtocol()?->ID) {
+            $list = $list
+                ->where(["SurfSharekit_Cache_RecordNode.ProtocolID = ?" => $this->getProtocol()->ID])
+                ->where(["SurfSharekit_Cache_RecordNode.ProtocolVersion <= ?" => $this->getProtocol()->Version]);
+        }
+
+        if ($this->getChannel()?->ID) {
+            $list = $list->where(["SurfSharekit_Cache_RecordNode.ChannelID = ?" => $this->getChannel()->ID]);
+        }
+
+        // Can't filter cache records on institute
+        if ($this->getInstitute()?->ID && !$dataClassSingleton instanceof Cache_RecordNode) {
+            if ($dataClassSingleton instanceof Member) {
+                $list = $list
+                    ->innerJoin("Group_Members", "Group_Members.MemberID = SurfSharekit_Person.ID")
+                    ->innerJoin("Group", "Group.ID = Group_Members.GroupID")
+                    ->innerJoin("SurfSharekit_Institute", 'Group.InstituteID = SurfSharekit_Institute.ID');
+            } else {
+                $list = $list->innerJoin("SurfSharekit_Institute", 'SurfSharekit_RepoItem.InstituteID = SurfSharekit_Institute.ID');
+            }
+            $list = $list->where(['SurfSharekit_Institute.ID = ?' => $this->getInstitute()->ID]);
+        }
+
+        return $list;
+    }
+
+    private ?DataList $listOfRepoItems = null;
+    private ?DataList $listOfPersons = null;
+    private function getFilteredRepoList(): DataList {
+        if ($this->listOfRepoItems) return $this->listOfRepoItems;
+
+        $this->listOfRepoItems = RepoItem::get()
+            ->innerJoin('SurfSharekit_Cache_RecordNode', 'SurfSharekit_Cache_RecordNode.RepoItemID = SurfSharekit_RepoItem.ID');
+        $this->listOfRepoItems = $this->applyCacheClearRequestFilter($this->listOfRepoItems);
+        return $this->listOfRepoItems;
+    }
+
+    private function getFilteredPersonList(): DataList {
+        if ($this->listOfPersons) return $this->listOfPersons;
+
+        $this->listOfPersons = Person::get()
+            ->innerJoin('SurfSharekit_Cache_RecordNode', 'SurfSharekit_Cache_RecordNode.PersonID = SurfSharekit_Person.ID');
+        $this->listOfPersons = $this->applyCacheClearRequestFilter($this->listOfPersons);
+        return $this->listOfPersons;
+    }
+
     public function run($request) {
         $this->setTaskId(Uuid::uuid4()->toString());
         set_time_limit(60 * 60 * 72);//72 hours
         ini_set('memory_limit', '2048M');
         if (null !== $cacheClearRequest = $this->getNextCacheClearRequest()) {
-            $this->setCacheClearRequest($cacheClearRequest);
-            $cacheClearRequest->markStatusAs('Started');
-
-            $listOfRepoItems = RepoItem::get()
-                ->innerJoin('SurfSharekit_Cache_RecordNode', 'SurfSharekit_Cache_RecordNode.RepoItemID = SurfSharekit_RepoItem.ID');
-
-            $listOfPersons = Person::get()
-                ->innerJoin('SurfSharekit_Cache_RecordNode', 'SurfSharekit_Cache_RecordNode.PersonID = SurfSharekit_Person.ID');
-
-            if ($cacheClearRequest->ProtocolID !== 0) {
-                $this->setType('Protocol');
-                $this->setProtocol($cacheClearRequest->Protocol());
-
-                $listOfRepoItems = $listOfRepoItems
-                    ->where(["SurfSharekit_Cache_RecordNode.ProtocolID = ?" => $this->getProtocol()->ID])
-                    ->where(["SurfSharekit_Cache_RecordNode.ProtocolVersion <= ?" => $this->getProtocol()->Version]);
-
-                $listOfPersons = $listOfPersons
-                    ->where(["SurfSharekit_Cache_RecordNode.ProtocolID = ?" => $this->getProtocol()->ID])
-                    ->where(["SurfSharekit_Cache_RecordNode.ProtocolVersion <= ?" => $this->getProtocol()->Version]);
-
-                if ($this->getProtocol()->SystemKey == 'OAI-PMH') {
-                    $listOfRepoItems = $listOfRepoItems->where("SurfSharekit_Cache_RecordNode.EndPoint = 'OAI'");
-                } else if ($this->getProtocol()->SystemKey == 'CSV') {
-                    foreach ($listOfRepoItems as $repoItem) {
-                        DataObjectCSVFileEncoder::getCSVRowFor($repoItem, true, $this->getProtocol());
-                    }
-                }
-            } else if ($cacheClearRequest->ChannelID !== 0) {
-                $this->setType('Channel');
-                $this->setChannel($cacheClearRequest->Channel());
-
-                $listOfRepoItems = $listOfRepoItems
-                    ->where(["SurfSharekit_Cache_RecordNode.ChannelID = ?" => $this->getChannel()->ID]);
-
-                $listOfPersons = $listOfPersons
-                    ->where(["SurfSharekit_Cache_RecordNode.ChannelID = ?" => $this->getChannel()->ID]);
-
-            } else  if ($cacheClearRequest->Institute !== 0) {
-                // skip after switch because institutes are recursive
-                $this->setType('Institute');
-
-                $this->clearCacheRecursiveForInstitutes($cacheClearRequest->Institute());
-
-                foreach ($this->instituteLists as $lists) {
-                    $this->setItemCount($this->getItemCount() + $lists[0]->count() + $lists[1]->count());
-                }
-
-                foreach ($this->instituteLists as $lists) {
-                    $this->refreshRepoItemsCache($lists[0]);
-                    $this->refreshPersonsCache($lists[1]);
-                }
+            try {
+                $this->executeCacheRequest($cacheClearRequest);
 
                 $cacheClearRequest->markStatusAs('Done');
-                return;
-            } else {
-                return;
+            } catch (Exception $e) {
+                Logger::errorLog($e->getMessage());
+                Logger::errorLog("At {$e->getFile()}:{$e->getLine()}");
+                $cacheClearRequest->onFail($e->getMessage());
             }
-
-            $this->setItemCount($listOfRepoItems->count() + $listOfPersons->count());
-
-            $this->refreshRepoItemsCache($listOfRepoItems);
-            $this->refreshPersonsCache($listOfPersons);
-
-            $cacheClearRequest->markStatusAs('Done');
         }
     }
 
-    private function clearCacheRecursiveForInstitutes(Institute $institute) {
-        $this->setInstitute($institute);
+    private function executeCacheRequest(CacheClearRequest $cacheClearRequest) {
+        $this->setCacheClearRequest($cacheClearRequest);
+        $cacheClearRequest->markStatusAs('Started');
 
-        $listOfRepoItems = RepoItem::get()
-            ->innerJoin('SurfSharekit_Cache_RecordNode', 'SurfSharekit_Cache_RecordNode.RepoItemID = SurfSharekit_RepoItem.ID');
-        $listOfPersons = Person::get()
-            ->innerJoin('SurfSharekit_Cache_RecordNode', 'SurfSharekit_Cache_RecordNode.PersonID = SurfSharekit_Person.ID');
+        if ($cacheClearRequest->ProtocolID) $this->setProtocol($cacheClearRequest->Protocol());
+        if ($cacheClearRequest->ChannelID) $this->setChannel($cacheClearRequest->Channel());
+        if ($cacheClearRequest->InstituteID) $this->setInstitute($cacheClearRequest->Institute());
 
-        $listOfRepoItems = $listOfRepoItems
-            ->innerJoin("SurfSharekit_Institute", 'SurfSharekit_RepoItem.InstituteID = SurfSharekit_Institute.ID')
-            ->where(['SurfSharekit_Institute.ID = ?' => $this->getInstitute()->ID]);
+        $listOfRepoItems = $this->getFilteredRepoList();
+        $listOfPersons = $this->getFilteredPersonList();
 
-        $listOfPersons = $listOfPersons
-            ->innerJoin("Group_Members", "Group_Members.MemberID = SurfSharekit_Person.ID")
-            ->innerJoin("Group", "Group.ID = Group_Members.GroupID")
-            ->innerJoin("SurfSharekit_Institute", 'Group.InstituteID = SurfSharekit_Institute.ID')
-            ->where(['SurfSharekit_Institute.ID = ?' => $this->getInstitute()->ID]);
-
-        $this->instituteLists[] = [
-            $listOfRepoItems,
-            $listOfPersons
-        ];
-
-        foreach ($institute->Institutes() as $nextInstitute) {
-            // TODO, exit if looping!
-            $this->clearCacheRecursiveForInstitutes($nextInstitute);
+        if ($cacheClearRequest->ProtocolID !== 0) {
+            if ($this->getProtocol()->SystemKey == 'OAI-PMH') {
+                $listOfRepoItems = $listOfRepoItems->where("SurfSharekit_Cache_RecordNode.EndPoint = 'OAI'");
+            } else if ($this->getProtocol()->SystemKey == 'CSV') {
+                foreach ($listOfRepoItems as $repoItem) {
+                    DataObjectCSVFileEncoder::getCSVRowFor($repoItem, true, $this->getProtocol());
+                }
+            }
         }
+        if (!$this->getProtocol() && !$this->getChannel() && !$this->getInstitute()) {
+            return;
+        }
+
+        $this->setItemCount($listOfRepoItems->count() + $listOfPersons->count());
+
+        $this->refreshRepoItemsCache($listOfRepoItems);
+        $this->refreshPersonsCache($listOfPersons);
     }
 
     private function getNextCacheClearRequest(): ?CacheClearRequest {
@@ -240,23 +250,18 @@ class RefreshCacheTask extends BuildTask
     }
 
     private function getCacheRecords(string $type): ?DataList {
-        switch ($this->getType()) {
-            case 'Protocol':
-                return Cache_RecordNode::get()->filter(['ProtocolID' => $this->getProtocol()->ID, 'ProtocolVersion:LessThanOrEqual' => $this->getProtocol()->Version, 'ChannelID:not' => 0]);
-            case 'Channel':
-                return Cache_RecordNode::get()->filter(['ChannelID' => $this->getChannel()->ID]);
-            case 'Institute':
-                if ($type === 'repoItem') {
-                    return Cache_RecordNode::get()
-                        ->innerJoin("SurfSharekit_RepoItem", "SurfSharekit_RepoItem.ID = SurfSharekit_Cache_RecordNode.RepoItemID");
-                } else if ($type === 'person') {
-                    return Cache_RecordNode::get()
-                        ->innerJoin("Group_Members", "Group_Members.MemberID = SurfSharekit_Cache_RecordNode.PersonID")
-                        ->innerJoin("Group", "Group.ID = Group_Members.GroupID");
-                }
+        $list = $this->applyCacheClearRequestFilter(Cache_RecordNode::get());
+        if ($this->getInstitute()?->ID) {
+            if ($type === 'repoItem') {
+                $list->innerJoin("SurfSharekit_RepoItem", "SurfSharekit_RepoItem.ID = SurfSharekit_Cache_RecordNode.RepoItemID");
+            } else if ($type === 'person') {
+                $list
+                    ->innerJoin("Group_Members", "Group_Members.MemberID = SurfSharekit_Cache_RecordNode.PersonID")
+                    ->innerJoin("Group", "Group.ID = Group_Members.GroupID");
+            }
         }
 
-        return null;
+        return $list;
     }
 
     /**
@@ -276,7 +281,7 @@ class RefreshCacheTask extends BuildTask
     /**
      * @return Protocol
      */
-    public function getProtocol(): Protocol {
+    public function getProtocol(): ?Protocol {
         return $this->protocol;
     }
 
@@ -290,7 +295,7 @@ class RefreshCacheTask extends BuildTask
     /**
      * @return Channel
      */
-    public function getChannel(): Channel {
+    public function getChannel(): ?Channel {
         return $this->channel;
     }
 
@@ -304,7 +309,7 @@ class RefreshCacheTask extends BuildTask
     /**
      * @return Institute
      */
-    public function getInstitute(): Institute {
+    public function getInstitute(): ?Institute {
         return $this->institute;
     }
 

@@ -21,7 +21,7 @@
                 "tags": [
                     "Institutes"
                 ],
-                "summary": "This endpoint allows you to retrieve all institutes registered in SURFSharekit",
+                "summary": "This endpoint allows you to retrieve all institutes registered in SURFsharekit",
                 "parameters": [
                     {
                         "in": "path",

@@ -24,7 +24,5 @@
     $PreviewPanel
 </div>
 </div>
-
-    <% include SilverStripe\\Admin\\BrowserWarning %>
 </body>
 </html>

@@ -40,6 +40,6 @@ class LectorateMetaFieldProcessor extends ScopedMetaFieldProcessor
     }
 
     public function convertValueToJson(RepoItemMetaField $repoItemMetaField) {
-        return $repoItemMetaField->RepoItemMetaFieldValues()->first()->InstituteUuid;
+        return $repoItemMetaField->RepoItemMetaFieldValues()->filter(["IsRemoved" => false])->first()->InstituteUuid;
     }
 }

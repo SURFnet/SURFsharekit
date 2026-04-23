@@ -15,6 +15,7 @@ use SilverStripe\Versioned\Versioned;
  * Class RepoItemMetaField
  * @package SurfSharekit\Models
  * @method HasManyList RepoItemMetaFieldValues()
+ * @method MetaField MetaField()
  * @method RepoItem RepoItem()
  * DataObject representing an answer on a @see MetaField
  * This Object is a collection of a list of actual values @see RepoItemMetaFieldValue , so to support multiselect answers for example
@@ -82,10 +83,14 @@ class RepoItemMetaField extends DataObject {
                 $summary = $answer->PersonSummary;
             }
             $selectedOption = $answer->MetaFieldOption();
+            $value = $answer->Value;
+            if ($this->MetaField()->MetaFieldType()->JSONEncodedStorage) {
+                $value = $value ? json_decode($value) : null;
+            }
             $answerValues[] = [
                 'repoItemID' => $answer->RepoItemUuid,
                 'optionKey' => $selectedOption ? DataObjectJsonApiEncoder::getJSONAPIID($selectedOption) : null,
-                'value' => $this->MetaField()->MetaFieldType()->JSONEncodedStorage ? json_decode($answer->Value) : $answer->Value,
+                'value' => $value,
                 'summary' => $summary,
                 'repoItemFileID' => $answer->RepoItemFileUuid,
                 'personID' => $answer->PersonUuid,

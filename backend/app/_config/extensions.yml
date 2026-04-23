@@ -16,6 +16,8 @@ SilverStripe\Security\Member:
     - SurfSharekit\Models\DataObjectAuditExtension
     - SilverStripe\Versioned\Versioned.versioned
     - SurfSharekit\Models\MemberPermisionExtension
+    - SurfSharekit\Models\MemberDataExportExtension
+    - SurfSharekit\Models\MemberExtension
 
 SilverStripe\Assets\File:
   extensions:
@@ -34,6 +36,7 @@ SilverStripe\Security\Group:
 SilverStripe\Security\PermissionRole:
   extensions:
     - SurfShareKit\Models\PermissionRoleExtension
+    - SurfSharekit\Models\PermissionRoleDataExportExtension
 
 SilverStripe\Security\Permission:
   extensions:
@@ -115,9 +118,6 @@ SurfSharekit\Models\Task:
     - UuidExtension
     - UuidRelationExtension
     - SurfSharekit\Models\DataObjectAuditExtension
-SurfSharekit\Models\MigrationLog:
-  extensions:
-    - UuidExtension
 SurfSharekit\Models\Claim:
   extensions:
     - SurfSharekit\Models\DataObjectAuditExtension
@@ -140,7 +140,37 @@ SurfSharekit\Models\UploadApiClientConfig:
   extensions:
     - UuidExtension
     - UuidRelationExtension
+SilverStripe\EnvironmentExport\DataObjects\EnvironmentExportRequest:
+  extensions:
+    - UuidExtension
+    - UuidRelationExtension
+    - SurfSharekit\Models\DataObjectAuditExtension
+SilverStripe\EnvironmentExport\DataObjects\EnvironmentImportRequest:
+  extensions:
+      - UuidExtension
+      - UuidRelationExtension
+      - SurfSharekit\Models\DataObjectAuditExtension
+SurfSharekit\models\webhooks\OAISubscriber:
+  extensions:
+    - UuidExtension
+    - UuidRelationExtension
 
 SurfSharekit\Models\ExportItem:
+  extensions:
+    - UuidExtension
+
+SurfSharekit\Models\MetaFieldJsonExample:
+  extensions:
+    - UuidExtension
+SurfSharekit\Models\MetaFieldOptionCategory:
+  extensions:
+    - UuidExtension
+SurfSharekit\Models\Protocol:
+  extensions:
+    - UuidExtension
+SurfSharekit\Models\Channel:
+  extensions:
+    - UuidExtension
+SurfSharekit\Models\ProtocolNode:
   extensions:
     - UuidExtension

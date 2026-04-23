@@ -3,6 +3,7 @@
 namespace SurfSharekit\models\notifications;
 
 use PermissionProviderTrait;
+use SilverStripe\EnvironmentExport\Exportable;
 use SilverStripe\Forms\RequiredFields;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Security\PermissionProvider;
@@ -22,6 +23,7 @@ use UuidRelationExtension;
  */
 class NotificationSetting extends DataObject implements PermissionProvider {
     use PermissionProviderTrait;
+    use Exportable;
 
     private static $singular_name = 'Notification setting';
     private static $plural_name = 'Notification settings';
@@ -89,6 +91,10 @@ class NotificationSetting extends DataObject implements PermissionProvider {
 
     protected function onBeforeWrite() {
         parent::onBeforeWrite();
+
+        if ($this->ImportTaskWrite) {
+            return;
+        }
 
         if ($this->isChanged("NotificationTypeID")) {
             $this->Key = ($this->Notification()->Key . $this->NotificationType()->Key);

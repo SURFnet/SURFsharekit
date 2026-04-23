@@ -10,14 +10,17 @@ use SilverStripe\Core\Manifest\ModuleResourceLoader;
 use SilverStripe\SiteConfig\SiteConfig;
 use SilverStripe\View\ArrayData;
 use SilverStripe\View\ViewableData;
+use Symfony\Component\Mime\Part\DataPart;
+use Symfony\Component\Mime\Part\File;
+use Symfony\Component\Mime\Test\Constraint\EmailAttachmentCount;
 
 class SharekitEmail extends Email
 {
     private $template;
 
-    public function send() {
+    public function send(): void {
         $this->setHTMLTemplate("Email\\Base");
-        $this->addAttachment(Director::publicFolder() . "/_resources/themes/surfsharekit/images/email-logo.png", 'logo.png', 'logo');
+        $this->addAttachment(Director::publicFolder() . "/_resources/themes/surfsharekit/images/email-logo.png", 'logo.png', cid: 'logo');
         $this->setData(ArrayData::create([
             'Content' => $this->getContent(),
         ]));
@@ -40,24 +43,15 @@ class SharekitEmail extends Email
             $this->setTo($recipient);
         }
 
-        return parent::send();
+        parent::send();
     }
 
-    public function addAttachment($path, $alias = null, $cid = null, $mime = null)
-    {
-        $attachment = \Swift_Attachment::fromPath($path);
-        if ($alias) {
-            $attachment->setFilename($alias);
-        }
-        if ($mime) {
-            $attachment->setContentType($mime);
-        }
+    public function addAttachment($path, $alias = null, $mime = null, $cid = null): static {
+        $attachment = new DataPart(new File($path), $alias, $mime);
         if ($cid) {
-            $attachment->setId("logo@image");
+            $attachment->setContentId("logo@image");
         }
-        $this->getSwiftMessage()->attach($attachment);
-
-        return $this;
+        return $this->addPart($attachment);
     }
 
     /**
@@ -83,12 +77,13 @@ class SharekitEmail extends Email
         }
 
         $this->addData('DashboardLink', Environment::getEnv("FRONTEND_BASE_URL") . '/dashboard');
+        $this->addData('ProfileLink', Environment::getEnv("FRONTEND_BASE_URL") . '/profile');
         $this->addData('PreferencesLink', Environment::getEnv("FRONTEND_BASE_URL") . '/profile#notifications');
 
         return $this->getData()->renderWith($this->getTemplate());
     }
 
-    public function getData() {
+    public function getData(): ViewableData {
         $data = parent::getData();
         if ($data instanceof ViewableData) {
             return $data;

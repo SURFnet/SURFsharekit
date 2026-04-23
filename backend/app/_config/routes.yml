@@ -3,8 +3,9 @@ Name: surf-sharekit-routes-config
 After: framework/_config/routes#coreroutes
 ---
 SilverStripe\Control\Director:
+  extensions:
+    - SurfSharekit\Extensions\DirectorRoutesExtension
   rules:
-
     # Upload API
     'api/upload/v1/discover': 'SurfSharekit\Api\Upload\Controllers\UploadApiDiscoveryController'
     'api/upload/v1/repoitems': 'SurfSharekit\Api\Upload\Controllers\UploadApiRepoItemController'
@@ -15,15 +16,24 @@ SilverStripe\Control\Director:
     # Upload API Docs
     'api/upload/v1/docs': 'SurfSharekit\Api\Upload\Controllers\UploadApiDocsController'
 
+    # LMS API
+    'api/v1/lms': 'SurfSharekit\Api\LmsJsonApiController'
+
+    'api/v1/metadata-suggestion': 'SurfSharekit\Api\MetadataSuggestionController'
+    'api/v1/instituteDashboardSummaries': 'SurfSharekit\Api\InstituteDashboardController'
     'api/v1/files//$Action/$ID/$Relations/$RelationNam': 'SurfSharekit\Api\FileJsonApiController'
+    'api/v1/links//$Action/$ID/$Relations/$RelationNam': 'SilverStripe\api\internal\LinkController'
     'api/v1/generateAccessToken': 'SurfSharekit\Api\AccessTokenApiController'
     'api/v1/uploadPart//$Action!': 'SurfSharekit\Api\S3FileUploadPartApiController'
     'api/v1/upload//$Action!': 'SurfSharekit\Api\S3FileUploadApiController'
     'api/v1/reports': 'SurfSharekit\Api\ReportsJsonApiController'
     'api/v1/search': 'SurfSharekit\Api\SearchApiController'
+    'api/v1/metaFieldOptionTreeSearch': 'SurfSharekit\Api\MetaFieldOptionTreeSearchController'
     'api/v1/upload': 'SurfSharekit\Api\UploadFileApiController'
     'api/v1/login/conext': 'SurfSharekit\Api\ConextLoginApiController'
     'api/v1/login/sram': 'SurfSharekit\Api\SramLoginApiController'
+    'api/v1/register/orcid': 'SurfSharekit\Api\ORCIDApiController'
+    'api/v1/logout': 'SurfSharekit\Api\LogoutApiController'
     'api/v1/csv': 'SurfSharekit\Api\CSVJsonApiController'
     'api/v1/operations': 'SurfSharekit\Api\OperationsJsonApiController'
 #    'api/oaipmh/v1': 'SurfSharekit\Api\OaipmhApiController'

@@ -15,6 +15,7 @@ class RepoItemSummaryJsonApiDescription extends DataObjectJsonApiDescription {
     public $fieldToAttributeMap = [
         'Summary.created' => 'created',
         'Summary.authorName' => 'authorName',
+        'Summary.instituteName' => 'instituteName',
         'Summary.lastEdited' => 'lastEdited',
         'Summary.repoType' => 'repoType',
         'Summary.isRemoved' => 'isRemoved',
@@ -46,6 +47,7 @@ class RepoItemSummaryJsonApiDescription extends DataObjectJsonApiDescription {
     public function getFilterableAttributesToColumnMap(): array {
         return ['status' => '`SurfSharekit_RepoItemSummary`.`Status`',
             'isRemoved' => '`SurfSharekit_RepoItemSummary`.`IsRemoved`',
+            'isArchived' => '`SurfSharekit_RepoItemSummary`.`isArchived`',
             'lastEdited' => '`SurfSharekit_RepoItem`.`LastEdited`',
             'title' => '`SurfSharekit_RepoItem`.`Title`',
             'publicationDate' => '`SurfSharekit_RepoItem`.`PublicationDate`',
@@ -73,6 +75,13 @@ class RepoItemSummaryJsonApiDescription extends DataObjectJsonApiDescription {
                 $scopedRepoItems = PermissionFilter::filterOnClauses($scopedRepoItems, $canCopyClauses);
                 $datalist = $datalist->innerJoin('(' . $scopedRepoItems->sql() . ')', 'ri.ID = SurfSharekit_RepoItem.ID', 'ri');
                 return $datalist;
+            };
+        }
+        if (in_array('archived', $fieldsToSearchIn)) {
+            return function (DataList $dataList, $filterValue, $modifier) {
+                $neg = $modifier === '=' ? '' : ':not';
+                return $dataList->filter('RepoItem.Status' . $neg, 'Archived')
+                    ->filter('RepoItem.IsRemoved', 0);
             };
         }
         if (in_array('id', $fieldsToSearchIn)) {
@@ -136,7 +145,7 @@ class RepoItemSummaryJsonApiDescription extends DataObjectJsonApiDescription {
                         $matchTag =  $tag . '*';
                     }
 
-                    $datalist = $datalist->where(["(MATCH(SurfSharekit_SearchObject.SearchText) AGAINST (? IN Boolean MODE) AND SurfSharekit_SearchObject.SearchText like ?)" => ['+' . $matchTag, '%' . $tag . '%']]);
+                    $datalist = $datalist->where(["(MATCH(SurfSharekit_SearchObject.SearchText) AGAINST (? IN Boolean MODE) OR SurfSharekit_SearchObject.SearchText like ?)" => ['+' . $matchTag, '%' . $tag . '%']]);
                 }
                 return $datalist;
             };

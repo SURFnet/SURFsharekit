@@ -117,7 +117,7 @@ class ExternalJsonApiController extends JsonApiController {
     }
 
     protected function userHasValidLogin(Member $member) {
-        if ($member->isDefaultAdmin()) {
+        if ($member->isMainAdmin()) {
             return true;
         } else if (ApiMemberExtension::hasApiUserRole($member)) {
             return true;

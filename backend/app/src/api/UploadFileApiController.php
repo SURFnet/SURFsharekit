@@ -5,7 +5,6 @@ namespace SurfSharekit\Api;
 use DataObjectJsonApiBodyEncoder;
 use Exception;
 use GroupJsonApiDescription;
-use Mimey\MimeTypes;
 use PersonImageJsonApiDescription;
 use PersonJsonApiDescription;
 use Ramsey\Uuid\Uuid;
@@ -22,6 +21,7 @@ use SurfSharekit\Models\MimetypeObject;
 use SurfSharekit\Models\Person;
 use SurfSharekit\Models\PersonImage;
 use SurfSharekit\Models\RepoItemFile;
+use Symfony\Component\Mime\MimeTypes;
 
 /**
  * Class UploadFileApiController
@@ -144,7 +144,7 @@ class UploadFileApiController extends JsonApiController {
         $file = $fileTypeToCreate::create();
         Logger::debugLog('Start publishing file');
         $file->publishFile();
-        $fileTypeExtension = null;
+        $fileTypeExtensions = [];
 
         if ($contentType = $this->postFile['type']) {
             // whitelist
@@ -155,10 +155,10 @@ class UploadFileApiController extends JsonApiController {
             //    - sib
 
             $mimes = new MimeTypes();
-            $fileTypeExtension = $mimes->getExtension($contentType);
+            $fileTypeExtensions = $mimes->getExtensions($contentType);
         }
 
-        if(is_null($fileTypeExtension)){
+        if(count($fileTypeExtensions) == 0){
             $ext = strtolower(pathinfo($this->postFile['name'], PATHINFO_EXTENSION));
 
             $allowedExtensions = MimetypeHelper::getWhitelistedExtensions();
@@ -166,11 +166,11 @@ class UploadFileApiController extends JsonApiController {
 //            Logger::debugLog($allowedExtensions);
 //            Logger::debugLog($ext);
             if(in_array($ext, $allowedExtensions)){
-                $fileTypeExtension = $ext;
+                $fileTypeExtensions = [$ext];
             }
         }
 
-        if ($fileTypeExtension) {
+        if (count($fileTypeExtensions) > 0) {
             Logger::debugLog('Start setting from localfile');
             $uuid = Uuid::uuid4()->toString();
             $fileName = FileNameFilter::singleton()->filter($this->postFile['name']);

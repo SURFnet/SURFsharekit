@@ -71,14 +71,15 @@ class ExternalRepoItemChannelJsonApiDescription extends DataObjectJsonApiDescrip
     }
 
     public function describeAttributesOfDataObject(ViewableData $dataObject) {
-        if (isset($this->objectsToDescribe)) {
-            if (!$this->repoItemsCurrentlyInChannel) {
-                $this->repoItemsCurrentlyInChannel = $this->getAllItemsToDescribe($this->objectsToDescribe, false)->column('ID');
-            }
-            $attributes = [];
-            if (!in_array($dataObject->ID, $this->repoItemsCurrentlyInChannel)) {
-                return $attributes;
-            }
+        if (!isset($this->objectsToDescribe)) {
+            $this->objectsToDescribe = $dataObject::get();
+        }
+        if (!$this->repoItemsCurrentlyInChannel) {
+            $this->repoItemsCurrentlyInChannel = $this->getAllItemsToDescribe($this->objectsToDescribe, false)->column('ID');
+        }
+        $attributes = [];
+        if (!in_array($dataObject->ID, $this->repoItemsCurrentlyInChannel)) {
+            return $attributes;
         }
         foreach ($this->fieldToAttributeMap as $field => $attribute) {
             if (is_int($field)) {
@@ -291,6 +292,7 @@ class ExternalRepoItemChannelJsonApiDescription extends DataObjectJsonApiDescrip
      * @param DataList $objectsToDescribe
      * @return DataList
      */
+    private $objectsToDescribe;
     public function getAllItemsToDescribe(DataList $objectsToDescribe, $includeCachedItems = true) {
         $this->objectsToDescribe = $objectsToDescribe;
         $objectsToDescribe = parent::applyGeneralFilter($objectsToDescribe);

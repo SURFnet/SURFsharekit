@@ -27,6 +27,8 @@ SilverStripe\Core\Injector\Injector:
   Aws\S3\S3Client:
     constructor:
       configuration:
+        endpoint: '`AWS_ENDPOINT`'
+        use_path_style_endpoint: true
         region: '`AWS_REGION`'
         version: latest
         credentials:

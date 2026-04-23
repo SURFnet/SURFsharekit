@@ -49,5 +49,8 @@ SilverStripe\Core\Injector\Injector:
   SilverStripe\Security\MemberAuthenticator\CookieAuthenticationHandler:
     properties:
       TokenCookieSecure: true
+      TokenCookieName: 'sharekit-access-token'
 SilverStripe\Control\Session:
   cookie_secure: true
+  cookie_httponly: true
+  cookie_name: 'sharekit-access-token-session'

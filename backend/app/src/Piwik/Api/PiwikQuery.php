@@ -10,7 +10,7 @@ use GuzzleHttp\RequestOptions;
 use Psr\Http\Message\ResponseInterface;
 
 class PiwikQuery {
-    private PiwikAPI $api;
+    private PiwikClient $api;
     private string $endpoint;
 
     private $dateFrom = null;
@@ -25,7 +25,7 @@ class PiwikQuery {
 
     private string $format = "json";
 
-    public function __construct(PiwikAPI $api, string $endpoint = "query") {
+    public function __construct(PiwikClient $api, string $endpoint = "query") {
         $this->api = $api;
         $this->endpoint = $endpoint;
     }
@@ -158,7 +158,7 @@ class PiwikQuery {
         return $this;
     }
 
-    public function getApi(): PiwikAPI {
+    public function getApi(): PiwikClient {
         return $this->api;
     }
 

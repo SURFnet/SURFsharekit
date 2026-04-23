@@ -26,7 +26,7 @@ class SurfConextLoginTokenHandler extends LoginTokenHandler
                 throw new ValidationException("Member has no permission to access the CMS");
             }
 
-            if (!$member->isWorksAdmin() && !$member->isDefaultAdmin()) {
+            if (!$member->isWorksAdmin() && !$member->isMainAdmin()) {
                 throw new ValidationException("Member has no permission to access the CMS");
             }
 
@@ -38,7 +38,7 @@ class SurfConextLoginTokenHandler extends LoginTokenHandler
             $passport->write();
         }
         
-        if (!$passport->Member()->isWorksAdmin() && !$passport->Member()->isDefaultAdmin()) {
+        if (!$passport->Member()->isWorksAdmin() && !$passport->Member()->isMainAdmin()) {
             $passport->delete();
             throw new ValidationException("Member has no permission to access the CMS");
         }

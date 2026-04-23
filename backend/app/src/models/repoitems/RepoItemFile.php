@@ -7,16 +7,28 @@ use RelationaryPermissionProviderTrait;
 use SilverStripe\Assets\File;
 use SilverStripe\Core\Environment;
 use SilverStripe\Core\Injector\Injector;
+use SilverStripe\Forms\FormField;
+use SilverStripe\Forms\Tab;
+use SilverStripe\Forms\TabSet;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Security\Group;
 use SilverStripe\Security\Member;
 use SilverStripe\Security\PermissionProvider;
 use SilverStripe\Security\Security;
+use SilverStripe\Services\Blueprint\BlueprintService;
+use SurfSharekit\Action\BlueprintCopyButton;
 use SurfSharekit\Api\FileJsonApiController;
+use SurfSharekit\Api\InstituteScoper;
 use SurfSharekit\Api\PermissionFilter;
 use SurfSharekit\Models\Helper\Logger;
 use SurfSharekit\Models\Helper\MimetypeHelper;
 
+/**
+ * @property String Link
+ * @property String S3Key
+ * @property String ETag
+ * @property String ObjectStoreCheckedAt
+ */
 class RepoItemFile extends File implements PermissionProvider {
     use RelationaryPermissionProviderTrait;
 
@@ -27,8 +39,8 @@ class RepoItemFile extends File implements PermissionProvider {
     ];
 
     private static $db = [
-        'Link' => 'Varchar(255)',
-        'S3Key' => 'Varchar(255)',
+        'Link' => 'Varchar(1024)',
+        'S3Key' => 'Varchar(1024)',
         'ETag' => 'Varchar(255)',
         'ObjectStoreCheckedAt' => 'Datetime'
     ];
@@ -51,7 +63,7 @@ class RepoItemFile extends File implements PermissionProvider {
     }
 
     public function getStreamURL() {
-        return Environment::getEnv('SS_BASE_URL') . '/api/v1/files/repoItemFiles/' . $this->Uuid;
+        return Environment::getEnv('SS_BASE_URL') . '/api/v1/files/repoItemFiles/' . $this->Uuid . "?utm_source=surfsharekit.nl";
     }
 
     public function getPublicStreamURL() {
@@ -70,6 +82,29 @@ class RepoItemFile extends File implements PermissionProvider {
         return null;
     }
 
+    public function getCMSFields() {
+        $fields = parent::getCMSFields();
+
+        $blueprintService = BlueprintService::create();
+        $fileJson = $blueprintService->createBlueprintPreviewForDataobject($this);
+
+        $blueprintFields = BlueprintCopyButton::create($fileJson);
+
+        if (is_array($blueprintFields)) {
+            foreach ($blueprintFields as $field) {
+                if (!$field instanceof FormField) {
+                    throw new Exception('All elements in BlueprintCopyButton array must be instances of FormField.');
+                }
+
+                $fields->insertAfter('FileFilename', $field);
+            }
+        } else {
+            throw new Exception('BlueprintCopyButton::create() must return an array of FormField instances.');
+        }
+
+        return $fields;
+    }
+
     public function canView($member = null) {
         try {
             /** @var RepoItem $repoItem */
@@ -80,6 +115,7 @@ class RepoItemFile extends File implements PermissionProvider {
                     // A member has to be able to access the parent RepoItem OR has to be a member of one of the institutes from the multiselectinstitute field
                     $canViewParentRepoItem = $repoItem->canView();
                     $allowedInstitutes = $this->getAllAllowedInstitutesWhereMemberIsPartOf($member);
+//                    Logger::debugLog($allowedInstitutes);
                     if ($canViewParentRepoItem || count($allowedInstitutes)) {
                         $repoItemRepoItemFile = $this->RepoItemRepoItemFile();
                         $accessRight = $repoItemRepoItemFile->AccessRight;
@@ -128,20 +164,22 @@ class RepoItemFile extends File implements PermissionProvider {
 
                             $allScopedGroups = [];
                             foreach ($allowedInstitutes as $allowedInstitute) {
-                                $scopedGroups = $member->ScopedGroups($allowedInstitute)->toArray();
-                                $allScopedGroups = array_merge($scopedGroups, $allScopedGroups);
+                                $scopedGroups = $member->ScopedGroups($allowedInstitute);
+//                                Logger::debugLog($scopedGroups->column('Title'));
+                                $scopedGroupsArray = $scopedGroups->toArray();
+                                $allScopedGroups = array_merge($scopedGroupsArray, $allScopedGroups);
                             }
 
                             // Only return true if member can view repoitems under embargo
                             foreach ($allScopedGroups as $group) {
                                 $permissionsCodesInGroup = ScopeCache::getPermissionsFromRequestCache($group);
+//                                Logger::debugLog($permissionsCodesInGroup);
                                 if (in_array("REPOITEM_VIEW_EMBARGO", $permissionsCodesInGroup)) {
                                     return true;
                                 }
-                            
-                                FileJsonApiController::setErrorCode(self::ERROR_AUTHORIZED_NOT_PUBLIC['embargo']);
-                                return false;
                             }
+                            FileJsonApiController::setErrorCode(self::ERROR_AUTHORIZED_NOT_PUBLIC['embargo']);
+                            return false;
                         }
                     }
                 } else {
@@ -279,11 +317,13 @@ class RepoItemFile extends File implements PermissionProvider {
             ->innerJoin("SurfSharekit_MetaField", "mf.ID = rimf.MetaFieldID", "mf")
             ->where(["mf.AttributeKey" => "AllowedForInstitute"])
             ->column("SurfSharekit_RepoItemMetaFieldValue.InstituteID");
-//        Logger::debugLog($instituteIDs);
-        if (!$instituteIDs) {
-            return [];
-        }
 
+//        Logger::debugLog($repoItemRepoItemFile->getField('InstituteID'));
+
+        $scopedInstitutes = InstituteScoper::getInstitutesOfUpperScope([$repoItemRepoItemFile->getField('InstituteID')])->Column('ID');
+//        Logger::debugLog($scopedInstitutes);
+        $instituteIDs = array_unique(array_merge($instituteIDs, $scopedInstitutes));
+//        Logger::debugLog($instituteIDs);
         $memberInstituteIDs = $member->extend('getInstituteIdentifiers')[0];
 //        Logger::debugLog($memberInstituteIDs);
         return array_intersect($instituteIDs, $memberInstituteIDs);

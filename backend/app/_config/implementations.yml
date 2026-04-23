@@ -1,0 +1,7 @@
+# Used to define the default classes for certain interfaces, useful for testing with mocks
+---
+Name: surfsharekit-impl
+---
+SilverStripe\Core\Injector\Injector:
+  SurfSharekit\ShareControl\ShareControlApiCommunicator:
+    class: SurfSharekit\ShareControl\ShareControlApiCommunicatorImpl

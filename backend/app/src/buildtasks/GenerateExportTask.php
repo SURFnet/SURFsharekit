@@ -83,7 +83,7 @@ class GenerateExportTask extends BuildTask
 
         SQLUpdate::create($tableName)
             ->addWhere([
-                "Created <= ?" => (new \DateTime())->modify('-1 day')->format('Y-m-d H:i:s'),
+                "Created <= ?" => (new \DateTime())->modify('-2 day')->format('Y-m-d H:i:s'),
                 "Status IN ('PENDING', 'IN PROGRESS')"
             ])
             ->addAssignments([

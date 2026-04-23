@@ -8,6 +8,8 @@ use SilverStripe\ORM\DataObject;
  * Class ProtocolNode
  * @package SurfSharekit\Models
  * DataObject representing a record node
+ *
+ * @property String Data
  */
 class Cache_RecordNode extends DataObject {
     private static $table_name = 'SurfSharekit_Cache_RecordNode';

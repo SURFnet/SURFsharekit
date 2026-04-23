@@ -6,8 +6,10 @@ use DataObjectJsonApiEncoder;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\BadResponseException;
+use SilverStripe\Control\Cookie;
 use SilverStripe\Core\Environment;
 use SilverStripe\Security\Security;
+use SurfSharekit\Api\Traits\LoginCookieTrait;
 use SurfSharekit\constants\RoleConstant;
 use SurfSharekit\Models\Helper\Constants;
 use SurfSharekit\Models\Helper\Logger;
@@ -22,6 +24,7 @@ use const SurfSharekit\Models\AUTHENTICATION_LOG;
  * A class used as the entryPoint to login with a context OpenID callback code and redirect_uri
  */
 class ConextLoginApiController extends CORSController {
+    use LoginCookieTrait;
 
     /**
      * @config
@@ -105,6 +108,7 @@ class ConextLoginApiController extends CORSController {
             $tokenInformation = $this->ensurePersonExistsAndGetApiInfo($conextAccesToken);
             if (is_array($tokenInformation)) {
                 $this->getResponse()->setStatusCode(200);
+                // The cookie will be set by ApiMemberExtension::refreshApiToken
                 return json_encode([
                     'token' => $tokenInformation['token'],
                     'token_expires' => $tokenInformation['expires'] - time(),
@@ -195,7 +199,13 @@ class ConextLoginApiController extends CORSController {
             $person = Person::get()->filter('ConextCode', $uniqueConextCodeIdentifier)->first();
 
             if (!$person || !$person->Exists()) {
-                $person = Person::get()->filter('Email', $email)->first();
+                if (!empty($email)) {
+                    $person = Person::get()->filter('Email', $email)->first();
+                } else {
+                    $err = 'Email cannot be blank';
+                    LogItem::debugLog($err, __CLASS__, __FUNCTION__, AUTHENTICATION_LOG);
+                    return $err;
+                }
             }
 
             if (!$person || !$person->Exists()) {
@@ -275,10 +285,20 @@ class ConextLoginApiController extends CORSController {
                 }
             }
 
+
+            if (ApiMemberExtension::hasApiUserRole($person)) {
+                LogItem::warnLog("Can't login api user", __CLASS__, __FUNCTION__, AUTHENTICATION_LOG);
+                return "Can't login api user";
+            }
+
             if (ApiMemberExtension::isTokenIsExpired($person)) {
                 $generatedTokenInformation = ApiMemberExtension::refreshApiToken($person);
             } else {
                 $generatedTokenInformation = ApiMemberExtension::getHashedTokenInformation($person);
+            }
+            if (!$generatedTokenInformation) {
+                LogItem::warnLog("Could not retrieve api token", __CLASS__, __FUNCTION__, AUTHENTICATION_LOG);
+                return "Could not retrieve api token";
             }
             try {
                 if ($firstTimeLoggingIn && (!count($groupsToPutPersonIn) && !$person->Groups()->count())) {
@@ -305,6 +325,9 @@ class ConextLoginApiController extends CORSController {
             }
 
             Security::setCurrentUser($person);
+            // Set the sharekit-access-token cookie using the trait
+            $this->setAuthenticationCookie($generatedTokenInformation['token']);
+
             return [
                 'name' => $person->getName(),
                 'token' => $generatedTokenInformation['token'],

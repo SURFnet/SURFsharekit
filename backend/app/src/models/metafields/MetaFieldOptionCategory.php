@@ -3,11 +3,13 @@
 namespace SurfSharekit\Models;
 
 use SilverStripe\Assets\Image;
+use SilverStripe\EnvironmentExport\Exportable;
 use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\Forms\GridField\GridFieldConfig_RecordEditor;
 use SilverStripe\ORM\DataObject;
 
 class MetaFieldOptionCategory extends DataObject {
+    use Exportable;
 
     private static $table_name = 'SurfSharekit_MetaFieldOptionCategory';
 

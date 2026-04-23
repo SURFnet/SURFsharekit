@@ -1,14 +1,15 @@
 <?php
 
-use SilverStripe\ORM\DataExtension;
+use SilverStripe\Core\Config\Config;
+use SilverStripe\Core\Extension;
+use SilverStripe\EnvironmentExport\DataObjects\EnvironmentExportRequest;
 use SurfSharekit\Models\Helper\Logger;
 
 /**
  * Class UuidRelationExtension
  * This extension automatically creates UUID fields for ID fields and updates those relations
  */
-class UuidRelationExtension extends DataExtension {
-    public static $relationChecking = null; //Used to block recursion
+class UuidRelationExtension extends Extension {
 
     /**
      * @param $class
@@ -30,36 +31,31 @@ class UuidRelationExtension extends DataExtension {
         if($class == 'SurfSharekit\\Models\\MetaField'){
             return ['db' => ['MetaFieldTypeUuid' => DBUuid::class]];
         }
-        //Recursion blocker
-        if (static::$relationChecking == $class) {
-            return [];
-        }
-
-        static::$relationChecking = $class;
 
         $getUuidFields = static::getUuidFields($class);
-
-        static::$relationChecking = null; //Clearing recursion block, needed to allow next class that uses this extension to use this method
 
         return ['db' => $getUuidFields];
     }
 
     private static function getUuidFields($class) {
-        /**
-         * @var \SilverStripe\ORM\DataObject $dataObject
-         */
-        $dataObject = $class::create();
+        $extensionSourceConfig = Config::inst()->get($class, null, true);
 
         $hasOneUuidFields = [];
 
-        foreach ($dataObject->hasOne() as $relationName => $relationClass) {
+        // Get all has_ones from extensions manually, because we can't make use of config's ExtensionMiddleware
+        $classExtensions = $extensionSourceConfig['extensions'] ?? [];
+        $hasOneList = $extensionSourceConfig['has_one'] ?? [];
+        foreach ($classExtensions as $extension) {
+            $hasOneList = array_merge($hasOneList, Config::forClass($extension)->get('has_one') ?? []);
+        }
+
+        foreach ($hasOneList as $relationName => $relationClass) {
             if($relationName != 'CreatedBy' and $relationName != 'ModifiedBy') {
                 try {
-                    /**
-                     * @var \SilverStripe\ORM\DataObject $instanceOfRelatedType
-                     */
-                    $instanceOfRelatedType = $relationClass::create();//must set singleton to true
-                    if ($instanceOfRelatedType->hasExtension(UuidExtension::class)) {
+                    $relationExtensions = Config::inst()
+                        ->get($relationClass, 'extensions', Config::EXCLUDE_EXTRA_SOURCES) ?? [];
+
+                    if (in_array(UuidExtension::class, $relationExtensions)) {
                         $hasOneUuidFields[$relationName . 'Uuid'] = DBUuid::class;
                     }
                 } catch (Exception $e) {
@@ -72,8 +68,6 @@ class UuidRelationExtension extends DataExtension {
     }
 
     public function onBeforeWrite() {
-        parent::onBeforeWrite();
-
         foreach (array_keys($this->owner->hasOne()) as $relationName) {
             if($relationName != 'CreatedBy' and $relationName != 'ModifiedBy') {
                 $relatedObject = $this->owner->$relationName();

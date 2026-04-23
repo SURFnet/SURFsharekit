@@ -10,19 +10,23 @@ use Zooma\SilverStripe\Models\ApiObject;
 class RequestDeleteRepoItemAction extends ApiObject
 {
     function execute() {
+        if (empty($this->Reason)) {
+            throw new \Exception("Reason required");
+        }
+
         /** @var RepoItem $repoItem */
         if (null === $repoItem = RepoItem::get()->find('Uuid', $this->RepoItemID)) {
-            throw new \Exception("Repo item not found");
+            throw new \Exception("RepoItem not found");
         }
 
         // repo item should be published
-        if ($repoItem->Status !== "Published") {
-            throw new \Exception("Repo item is not published");
+        if ($repoItem->Status !== "Published" && $repoItem->Status !== "Archived") {
+            throw new \Exception("RepoItem is not Published or Archived");
         }
 
         // Only continue if user has no permission to delete repo item
         if ($repoItem->canDelete(Security::getCurrentUser())) {
-            throw new \Exception("User is allowed to delete repo item");
+            throw new \Exception("User is allowed to delete RepoItem");
         }
 
         // Check if user is author of repo item
@@ -30,11 +34,13 @@ class RequestDeleteRepoItemAction extends ApiObject
             throw new \Exception("User is not allowed to create delete request");
         }
 
-        $this->doCreateDeleteRequest($repoItem);
+        $this->doCreateDeleteRequest($repoItem, $this->Reason);
     }
 
-    private function doCreateDeleteRequest(RepoItem $repoItem) {
+    private function doCreateDeleteRequest(RepoItem $repoItem, string $reason) {
+        $repoItem->DeleteReason = $reason;
         $repoItem->ignoreSetStatusCheck = true;
+        $repoItem->DeletionHasBeenDeclined = false;
         $repoItem->Status = "Draft";
         $repoItem->IsRemoved = true;
         $repoItem->write();

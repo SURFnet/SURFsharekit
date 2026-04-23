@@ -2,6 +2,7 @@
 
 namespace SurfSharekit\Models;
 
+use SilverStripe\EnvironmentExport\Exportable;
 use SilverStripe\Forms\CheckboxField;
 use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\Forms\GridField\GridFieldAddNewButton;
@@ -30,6 +31,8 @@ use SilverStripe\Versioned\Versioned;
  * DataObject representing a channel the external api can open
  */
 class Channel extends DataObject {
+    use Exportable;
+
     private static $table_name = 'SurfSharekit_Channel';
 
     private static $extensions = [

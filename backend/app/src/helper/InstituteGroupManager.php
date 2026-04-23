@@ -60,7 +60,7 @@ class InstituteGroupManager {
         $role = PermissionRole::get()->filter('Key', $roleKey)->first();
         if ($role) {
             $newGroup = Group::create();
-            $newGroup->Title = $groupTitlePrefix . $institute->Title;
+            $newGroup->Title = $groupTitlePrefix . $institute->Title . " (" . $institute->ID . ")";
             $newGroup->Label_NL = $role->Label_NL . ' van ' . $institute->Title;
             $newGroup->Label_EN = $role->Label_EN . ' of ' . $institute->Title;
             $newGroup->InstituteID = $institute->ID;

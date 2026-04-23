@@ -6,6 +6,7 @@ class RequestDeleteRepoItemActionDescription extends DataObjectJsonApiDescriptio
     public $type_singular = "requestdeleterepoitem";
 
     public $attributeToFieldMap = [
-        "repoItemId" => "RepoItemID"
+        "repoItemId" => "RepoItemID",
+        "reason" => "Reason"
     ];
 }

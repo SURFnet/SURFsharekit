@@ -273,7 +273,11 @@ class Task extends DataObject implements PermissionProvider{
                 $data["deleteRepoItem"] = [
                     "id" => $this->RepoItem()->Uuid,
                     'title' => $this->RepoItem()->Title,
-                    "type" => $this->RepoItem()->RepoType
+                    "type" => $this->RepoItem()->RepoType,
+                    "author" => [
+                        "id" => $this->RepoItem()->Owner()->Uuid,
+                        "fullName" => MemberHelper::getMemberFullName($this->RepoItem()->Owner())
+                    ]
                 ];
                 $this->Data = json_encode($data);
                 break;
