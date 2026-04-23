@@ -1,6 +1,6 @@
-import React, {useEffect, useRef, useState} from "react";
+import React, {useEffect, useRef} from "react";
 import './newprofile.scss'
-import {Redirect} from "react-router-dom";
+import {Navigate} from "react-router-dom";
 import ProfileContent from "../../profile/profilecontent/ProfileContent";
 import Page from "../../components/page/Page";
 import {StorageKey, useAppStorageState} from "../../util/AppStorage";
@@ -20,7 +20,7 @@ function NewProfile(pageProps) {
     }, [profileDataFormRef.current])
 
     if (user === null) {
-        return <Redirect to={'login?redirect=profiles/newprofile'}/>
+        return <Navigate to={'login?redirect=profiles/newprofile'}/>
     }
 
     let content = <div>
@@ -39,7 +39,6 @@ function NewProfile(pageProps) {
     </div>;
 
     return <Page id="new-profile"
-                 history={pageProps.history}
                  showBackButton={true}
                  breadcrumbs={[
                      {

@@ -204,6 +204,10 @@
             @include open-sans-bold
         }
 
+        &.extra-spacing {
+            padding-left: 35px;
+        }
+
         .profile-banner-image {
             margin-right: 0;
         }
@@ -225,7 +229,6 @@
                 display: flex;
                 align-items: center;
                 background-color: $cultured;
-                min-width: 140px;
                 max-width: 140px;
                 border-radius: 5px;
 

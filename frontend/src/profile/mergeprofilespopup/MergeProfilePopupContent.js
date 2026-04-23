@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import styled from "styled-components";
 import {ThemedH3, ThemedH4, ThemedP} from "../../Elements";
 import SURFButton from "../../styled-components/buttons/SURFButton";
@@ -16,13 +16,19 @@ import SwalMergeProfilesPopup from "sweetalert2";
 import {faTimes} from "@fortawesome/free-solid-svg-icons";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {CollapsePersonMergeFooterEvent} from "../../util/events/Events";
+import LoadingIndicator from "../../components/loadingindicator/LoadingIndicator";
 
 function MergeProfilePopupContent(props) {
 
-    const {formState, register, handleSubmit, errors, setValue, reset, trigger} = useForm();
+    const {formState, register, handleSubmit, formState: {errors}, setValue, reset, trigger} = useForm();
     const [personsToMerge, setPersonsToMerge] = useAppStorageState(StorageKey.PERSONS_TO_MERGE)
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [isLoading, setIsLoading] = useState(false)
 
     const {t} = useTranslation()
+    // This popup is rendered via SweetAlert2, which mounts outside the normal React tree.
+    // So we pass `navigate` explicitly from a Router-mounted component.
+    const navigate = props.navigate
 
     const atLeastOneProfileWithEmail = PersonMergeHelper.getAllUniqueValuesForField(personsToMerge, "email").length > 0
 
@@ -165,7 +171,7 @@ function MergeProfilePopupContent(props) {
                                    options={emailOptions}
                                    label={t("profile.profile_email")}
                                    isRequired={atLeastOneProfileWithEmail}
-                                   readonly={emailOptions.length === 0}
+                                   readonly={emailOptions.length === 0 || props.isOnboarding}
                                    error={errors["email"]}
                                    name={"email"}
                                    register={register}
@@ -232,7 +238,7 @@ function MergeProfilePopupContent(props) {
                                    type={"dropdown"}
                                    options={positionOptions}
                                    label={t("profile.profile_function")}
-                                   isRequired={true}
+                                   isRequired={false}
                                    readonly={positionOptions.length === 0}
                                    error={errors["position"]}
                                    name={"position"}
@@ -352,16 +358,25 @@ function MergeProfilePopupContent(props) {
                     backgroundColor={majorelle}
                     highlightColor={majorelleLight}
                     width={"170px"}
+                    disabled={isSubmitting}
                     onClick={() => {
+                        if (isSubmitting) return;
+                        setIsSubmitting(true);
                         handleSubmit((formData) => postPersonMergeAction(formData))()
                     }}
                 />
             </Footer>
+            <LoadingIndicator isLoading={isLoading} isFullscreen={true}/>
         </MergeProfilePopupContentRoot>
     )
 
     function postPersonMergeAction(formData) {
-        GlobalPageMethods.setFullScreenLoading(true)
+        setIsLoading(true)
+        // Note: we need to check if it's a function, otherwise webpack will throw an error
+        // Unsure where the error is coming from, but need to figure out why the error is thrown'
+        if (typeof GlobalPageMethods.setFullScreenLoading === 'function') {
+            GlobalPageMethods.setFullScreenLoading(true)
+        }
 
         const config = {
             headers: {
@@ -386,31 +401,50 @@ function MergeProfilePopupContent(props) {
 
         Api.post('actions/personmerge/', () => {}, onSuccess, onLocalFailure, onServerFailure, config, postData);
 
+        const errorCallback = (error) => {
+            setIsLoading(false)
+            // Note: we need to check if it's a function, otherwise webpack will throw an error
+            // Unsure where the error is coming from, but need to figure out why the error is thrown'
+            if (typeof GlobalPageMethods.setFullScreenLoading === 'function') {
+                GlobalPageMethods.setFullScreenLoading(false)
+            }
+            setIsSubmitting(false)
+            Toaster.showServerError(error)
+            console.log(error);
+        }
+
         function onSuccess(response) {
-            GlobalPageMethods.setFullScreenLoading(false)
+            setIsLoading(false)
+            // Note: we need to check if it's a function, otherwise webpack will throw an error
+            // Unsure where the error is coming from, but need to figure out why the error is thrown'
+            if (typeof GlobalPageMethods.setFullScreenLoading === 'function') {
+                GlobalPageMethods.setFullScreenLoading(false)
+            }
+            setIsSubmitting(false)
             SwalMergeProfilesPopup.close()
             const resultingPersonId = personsToMerge[0].id
-            if (resultingPersonId) {
-                props.history.push("/profile/" + resultingPersonId)
+            if (props.isOnboarding) {
+                props.onSuccess()
             } else {
-                props.history.replace("/dashboard");
+                if (resultingPersonId) {
+                    navigate("/profile/" + resultingPersonId)
+                } else {
+                    navigate("/dashboard", {replace: true});
+                }
             }
             AppStorage.remove(StorageKey.PERSONS_TO_MERGE)
             window.dispatchEvent(new CollapsePersonMergeFooterEvent(true))
         }
 
         function onServerFailure(error) {
-            GlobalPageMethods.setFullScreenLoading(false)
-            Toaster.showServerError(error)
+            errorCallback(error)
             if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                props.history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             }
         }
 
         function onLocalFailure(error) {
-            GlobalPageMethods.setFullScreenLoading(false)
-            Toaster.showDefaultRequestError()
-            console.log(error);
+            errorCallback(error)
         }
     }
 }
@@ -421,6 +455,7 @@ const MergeProfilePopupContentRoot = styled.div`
     display: flex;
     flex-direction: column;
     text-align: left;
+    padding: 40px;
 `;
 
 const Header = styled.div`

@@ -5,11 +5,16 @@ import {useTranslation} from "react-i18next";
 import './onboarding.scss'
 import '../components/field/formfield.scss'
 import IconButtonText from "../components/buttons/iconbuttontext/IconButtonText";
-import {faArrowLeft, faArrowRight, faBuilding} from "@fortawesome/free-solid-svg-icons";
+import {
+    faArrowLeft,
+    faArrowRight,
+    faBuilding,
+    faTimes,
+} from "@fortawesome/free-solid-svg-icons";
 import {FormStep} from "../components/field/relatedrepoitempopup/RelatedRepoItemContent";
 import {FormField} from "../components/field/FormField";
 import {useForm} from "react-hook-form";
-import {Redirect} from "react-router-dom";
+import {Navigate} from "react-router-dom";
 import MemberPositionOptionsHelper from "../util/MemberPositionOptionsHelper";
 import {SearchInput} from "../components/searchinput/SearchInput";
 import {HelperFunctions} from "../util/HelperFunctions";
@@ -18,65 +23,148 @@ import Api from "../util/api/Api";
 import Toaster from "../util/toaster/Toaster";
 import LoadingIndicator from "../components/loadingindicator/LoadingIndicator";
 import ButtonText from "../components/buttons/buttontext/ButtonText";
-import AppStorage, {StorageKey} from "../util/AppStorage";
-import {Jsona} from "jsona";
+import AppStorage, {StorageKey, useAppStorageState} from "../util/AppStorage";
 import {useGlobalState} from "../util/GlobalState";
+import {useNavigation} from "../providers/NavigationProvider";
+import {UserSuggestion} from "../dashboard/components/suggestion/UserSuggestion";
+import {ThemedH3, ThemedP} from "../Elements";
+import styled from "styled-components";
+import MergeProfilePopup from "../profile/mergeprofilespopup/MergeProfilesPopup";
+
+const LoadingContainer = styled.div`
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 450px;
+`
+
+const StyledLoadingIndicator = styled(LoadingIndicator)`
+    margin-right: 20px;
+`
+
+const LoadingTitle = styled(ThemedH3)`
+    margin-top: 30px;
+    padding-bottom: 0;
+`
+
+const SuggestionTitle = styled(ThemedH3)`
+    padding-bottom: 0 !important;
+`
+
+const SuggestionDescription = styled(ThemedP)`
+    text-align: center;
+    margin-bottom: 20px;
+`
+
+const SuggestionList = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+    max-height: 425px;
+    overflow-y: auto;
+    padding: 8px 8px 10px 8px;
+`
+
+const SuggestionButtonContainer = styled.div`
+    display: flex;
+    justify-content: right;
+    margin-top: 40px;
+`
+
+const StyledIconButtonText = styled(IconButtonText)`
+    flex-direction: row-reverse;
+    gap: 7px;
+`
+
+const SelectedInstitutesList = styled.div`
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 10px;
+    margin-bottom: 10px;
+`
+
+const NoResults = styled.div`
+    text-align: center;
+    margin-top: 20px;
+`
+
+const StyledSelectedInstitute = styled.div`
+    display: flex;
+    background-color: rgb(115,68,238);
+    color: white;
+    font-size: 12px;
+    padding-left: 12px;
+    align-items: center;
+    border-radius: 2px 10px 10px;
+    margin: 2px;
+`
+
+const InstituteTitle = styled.p`
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+`
+
+const InstituteButton = styled.div`
+    cursor: pointer;
+    padding: 10px 12px;
+`
 
 export default function Onboarding(props) {
-
     const [currentStepIndex, setCurrentStepIndex] = useState(0);
     const {t} = useTranslation();
     const profileFormSubmitButtonRef = useRef();
-    const [memberData, setMemberData] = useState(props.location?.state?.memberData)
-    const [selectedInstitute, setSelectedInstitute] = useState(null)
+    const [memberData, setMemberData] = useAppStorageState(StorageKey.MEMBER_DATA);
+    const [selectedInstitutes, setSelectedInstitutes] = useState(() => {
+        const defaultInstitute = getDefaultInstituteFromMemberData(memberData);
+        return defaultInstitute ? [defaultInstitute] : [];
+    });
     const [currentProfileFormData, setCurrentProfileFormData] = useState(null)
     const [isTopMenuVisible, setTopMenuVisible] = useGlobalState('isTopMenuVisible', true);
+    const [loadingSuggestions, setLoadingSuggestions] = useState(true);
+    const navigate = useNavigation()
 
     useEffect(() => {
         setTopMenuVisible(false)
+
+        if (props.location?.state?.memberData && !memberData) {
+            setMemberData(props.location.state.memberData);
+        }
     },[])
 
+    useEffect(() => {
+        if (!selectedInstitutes || selectedInstitutes.length === 0) {
+            const defaultInstitute = getDefaultInstituteFromMemberData(memberData);
+            if (defaultInstitute) {
+                setSelectedInstitutes([defaultInstitute]);
+            }
+        }
+    }, [memberData, selectedInstitutes]);
+
     if (!memberData) {
-        return <Redirect to={'login?redirect=login'}/>
+        return <Navigate to={'login?redirect=login'}/>
     }
 
     const isMemberStudent = memberData.position === "student";
 
-    let formSteps;
-    let totalSteps;
-    if(isMemberStudent) {
-        //Show all steps
-        totalSteps = 3;
-        formSteps = (
-            <div className='onboarding-steps flex-row form-step-list'>
-                <FormStep active={currentStepIndex === 0}
-                          number={1}
-                          title={t('onboarding.institute_step.title')}/>
-                <div className='form-step-divider'/>
-                <FormStep active={currentStepIndex === 1}
-                          number={2}
-                          title={t('onboarding.profile_step.title')}/>
-                <div className='form-step-divider'/>
-                <FormStep active={currentStepIndex === 2}
-                          number={3}
-                          title={t('onboarding.start_step.title')}/>
-            </div>
-        )
-    } else {
-        //Show profile step and start step
-        totalSteps = 2
-        formSteps = (
-            <div className='onboarding-steps flex-row form-step-list'>
-                <FormStep active={currentStepIndex === 0}
-                          number={1}
-                          title={t('onboarding.profile_step.title')}/>
-                <div className='form-step-divider'/>
-                <FormStep active={currentStepIndex === 1}
-                          number={2}
-                          title={t('onboarding.start_step.title')}/>
-            </div>
-        )
-    }
+    let totalSteps = 4;
+    let totalStepsVisible = 2;
+    let formSteps = (
+        <div className='onboarding-steps flex-row form-step-list'>
+            <FormStep active={currentStepIndex === 0}
+                      number={1}
+                      title={t('onboarding.profile_step.title')}/>
+            <div className='form-step-divider'/>
+            <FormStep active={currentStepIndex === 1}
+                      number={2}
+                      title={t('onboarding.institute_step.title')}/>
+        </div>
+    )
 
     const isFirstStep = (currentStepIndex === 0)
     const isLastStep = (currentStepIndex === totalSteps - 1)
@@ -84,46 +172,61 @@ export default function Onboarding(props) {
     function getStepContent() {
 
         const instituteStepContent = (
-            <InstituteStepContent didSelectInstitute={(institute) => {
-                                      setSelectedInstitute(institute)
-                                  }}/>
+            <InstituteStepContent
+                memberData={memberData}
+                selectedInstitutes={selectedInstitutes}
+                setSelectedInstitutes={setSelectedInstitutes}
+            />
         )
 
         const profileStepContent = (
-            <ProfileStepContent memberData={memberData}
-                                submitButtonRef={profileFormSubmitButtonRef}
-                                savedProfile={(profileFormData) => {
-                                    //Form values validated, proceed to next step
-                                    setCurrentStepIndex(currentStepIndex + 1);
-                                    setCurrentProfileFormData(profileFormData)
-                                }}/>
+            <ProfileStepContent
+                memberData={memberData}
+                submitButtonRef={profileFormSubmitButtonRef}
+                savedProfile={(profileFormData) => {
+                    //Form values validated, proceed to next step
+                    setCurrentStepIndex(currentStepIndex + 1);
+                    setCurrentProfileFormData(profileFormData)
+                }}
+            />
         )
 
         const startStepContent = (
-            <StartStepContent memberData={memberData}
-                              selectedInstitute={selectedInstitute}
-                              profileFormData={currentProfileFormData}
-                              history={props.history}/>
+            <StartStepContent
+                memberData={memberData}
+                selectedInstitutes={selectedInstitutes}
+                profileFormData={currentProfileFormData}
+                navigate={navigate}
+            />
         )
 
-        if(isMemberStudent) {
-            if (currentStepIndex === 0) {
-                return instituteStepContent
-            }
-            if (currentStepIndex === 1) {
-                return profileStepContent
-            }
-            if (currentStepIndex === 2) {
-                return startStepContent
-            }
-        } else {
-            if (currentStepIndex === 0) {
-                return profileStepContent
-            }
-            if (currentStepIndex === 1) {
-                return startStepContent
-            }
-        }
+        const suggestionStepContent = (
+            <SuggestionStepContent
+                memberData={memberData}
+                isLoading={loadingSuggestions}
+                setIsLoading={setLoadingSuggestions}
+                nextStep={nextStep}
+                navigate={navigate}
+            />
+        )
+
+        const studentSteps = [
+            profileStepContent,
+            instituteStepContent,
+            suggestionStepContent,
+            startStepContent,
+        ];
+
+        const memberSteps = [
+            profileStepContent,
+            instituteStepContent,
+            suggestionStepContent,
+            startStepContent,
+        ];
+
+        const steps = isMemberStudent ? studentSteps : memberSteps;
+
+        return steps[currentStepIndex];
     }
 
     function previousStep() {
@@ -142,44 +245,48 @@ export default function Onboarding(props) {
         <div className={"onboarding-page"}>
             <div className={"onboarding-wrapper"}>
                 <div className={"onboarding-container"}>
-                    <div className={"logo-wrapper"}>
-                        <img alt="Surf" id="login-logo" src={require('../resources/images/surf-sharekit-logo.png')}/>
-                    </div>
+                    { currentStepIndex <= totalStepsVisible - 1 && (
+                        <>
+                            <div className={"logo-wrapper"}>
+                                <img alt="Surf" id="login-logo" src={require('../resources/images/surf-sharekit-logo.png')}/>
+                            </div>
 
-                    <div className='onboarding-steps-list flex-row form-step-list'>
-                        {formSteps}
-                    </div>
+                            <div className='onboarding-steps-list flex-row form-step-list'>
+                                {formSteps}
+                            </div>
 
-                    {getStepContent()}
+                            {getStepContent()}
 
-                    <div className={"button-container"}>
-                        <IconButtonText className={"onboarding-previous-button"}
-                                        faIcon={faArrowLeft}
-                                        buttonText={t("action.previous")}
-                                        onClick={()=>{
-                                            if(isMemberStudent && currentStepIndex === 1 && selectedInstitute) {
-                                                setSelectedInstitute(null)
-                                                previousStep()
-                                            } else {
-                                                previousStep()
-                                            }
-                                        }}
-                                        style={{visibility: isFirstStep ? "hidden" : "visible"}}
-                        />
+                            <div className={"button-container"}>
+                                <IconButtonText className={"onboarding-previous-button"}
+                                                faIcon={faArrowLeft}
+                                                buttonText={t("action.previous")}
+                                                onClick={()=>{
+                                                    previousStep()
+                                                }}
+                                                style={{visibility: isFirstStep ? "hidden" : "visible"}}
+                                />
 
-                        <IconButtonText className={`onboarding-next-button${(currentStepIndex === 0 && isMemberStudent && !selectedInstitute) ? " disabled" : ""}`}
-                                        faIcon={faArrowRight}
-                                        buttonText={t("action.next")}
-                                        onClick={()=>{
-                                            if(currentStepIndex === 0 && isMemberStudent && selectedInstitute) {
-                                                nextStep()
-                                            } else if((isMemberStudent && currentStepIndex === 1) || (!isMemberStudent && currentStepIndex === 0)) {
-                                                profileFormSubmitButtonRef.current.click();
-                                            }
-                                        }}
-                                        style={{visibility: isLastStep ? "hidden" : "visible"}}
-                        />
-                    </div>
+                                <IconButtonText className={"onboarding-next-button"}
+                                                faIcon={faArrowRight}
+                                                buttonText={t("action.next")}
+                                                onClick={()=>{
+                                                    if (currentStepIndex === 0) {
+                                                        profileFormSubmitButtonRef.current?.click();
+                                                        return;
+                                                    }
+
+                                                    nextStep();
+                                                }}
+                                                style={{visibility: isLastStep ? "hidden" : "visible"}}
+                                />
+                            </div>
+                        </>
+                    ) || (
+                        <>
+                            {getStepContent()}
+                        </>
+                    )}
                 </div>
             </div>
         </div>
@@ -187,29 +294,53 @@ export default function Onboarding(props) {
 
     return (
         <EmptyPage id="onboarding"
-                   history={props.history}
                    content={content}
                    style={{backgroundImage: `url('` + Background + `')`}}
         />
     )
 }
 
+function getDefaultInstituteFromMemberData(memberData) {
+    const rootInstituteSummary = memberData?.rootInstitutesSummary?.[0];
+    if (rootInstituteSummary?.id && rootInstituteSummary?.title) {
+        return {
+            id: rootInstituteSummary.id,
+            title: rootInstituteSummary.title
+        }
+    }
+    return null;
+}
+
 export function InstituteStepContent(props) {
     const {t} = useTranslation();
     const [currentQuery, setCurrentQuery] = useState("");
     const [institutes, setInstitutes] = useState(null);
-    const [selectedInstitute, setSelectedInstitute] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const debouncedQueryChange = HelperFunctions.debounce(setCurrentQuery)
 
+    const removeInstitute = (instituteToRemove) => {
+        const updatedInstitutes = props.selectedInstitutes.filter(institute => institute.id !== instituteToRemove.id);
+        props.setSelectedInstitutes(updatedInstitutes);
+    };
+
     useEffect(() => {
         setIsLoading(true)
-        searchInstitutes(currentQuery)
+        searchInstitutes(currentQuery, props.memberData)
     }, [currentQuery])
 
     return (
         <div className={"institute-step-content"}>
             <h3>{t('onboarding.institute_step.title')}</h3>
+            <SelectedInstitutesList>
+                {props.selectedInstitutes.map((institute) => (
+                    <SelectedInstitute
+                        key={institute.id}
+                        institute={institute}
+                        selectedInstitutes={props.selectedInstitutes}
+                        onRemoveInstitute={removeInstitute}
+                    />
+                ))}
+            </SelectedInstitutesList>
             <SearchInput placeholder={t("navigation_bar.search")}
                          onChange={(e) => {
                              debouncedQueryChange(e.target.value)
@@ -219,28 +350,36 @@ export function InstituteStepContent(props) {
                     isLoading && <LoadingIndicator/>
                 }
                 {
-                    !isLoading && institutes && institutes.map((institute) => {
-                        return <InstituteOptionRow key={institute.id}
-                                                   institute={institute}
-                                                   selectedInstitute={selectedInstitute}
-                                                   onClick={didSelectRow}/>
-                    })
+                    !isLoading && institutes && institutes.length > 0 && institutes.map((institute) => (
+                        <InstituteOptionRow key={institute.id}
+                           institute={institute}
+                           selectedInstitutes={props.selectedInstitutes}
+                           onClick={didSelectRow}/>
+                    )) || !isLoading && <NoResults>{t("onboarding.institute_step.no_results")}</NoResults>
                 }
             </div>
         </div>
     )
 
     function didSelectRow(institute) {
-        setSelectedInstitute(institute)
-        props.didSelectInstitute(institute)
+        const isAlreadySelected = props.selectedInstitutes.some(selected => selected.id === institute.id);
+        if (!isAlreadySelected) {
+            const updatedInstitutes = [...props.selectedInstitutes, institute];
+            props.setSelectedInstitutes(updatedInstitutes);
+        }
     }
 
-    function searchInstitutes(searchQuery = "") {
+    function searchInstitutes(searchQuery = "", memberData = null) {
         setIsLoading(true)
+
+        let levels = 'discipline';
+        if (memberData && memberData.position !== 'student') {
+            levels = 'lectorate,department,discipline'
+        }
 
         const config = {
             params: {
-                'filter[level]': 'discipline',
+                'filter[level]': levels,
                 'filter[isRemoved]': 0,
                 'page[number]': 1,
                 'page[size]': 50,
@@ -259,22 +398,24 @@ export function InstituteStepContent(props) {
             setInstitutes(instituteResults)
         }
 
-        function onLocalFailure(error) {
-            setIsLoading(false)
-            Toaster.showDefaultRequestError()
-        }
-
-        function onServerFailure(error) {
+        const errorCallback = (error) => {
             setIsLoading(false)
             Toaster.showServerError(error)
         }
 
+        function onLocalFailure(error) {
+            errorCallback(error);
+        }
+
+        function onServerFailure(error) {
+            errorCallback(error);
+        }
         Api.get('institutes', onValidate, onSuccess, onLocalFailure, onServerFailure, config);
     }
 }
 
 export function InstituteOptionRow(props) {
-    const isSelectedInstitute = props.selectedInstitute && props.selectedInstitute.id === props.institute.id
+    const isSelectedInstitute = props.selectedInstitutes.some(selectedInstitute => selectedInstitute.id === props.institute.id);
 
     return (
         <div className={`institute-option-row${isSelectedInstitute ? " selected-institute" : ""}`}
@@ -291,9 +432,22 @@ export function InstituteOptionRow(props) {
     )
 }
 
+export function SelectedInstitute(props) {
+    return (
+        <StyledSelectedInstitute>
+            <InstituteTitle>{props.institute?.title ?? ""}</InstituteTitle>
+            <InstituteButton className={"selected-institute-icon"} onClick={() => {
+                props.onRemoveInstitute(props.institute);
+            }}>
+                <FontAwesomeIcon icon={faTimes}/>
+            </InstituteButton>
+        </StyledSelectedInstitute>
+    )
+}
+
 export function ProfileStepContent(props) {
 
-    const {register, handleSubmit, errors, setValue} = useForm();
+    const {register, handleSubmit, formState: { errors}, setValue} = useForm();
     const {t} = useTranslation();
     const profileFormRef = useRef();
 
@@ -306,8 +460,10 @@ export function ProfileStepContent(props) {
     }
 
     const organisationOption = []
-    if(props.memberData.institutes.length > 0) {
-        organisationOption.push(getOrganisationOption(props.memberData.institutes[0]))
+    const defaultRootInstituteTitle = props.memberData.rootInstitutesSummary?.[0]?.title;
+    const defaultInstituteTitle = defaultRootInstituteTitle || props.memberData.institutes?.[0];
+    if(defaultInstituteTitle) {
+        organisationOption.push(getOrganisationOption(defaultInstituteTitle))
     }
 
     const functionOptions = new MemberPositionOptionsHelper().getPositionOptions();
@@ -369,6 +525,9 @@ export function ProfileStepContent(props) {
                                    isRequired={true}
                                    readonly={true}
                                    name={"organisation"}
+                                   register={register}
+                                   setValue={setValue}
+                                   defaultValue={defaultInstituteTitle}
                         />
                     </div>
                     <div className={"flex-column form-field-container"}>
@@ -396,6 +555,8 @@ export function ProfileStepContent(props) {
                                    readonly={true}
                                    error={errors["email"]}
                                    name={"email"}
+                                   register={register}
+                                   setValue={setValue}
                                    defaultValue={props.memberData.email}
                         />
                     </div>
@@ -428,6 +589,8 @@ export function ProfileStepContent(props) {
 
 export function StartStepContent(props) {
     const {t} = useTranslation();
+    const navigate = props.navigate
+    const personIsStudent = (props.memberData.position === 'student' || props.profileFormData?.position === 'student' || props.memberData.conextRoles === 'student')
 
     return (
         <div className={"start-step-content"}>
@@ -447,6 +610,31 @@ export function StartStepContent(props) {
     function saveOnboardingData() {
         GlobalEmptyPageMethods.setFullScreenLoading(true)
 
+        // Filter out the organisation field from form data
+        const { organisation, ...filteredFormData } = props.profileFormData;
+
+        const config = {
+            headers: {
+                "Content-Type": "application/vnd.api+json",
+            }
+        }
+
+        const patchData = {
+            "data": {
+                "type": "person",
+                "id": props.memberData.id,
+                "attributes": {
+                    "hasFinishedOnboarding": 1,
+                    ...filteredFormData
+                }
+            }
+        };
+
+        // Only students need disciplines; persist all selected institute ids
+        if (props.selectedInstitutes && props.selectedInstitutes.length > 0 && personIsStudent) {
+            patchData.data.attributes["disciplines"] = props.selectedInstitutes.map(institute => institute.id);
+        }
+
         function onSuccess(responseData) {
             //If user updated own profile
             const savedUser = AppStorage.get(StorageKey.USER);
@@ -465,49 +653,153 @@ export function StartStepContent(props) {
             if (redirect) {
                 if (isRedirectPrivate) {
                     Api.downloadFileWithAccessTokenAndPopup(redirect, null)
-                    props.history.push('dashboard');
+                    navigate('/dashboard', {replace: true});
                 } else {
-                    props.history.push(redirect);
+                    navigate(redirect);
                 }
             } else {
-                props.history.push('dashboard');
+                navigate('/dashboard', {replace: true});
             }
         }
 
-        function onLocalFailure(error) {
+        const errorCallback = (error) => {
             GlobalEmptyPageMethods.setFullScreenLoading(false)
-            Toaster.showDefaultRequestError()
+            Toaster.showServerError(error)
+        };
+
+        function onLocalFailure(error) {
+            errorCallback(error);
         }
 
         function onServerFailure(error) {
-            GlobalEmptyPageMethods.setFullScreenLoading(false)
-            Toaster.showServerError(error)
+            errorCallback(error);
             if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                props.history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             }
-        }
-
-        const config = {
-            headers: {
-                "Content-Type": "application/vnd.api+json",
-            }
-        }
-
-        const patchData = {
-            "data": {
-                "type": "person",
-                "id": props.memberData.id,
-                "attributes":{
-                    "hasFinishedOnboarding": 1,
-                    ...props.profileFormData
-                }
-            }
-        };
-
-        if(props.selectedInstitute) {
-            patchData.data.attributes["discipline"] = props.selectedInstitute.id
         }
 
         Api.patch('persons/' + props.memberData.id, () => {}, onSuccess, onLocalFailure, onServerFailure, config, patchData);
     }
+}
+
+export function SuggestionStepContent(props) {
+    const {t} = useTranslation();
+    const [personSummaries, setPersonSummaries] = useState(null);
+    const [personsToMerge, setPersonsToMerge] = useAppStorageState(StorageKey.PERSONS_TO_MERGE)
+    const navigate = props.navigate
+
+    useEffect(() => {
+        getUserSuggestions()
+        // Add the current user to the list of profiles to merge
+        addProfileDataToMergeList(props.memberData)
+    }, [])
+
+    function getUserSuggestions() {
+        const config = {
+            params: {
+                'filter[suggestion]': `${props.memberData.firstName} ${props.memberData.surnamePrefix ? props.memberData.surnamePrefix + ' ' : ''}${props.memberData.surname}`,
+                "page[size]": 10
+            }
+        };
+        props.setIsLoading(true)
+
+        Api.jsonApiGet('personSummaries', onValidate, onSuccess, onLocalFailure, onServerFailure, config);
+
+        function onValidate(response) {
+        }
+
+        function onSuccess(response) {
+            // Go to next step if no suggestions are found
+            if (response.data.length === 0) {
+                AppStorage.remove(StorageKey.PERSONS_TO_MERGE)
+                console.log("No suggestions found, go to next step")
+                props.nextStep()
+                return
+            }
+
+            setPersonSummaries(response.data)
+
+            props.setIsLoading(false)
+        }
+
+        const errorCallback = (error) => {
+            Toaster.showServerError(error)
+            AppStorage.remove(StorageKey.PERSONS_TO_MERGE)
+            props.nextStep()
+        };
+
+        function onServerFailure(error) {
+            errorCallback(error);
+        }
+
+        function onLocalFailure(error) {
+            errorCallback(error);
+        }
+    }
+
+    function addProfileDataToMergeList(person) {
+        const personsToMerge = AppStorage.get(StorageKey.PERSONS_TO_MERGE)
+        if (!personsToMerge) {
+            AppStorage.set(StorageKey.PERSONS_TO_MERGE, [person])
+        } else {
+            const personAlreadyAdded = personsToMerge.find(profile => person.id === profile.id)
+            if (personAlreadyAdded) {
+                return
+            }
+            setPersonsToMerge([...personsToMerge, person])
+        }
+    }
+
+    function removeProfileDataToMergeList(person) {
+        const personsToNotMerge = AppStorage.get(StorageKey.PERSONS_TO_MERGE)
+        const newArray = personsToNotMerge.filter(profile => person.id !== profile.id)
+        AppStorage.set(StorageKey.PERSONS_TO_MERGE, newArray);
+    }
+
+    function onContinue(){
+        if (personsToMerge.length <= 1) {
+            console.log("No profiles to merge, go to next step")
+            AppStorage.remove(StorageKey.PERSONS_TO_MERGE)
+            props.nextStep()
+
+        } else {
+            MergeProfilePopup.show(navigate, true, () => {
+                console.log("Profiles merged successfully. Go to the next step");
+                AppStorage.remove(StorageKey.PERSONS_TO_MERGE)
+                props.nextStep()
+            });
+        }
+    }
+
+    return (
+        <div>
+            { props.isLoading &&
+                <LoadingContainer>
+                    <StyledLoadingIndicator />
+                    <LoadingTitle>{t('onboarding.suggestion_step.loading.title')}</LoadingTitle>
+                </LoadingContainer>
+                ||
+                <>
+                    <SuggestionTitle>{props.memberData.name}, {t('onboarding.suggestion_step.title')}</SuggestionTitle>
+                    <SuggestionDescription className={"description"}>{t('onboarding.suggestion_step.description')}</SuggestionDescription>
+
+                    <SuggestionList className="suggestion-list">
+                        {personSummaries && personSummaries.map((person, index) => (
+                            <UserSuggestion person={person} key={index} addProfileDataToMergeList={addProfileDataToMergeList} removeProfileDataToMergeList={removeProfileDataToMergeList}/>
+                        ))}
+                    </SuggestionList>
+
+                    <SuggestionButtonContainer>
+                        <StyledIconButtonText
+                            faIcon={faArrowRight}
+                            buttonText={t("action.next")}
+                            onClick={()=>{
+                                onContinue()
+                            }}
+                        />
+                    </SuggestionButtonContainer>
+                </>
+            }
+        </div>
+    )
 }

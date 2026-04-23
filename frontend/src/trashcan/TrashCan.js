@@ -7,7 +7,7 @@ import {HelperFunctions} from "../util/HelperFunctions";
 import {EmptyState} from "../components/emptystate/EmptyState";
 import {Pagination} from "../components/reacttable/reacttable/ReactTable";
 import {StorageKey, useAppStorageState} from "../util/AppStorage";
-import {Redirect} from "react-router-dom";
+import {Navigate, useParams, useSearchParams} from "react-router-dom";
 import {TrashcanResultRow} from "./TrashcanResultRow";
 import Api from "../util/api/Api";
 import Toaster from "../util/toaster/Toaster";
@@ -16,11 +16,24 @@ import useDocumentTitle from "../util/useDocumentTitle";
 
 function TrashCan(props) {
     const {t} = useTranslation();
-    const [currentQuery, setCurrentQuery] = useState(props.match.params.searchQuery ?? '');
-    const [pageIndex, setPageIndex] = useState(0);
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [currentQuery, setCurrentQuery] = useState(searchParams.get('searchQuery') ?? '');
+    const [pageIndex, setPageIndex] = useState(parseInt(searchParams.get('page') ?? '1') - 1);
     const [totalCount, setTotalCount] = useState(0);
     const [searchResults, setSearchResults] = useState([]);
-    const debouncedQueryChange = HelperFunctions.debounce(setCurrentQuery)
+    const debouncedQueryChange = (value) => {
+        setCurrentQuery(value);
+        setSearchParams(prev => {
+            const newParams = new URLSearchParams(prev);
+            if (value) {
+                newParams.set('searchQuery', value);
+            } else {
+                newParams.delete('searchQuery');
+            }
+            newParams.set('page', '1'); // Reset to first page on new search
+            return newParams;
+        });
+    }
     const pageSize = 10;
     const [user] = useAppStorageState(StorageKey.USER);
 
@@ -31,7 +44,7 @@ function TrashCan(props) {
     }, [currentQuery, pageIndex]);
 
     if (user === null) {
-        return <Redirect to={'login?redirect=trashcan'}/>
+        return <Navigate to={'login?redirect=trashcan'}/>
     }
 
     function SearchResultsList() {
@@ -53,7 +66,6 @@ function TrashCan(props) {
                                 case "group":
                                     return <TrashcanResultRow {...searchResult}
                                                               key={searchResult.id}
-                                                              history={props.history}
                                                               onReload={() => {
                                                                   setPageIndex(0)
                                                                   search(currentQuery)
@@ -62,7 +74,6 @@ function TrashCan(props) {
                                 case "repoitem":
                                     return <TrashcanResultRow {...searchResult}
                                                               key={searchResult.id}
-                                                              history={props.history}
                                                               onReload={() => {
                                                                   setPageIndex(0)
                                                                   search(currentQuery)
@@ -80,7 +91,6 @@ function TrashCan(props) {
                                     }
                                     return <TrashcanResultRow {...searchResult}
                                                               key={searchResult.id}
-                                                              history={props.history}
                                                               onReload={() => {
                                                                   setPageIndex(0)
                                                                   search(currentQuery)
@@ -107,29 +117,43 @@ function TrashCan(props) {
                 {t("trash.disclaimer")}
             </div>
             <SearchInput placeholder={t("navigation_bar.search")}
-                         defaultValue={props.match.params.searchQuery}
-                         onChange={(e) => {
-                             debouncedQueryChange(e.target.value)
-                         }}/>
+                         defaultValue={currentQuery}
+                         onChange={(e) => debouncedQueryChange(e.target.value)}/>
             <SearchResultsList/>
             {totalCount !== 0 && <Pagination pageIndex={pageIndex}
                                              pageCount={Math.ceil(totalCount / pageSize)}
-                                             setPage={setPageIndex}
+                                             setPage={(newPage) => {
+                                                 setPageIndex(newPage);
+                                                 setSearchParams(prev => {
+                                                     const newParams = new URLSearchParams(prev);
+                                                     newParams.set('page', (newPage + 1).toString());
+                                                     return newParams;
+                                                 });
+                                             }}
                                              previousPageIfPossible={() => {
                                                  if (pageIndex > 0) {
-                                                     setPageIndex(pageIndex - 1)
+                                                     setPageIndex(pageIndex - 1);
+                                                     setSearchParams(prev => {
+                                                         const newParams = new URLSearchParams(prev);
+                                                         newParams.set('page', pageIndex.toString());
+                                                         return newParams;
+                                                     });
                                                  }
                                              }}
                                              nextPageIfPossible={() => {
                                                  if (pageIndex < Math.ceil(totalCount / pageSize) - 1) {
-                                                     setPageIndex(pageIndex + 1)
+                                                     setPageIndex(pageIndex + 1);
+                                                     setSearchParams(prev => {
+                                                         const newParams = new URLSearchParams(prev);
+                                                         newParams.set('page', (pageIndex + 2).toString());
+                                                         return newParams;
+                                                     });
                                                  }
                                              }}/>}
         </div>
     );
 
     return <Page id="trashcan"
-                 history={props.history}
                  activeMenuItem={"trashcan"}
                  content={content}
                  breadcrumbs={[
@@ -168,16 +192,18 @@ function TrashCan(props) {
             setTotalCount(response.data.meta.totalCount)
         }
 
-        function onLocalFailure(error) {
-            console.log(error);
-            GlobalPageMethods.setFullScreenLoading(false)
-            Toaster.showDefaultRequestError()
-        }
-
-        function onServerFailure(error) {
+        const errorCallback = (error) => {
             console.log(error);
             GlobalPageMethods.setFullScreenLoading(false)
             Toaster.showServerError(error)
+        }
+
+        function onLocalFailure(error) {
+            errorCallback(error);
+        }
+
+        function onServerFailure(error) {
+            errorCallback(error);
         }
 
         Api.get('search', onValidate, onSuccess, onLocalFailure, onServerFailure, config);

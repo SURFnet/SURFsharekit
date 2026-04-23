@@ -4,10 +4,10 @@ import Toaster from "../toaster/Toaster";
 
 class ApiRequests {
 
-    static getExtendedPersonInformation(user, history, successCallback, errorCallback) {
+    static getExtendedPersonInformation(user, navigate, successCallback, errorCallback) {
         const config = {
             params: {
-                'fields[institutes]': 'title,conextCode,permissions,isUsersConextInstitute,isBaseScopeForUser',
+                'fields[institutes]': 'title,conextCode,permissions,isUsersConextInstitute,totalPublicationsCount,isBaseScopeForUser',
                 'fields[groups]': 'title,permissions,userPermissions,roleCode,codeMatrix,partOf,labelNL,labelEN'
             }
         };
@@ -29,16 +29,14 @@ class ApiRequests {
         }
 
         function onServerFailure(error) {
-            Toaster.showServerError(error)
             if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                history.push('/login');
+                navigate('/login');
             }
-            errorCallback()
+            errorCallback(error)
         }
 
         function onLocalFailure(error) {
-            Toaster.showDefaultRequestError()
-            errorCallback()
+            errorCallback(error)
         }
     }
 }

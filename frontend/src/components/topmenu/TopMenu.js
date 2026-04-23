@@ -21,16 +21,18 @@ import TopMenuSearch from "./components/TopMenuSearch";
 import TopMenuButton from "./components/TopMenuButton";
 import LanguageSwitch from "./components/LanguageSwitch";
 import ProfileDropdown from "./components/ProfileDropdown";
-import {useHistory, useLocation} from "react-router-dom";
+import {useNavigate, useLocation} from "react-router-dom";
 import {useGlobalState} from "../../util/GlobalState";
 import Api from "../../util/api/Api";
 import Toaster from "../../util/toaster/Toaster";
 import {UpdateTaskCountEvent} from "../../util/events/Events";
+import {useNavigation} from "../../providers/NavigationProvider";
+import { onErrorResumeNext } from "rxjs";
 
 function TopMenu(props) {
     const {t} = useTranslation();
     const location = useLocation();
-    const history = useHistory();
+    const navigate = useNavigation();
     const cancelToken = useRef();
 
     const [user, setUser] = useAppStorageState(StorageKey.USER);
@@ -76,7 +78,7 @@ function TopMenu(props) {
                             <TopMenuButton
                                 icon={TasksIcon}
                                 onClick={() => {
-                                    history.push("/dashboard")
+                                    navigate("/dashboard")
                                 }}
                                 count={taskCount}
                             />
@@ -107,7 +109,7 @@ function TopMenu(props) {
             if (index !== props.breadcrumbs.length - 1) {
                 elements.push(
                     <BreadCrumb isClickable={true} onClick={() => {
-                        history.push(breadcrumb.path)
+                        navigate(breadcrumb.path)
                     }}>
                         {t(breadcrumb.title)}
                     </BreadCrumb>
@@ -148,12 +150,12 @@ function TopMenu(props) {
         function onServerFailure(error) {
             Toaster.showServerError(error)
             if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             }
         }
 
         function onLocalFailure(error) {
-            Toaster.showDefaultRequestError()
+            Toaster.showServerError(error)
         }
     }
 }

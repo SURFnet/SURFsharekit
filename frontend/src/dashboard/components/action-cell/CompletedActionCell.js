@@ -9,8 +9,9 @@ import TaskHelper, {TASK_ACTION, TASK_TYPE} from "../../../util/TaskHelper";
 import {useTranslation} from "react-i18next";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import SURFButton from "../../../styled-components/buttons/SURFButton";
-import {Link, useHistory} from "react-router-dom";
+import {Link, useNavigate} from "react-router-dom";
 import {Tooltip} from "../../../components/field/FormField";
+import {useNavigation} from "../../../providers/NavigationProvider";
 
 function ActionCell(props) {
     const {
@@ -19,7 +20,7 @@ function ActionCell(props) {
     } = props
 
     const {t} = useTranslation();
-    const history = useHistory();
+    const navigate = useNavigation();
 
     return (
         <Cell>
@@ -64,7 +65,10 @@ function ActionCell(props) {
                         className={`icon-trash`}
                         onClick={(e) => {
                             e.stopPropagation()
-                            removeTask()
+                            removeTask((error) => {
+                                GlobalPageMethods.setFullScreenLoading(false)
+                                Toaster.showServerError(error)
+                            })
                         }}
                     />
                 </IconWrapper>
@@ -115,7 +119,7 @@ function ActionCell(props) {
         }
     }
 
-    function removeTask() {
+    function removeTask(errorCallback = () => {}) {
         GlobalPageMethods.setFullScreenLoading(true)
         const config = {
             headers: {
@@ -142,16 +146,14 @@ function ActionCell(props) {
         }
 
         function onServerFailure(error) {
-            GlobalPageMethods.setFullScreenLoading(false)
-            Toaster.showServerError(error)
+            errorCallback(error)
             if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             }
         }
 
         function onLocalFailure(error) {
-            GlobalPageMethods.setFullScreenLoading(false)
-            Toaster.showDefaultRequestError();
+            errorCallback(error)
         }
     }
 }

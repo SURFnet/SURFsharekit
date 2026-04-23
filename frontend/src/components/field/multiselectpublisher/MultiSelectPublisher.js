@@ -1,7 +1,6 @@
 import React, {useEffect, useState} from "react";
 import './multiselectpublisher.scss';
 import {useTranslation} from "react-i18next";
-import {useHistory} from "react-router-dom";
 import Constants from "../../../sass/theme/_constants.scss";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faChevronDown} from "@fortawesome/free-solid-svg-icons";
@@ -11,10 +10,10 @@ import debounce from "debounce-promise";
 import AsyncSelect from "react-select/async";
 import Api from "../../../util/api/Api";
 import {SwitchField} from "../switch/Switch";
+import {useFormFieldRegistration} from "../../../util/hooks/useFormFieldRegistration";
 
 function MultiSelectPublisher(props) {
     const {t} = useTranslation();
-    const history = useHistory();
     const [selectedOptionValues, setSelectedOptionValues] = useState(getInitialValues())
     const [showInactive, setShowInactive] = useState(0);
     const loadOptions = inputValue => promiseOptions(inputValue)
@@ -27,7 +26,7 @@ function MultiSelectPublisher(props) {
             const accessRightState = Object.values(props.formState).find(state => state.field.attributeKey === 'AccessRight');
             if (accessRightState && accessRightState.state) {
                 const selectedOption = accessRightState.field.options.find(o => o.key === accessRightState.state);
-                return selectedOption.value === "restrictedaccess";
+                return selectedOption?.value === "restrictedaccess";
             }
         }
         return false;
@@ -47,7 +46,7 @@ function MultiSelectPublisher(props) {
     }
 
     const style = {
-        label: (base: state) => ({
+        label: (base) => ({
             ...base,
             paddingRight: '10px'
         }),
@@ -58,7 +57,9 @@ function MultiSelectPublisher(props) {
         }),
         input: (base, state) => ({
             ...base,
-            display: (props.readonly) ? 'none' : 'block'
+            display: (props.readonly) ? 'none' : 'flex',
+            fontSize: '12px',
+            fontFamily: 'Open Sans, sans-serif'
         }),
 
         /** Used to display differently for MultiSelectInstitute */
@@ -87,18 +88,10 @@ function MultiSelectPublisher(props) {
             const accessRightState = Object.values(props.formState).find(state => state.field.attributeKey === 'AccessRight')
             if (accessRightState && accessRightState.state) {
                 const selectedOption = accessRightState.field.options.find(o => o.key === accessRightState.state)
-                setShowMultiSelectInstituteField(selectedOption.value === "restrictedaccess")
+                setShowMultiSelectInstituteField(selectedOption?.value === "restrictedaccess")
             }
         }
     }, [props.formState])
-
-    useEffect(() => {
-        if (props.register) {
-            props.register({name: props.name}, {required: props.isRequired})
-            props.setValue(props.name, getOptionValues())
-            props.onChange(getOptionValues())
-        }
-    }, [props.register])
 
     useEffect(() => {
         if (props.setValue) {
@@ -110,12 +103,13 @@ function MultiSelectPublisher(props) {
     function getInitialValues() {
         if (props.defaultValue) {
             return props.defaultValue.map((optionData, index) => {
+                const summaryTitle = optionData?.summary?.title ?? optionData?.title ?? t('organisation.unknown');
                 return {
                     value: optionData.id,
-                    optionTitle: optionData.summary.title,
+                    optionTitle: summaryTitle,
                     optionLabel: null,
                     isRemoved: null,
-                    label: optionData.summary.title,
+                    label: summaryTitle,
                     isFixed: index === 0
                 }
             });
@@ -125,23 +119,19 @@ function MultiSelectPublisher(props) {
     }
 
     function getOptionValues() {
-        const parseSelectedOptionValues = () => {
-            if (selectedOptionValues) {
-                return selectedOptionValues.map(selectedOptionValue => {
-                    return JSON.stringify({
-                        id: selectedOptionValue.value,
-                        summary: {
-                            title: selectedOptionValue.label,
-                        }
-                    })
-                })
-            }
-            return null
+        if (selectedOptionValues) {
+            return selectedOptionValues.map(selectedOptionValue => ({
+                id: selectedOptionValue.value,
+                summary: {
+                    title: selectedOptionValue.label,
+                }
+            }));
         }
-
-        let noDefaultOrSelectedOptionValues = (!props.defaultValue || props.defaultValue.length === 0) && (!selectedOptionValues || selectedOptionValues.length === 0)
-        return (noDefaultOrSelectedOptionValues ? null : parseSelectedOptionValues());
+        return null;
     }
+
+    // Use the custom hook for form field registration
+    const { hiddenInput } = useFormFieldRegistration(props, getOptionValues);
 
     const DropdownChevronIcon = () => {
         return <FontAwesomeIcon icon={faChevronDown}/>;
@@ -179,12 +169,13 @@ function MultiSelectPublisher(props) {
         new Promise(resolve => {
             getRootOrganisations(inputValue, (data) => {
                 const options = data.map(optionData => {
+                const summaryTitle = optionData?.summary?.title ?? optionData?.title ?? t('organisation.unknown');
                     return {
                         value: optionData.id,
-                        optionTitle: optionData.summary.title,
+                    optionTitle: summaryTitle,
                         optionLabel: optionData.level,
                         isRemoved: optionData.isRemoved,
-                        label: optionData.summary.title,
+                    label: summaryTitle,
                         isFixed: false
                     }
                 })
@@ -200,6 +191,9 @@ function MultiSelectPublisher(props) {
 
     return (
         <div className={"multi-select-suborganisation-container" + classAddition}>
+            {/* Hidden input for react-hook-form registration */}
+            {hiddenInput}
+            
             {!props.readonly && props.showInactiveSwitch && <div className={"inactive-switch"}>
                 <div className={"switch-row-text"}>
                     <h5 className={"bold-text"}>{t("organisation.tab_organizational_inactive")}</h5>
@@ -259,7 +253,7 @@ function MultiSelectPublisher(props) {
         function onServerFailure(error) {
             callback([])
             if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                history.push('/login?redirect=' + window.location.pathname);
+                props.navigate('/login?redirect=' + window.location.pathname);
             }
         }
 
@@ -284,4 +278,3 @@ function MultiSelectPublisher(props) {
 }
 
 export default MultiSelectPublisher;
-

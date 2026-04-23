@@ -2,8 +2,6 @@ import ValidationError from "../../../util/ValidationError";
 import Toaster from "../../../util/toaster/Toaster";
 import Api from "../../../util/api/Api";
 import RepoItemPopup from "../relatedrepoitempopup/RelatedRepoItemPopup";
-import {useHistory} from "react-router-dom";
-import {useEffect} from "react";
 
 export function showRepoItemPopup(currentFormReducerStateRef, field, repoItemToShowId, files, onSuccessCallback, baseRepoItem, repoItemIdsToExcludeInSearch = [], getRepoItemFunction = null, repoItems = []) {
     function onSuccessfulSaveOfRelatedRepoItem(savedRelatedRepoItems) {
@@ -66,7 +64,7 @@ export function showRepoItemPopup(currentFormReducerStateRef, field, repoItemToS
     RepoItemPopup.show(repoItemToShowId, files, onSuccessfulSaveOfRelatedRepoItem, onCancel, baseRepoItem, repoItemIdsToExcludeInSearch, getRepoItemFunction, repoItems)
 }
 
-export function createRelatedRepoItem(repoType, instituteId, history, successCallback, failureCallback) {
+export function createRelatedRepoItem(repoType, instituteId, navigate, successCallback, failureCallback) {
 
     function validator(response) {
         const repoItemData = response.data ? response.data.data : null;
@@ -75,21 +73,24 @@ export function createRelatedRepoItem(repoType, instituteId, history, successCal
         }
     }
 
+    const errorCallback = (error) => {
+        Toaster.showServerError(error)
+        failureCallback(error)
+        if (error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
+            navigate('/login?redirect=' + window.location.pathname);
+        }
+    }
+
     function onSuccess(response) {
         successCallback(Api.dataFormatter.deserialize(response.data))
     }
 
     function onLocalFailure(error) {
-        Toaster.showDefaultRequestError()
-        failureCallback(error)
+        errorCallback(error)
     }
 
     function onServerFailure(error) {
-        Toaster.showServerError(error)
-        failureCallback(error)
-        if (error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-            history.push('/login?redirect=' + window.location.pathname);
-        }
+        errorCallback(error)
     }
 
     const config = {

@@ -6,18 +6,18 @@ import AppStorage, {StorageKey, useAppStorageState} from "../../util/AppStorage"
 import {useForm} from "react-hook-form";
 import {FormField, Required, Tooltip} from "../../components/field/FormField";
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
-import {faLinkedin, faResearchgate, faTwitterSquare} from '@fortawesome/free-brands-svg-icons'
+import {faLinkedin, faResearchgate, faXTwitter} from '@fortawesome/free-brands-svg-icons'
+import {ReactComponent as SocialMediaIconSvg} from '../../resources/icons/ic-social-icon.svg'
 import Api from "../../util/api/Api";
 import Toaster from "../../util/toaster/Toaster";
 import {GlobalPageMethods} from "../../components/page/Page";
 import MemberPositionOptionsHelper from "../../util/MemberPositionOptionsHelper";
-import {useHistory} from "react-router-dom";
-import {useDirtyNavigationCheck} from "../../util/hooks/useDirtyNavigationCheck";
 import {Mod11Helper} from "../../util/Mod11Helper"
 import {Accordion} from "../../components/Accordion";
 import styled from "styled-components";
-import {faAlignLeft, faShareAlt} from "@fortawesome/free-solid-svg-icons";
+import {faAlignLeft, faIdCard, faShareAlt} from "@fortawesome/free-solid-svg-icons";
 import {EmailRadioButtons} from "../../components/createpersonform/CreatePersonForm";
+import {useNavigation} from "../../providers/NavigationProvider";
 
 function ProfileContent(props) {
     const profileData = props.profileData ?? {}
@@ -25,17 +25,25 @@ function ProfileContent(props) {
 
     const {t} = useTranslation();
     const [user] = useAppStorageState(StorageKey.USER);
-    const {formState, register, handleSubmit, errors, setValue, reset, trigger} = useForm();
+    const {
+        register,
+        handleSubmit,
+        setValue,
+        reset,
+        trigger,
+        formState: { errors, dirtyFields }
+    } = useForm();
     const [isEmailUnknown, setIsEmailUnknown] = useState(false);
     const [isInstituteKnown, setIsInstituteKnown] = useState(true);
     const [personConfig, setPersonConfig] = useState(!makingNewProfile ? props.profileData.config : {});
-    const {dirtyFields} = formState
     const formSubmitButton = useRef();
-    const history = useHistory();
+    const navigate = useNavigation();
     const functionOptions = new MemberPositionOptionsHelper().getPositionOptions();
     const [emailState, setEmailState] = useState(getEmailState)
     const disableEmailChange = emailState === 'no-permission'
     const emailKnown = (emailState === 'known')
+
+    const hasGeneratedOrcid = profileData.orcidRegisterDate !== null
 
     useEffect(() => {
         if (Object.keys(errors).length > 0) {
@@ -51,7 +59,7 @@ function ProfileContent(props) {
         }
     }, [isInstituteKnown]);
 
-    useDirtyNavigationCheck(history, dirtyFields)
+    // useDirtyNavigationCheck(dirtyFields)
 
     function getEmailState() {
         if (makingNewProfile || profileData.email) {
@@ -80,7 +88,6 @@ function ProfileContent(props) {
     let emailElement;
     if (makingNewProfile || canEdit()) {
         emailElement = <FormField key={"email"}
-                                  classAddition={''}
                                   type={"email"}
                                   label={t("profile.profile_email")}
                                   isRequired={makingNewProfile && emailKnown}
@@ -109,13 +116,12 @@ function ProfileContent(props) {
         />
     } else {
         emailElement = <FormField key={"email"}
-                                  classAddition={''}
                                   type={"email"}
                                   label={t("profile.profile_email")}
                                   isRequired={emailKnown && canEdit()}
                                   hideRequired={emailKnown}
                                   readonly={ profileData.disableEmailChange ? true : (!emailKnown || (profileData.hasFinishedOnboarding ? !canEdit() : false)) }
-                                  error={errors["email"]}
+                                  error={errors && errors["email"]}
                                   name={"email"}
                                   inputHidden={!emailKnown}
                                   prefixElement={
@@ -147,7 +153,6 @@ function ProfileContent(props) {
                         <FormGrid>
                             <FormFieldContainerMedium className={"form-field-container"}>
                                 <FormField key={"title"}
-                                           classAddition={''}
                                            type={"text"}
                                            label={t("profile.profile_titulatuur")}
                                            isRequired={false}
@@ -162,7 +167,6 @@ function ProfileContent(props) {
 
                             <FormFieldContainerSmall className={"form-field-container"}>
                                 <FormField key={"academicTitle"}
-                                           classAddition={''}
                                            type={"text"}
                                            label={t("profile.profile_academic_title")}
                                            isRequired={false}
@@ -177,7 +181,6 @@ function ProfileContent(props) {
 
                             <FormFieldContainerLarge className={"form-field-container"}>
                                 <FormField key={"initials"}
-                                           classAddition={''}
                                            type={"text"}
                                            label={t("profile.profile_initials")}
                                            isRequired={false}
@@ -192,7 +195,6 @@ function ProfileContent(props) {
 
                             <FormFieldContainerMedium className={"form-field-container"}>
                                 <FormField key={"firstName"}
-                                           classAddition={''}
                                            type={"text"}
                                            label={t("profile.profile_first_name")}
                                            isRequired={true}
@@ -207,7 +209,6 @@ function ProfileContent(props) {
 
                             <FormFieldContainerSmall className={"form-field-container"}>
                                 <FormField key={"surnamePrefix"}
-                                           classAddition={''}
                                            type={"text"}
                                            label={t("profile.profile_surname_prefix")}
                                            isRequired={false}
@@ -222,7 +223,6 @@ function ProfileContent(props) {
 
                             <FormFieldContainerLarge className={"form-field-container"}>
                                 <FormField key={"surname"}
-                                           classAddition={''}
                                            type={"text"}
                                            label={t("profile.profile_surname")}
                                            isRequired={true}
@@ -243,7 +243,6 @@ function ProfileContent(props) {
 
                             <FormFieldContainerLarge className={"form-field-container"}>
                                 <FormField key={"secondaryEmail"}
-                                           classAddition={''}
                                            type={"email"}
                                            label={t("profile.profile_email_alt")}
                                            isRequired={false}
@@ -258,7 +257,6 @@ function ProfileContent(props) {
 
                             <FormFieldContainerLarge className={"form-field-container"}>
                                 <FormField key={"position"}
-                                           classAddition={''}
                                            type={"dropdown"}
                                            options={functionOptions}
                                            label={t("profile.profile_function")}
@@ -274,7 +272,6 @@ function ProfileContent(props) {
 
                             <FormFieldContainerLarge className={"form-field-container"}>
                                 <FormField key={"phone"}
-                                           classAddition={''}
                                            type={"text"}
                                            label={t("profile.profile_phone")}
                                            isRequired={false}
@@ -287,84 +284,10 @@ function ProfileContent(props) {
                                            defaultValue={profileData.phone}
                                 />
                             </FormFieldContainerLarge>
-
-                            <FormFieldContainerLarge className={"form-field-container"}>
-                                <FormField key={"persistentIdentifier"}
-                                           classAddition={''}
-                                           type={"text"}
-                                           hardHint={"info:eu-repo/dai/nl/"}
-                                           label={t("profile.profile_persistent_identifier")}
-                                           isRequired={false}
-                                           extraValidation={Mod11Helper.mod11Validator}
-                                           validationRegex={"^[0-9]{8,9}[0-9X]$"}
-                                           readonly={!makingNewProfile && profileData.permissions.canEdit !== true}
-                                           error={errors["persistentIdentifier"]}
-                                           name={"persistentIdentifier"}
-                                           register={register}
-                                           setValue={setValue}
-                                           defaultValue={profileData.persistentIdentifier}
-                                />
-                                <Tooltip text={t("profile.tooltips.dai")}/>
-                            </FormFieldContainerLarge>
-
-                            <FormFieldContainerLarge className={"form-field-container"}>
-                                <FormField key={"isni"}
-                                           classAddition={''}
-                                           type={"text"}
-                                           hardHint={"https://isni.org/isni/"}
-                                           label={t("profile.profile_isni")}
-                                           isRequired={false}
-                                           extraValidation={Mod11Helper.mod11_2Validator}
-                                           validationRegex={"^[0]{4}[0-9]{4}[0-9]{4}[0-9]{3}[0-9X]$"}
-                                           readonly={!makingNewProfile && profileData.permissions.canEdit !== true}
-                                           error={errors["isni"]}
-                                           name={"isni"}
-                                           register={register}
-                                           setValue={setValue}
-                                           defaultValue={profileData.isni}
-                                />
-                                <Tooltip text={t("profile.tooltips.isni")}/>
-                            </FormFieldContainerLarge>
-
-                            <FormFieldContainerLarge className={"form-field-container"}>
-                                <FormField key={"orcid"}
-                                           classAddition={''}
-                                           type={"text"}
-                                           label={t("profile.profile_orcid")}
-                                           isRequired={false}
-                                           extraValidation={Mod11Helper.mod11_2Validator}
-                                           readonly={!makingNewProfile && profileData.permissions.canEdit !== true}
-                                           error={errors["orcid"]}
-                                           name={"orcid"}
-                                           hardHint={"http://orcid.org/"}
-                                           validationRegex={"^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{3}[0-9X]$"}
-                                           register={register}
-                                           setValue={setValue}
-                                           defaultValue={profileData.orcid}
-                                />
-                                <Tooltip text={t("profile.tooltips.orcid")}/>
-                            </FormFieldContainerLarge>
-
-                            <FormFieldContainerLarge className={"form-field-container"}>
-                                <FormField key={"hogeschoolId"}
-                                           classAddition={''}
-                                           type={"text"}
-                                           label={t("profile.profile_hogeschool_id")}
-                                           isRequired={false}
-                                           readonly={!makingNewProfile && profileData.permissions.canEdit !== true}
-                                           error={errors["hogeschoolId"]}
-                                           name={"hogeschoolId"}
-                                           register={register}
-                                           setValue={setValue}
-                                           defaultValue={profileData.hogeschoolId}
-                                />
-                                <Tooltip text={t("profile.tooltips.hogeschool_id")}/>
-                            </FormFieldContainerLarge>
                             
                             { makingNewProfile && (
                                 <FormFieldContainerLarge className={"form-field-container"}>
                                     <FormField key={"institute"}
-                                               classAddition={''}
                                                type={"institute"}
                                                label={t('profile.organisation')}
                                                isRequired={isInstituteKnown}
@@ -392,7 +315,6 @@ function ProfileContent(props) {
                                 <FormFieldContainerFullWidth className={"form-field-container"}>
                                     <FormField
                                         key={"rootInstitutes"}
-                                        classAddition={''}
                                         type={"tag"}
                                         label={t("profile.profile_root_institutes")}
                                         isRequired={false}
@@ -406,12 +328,103 @@ function ProfileContent(props) {
                         </FormGrid>
                     </Accordion>
 
+                    <Accordion faIcon={faIdCard} title={t("profile.identifiers")}>
+                        <FormGrid>
+                            {/*TODO: ORCIC generated on checken hier*/}
+                            <FormFieldContainerLarge className={"form-field-container"}>
+                                <FormField key={"orcid"}
+                                           type={"orcid"}
+                                           label={t("profile.profile_orcid")}
+                                           isRequired={false}
+                                           extraValidation={Mod11Helper.mod11_2Validator}
+                                           readonly={!makingNewProfile && profileData.permissions.canEdit !== true}
+                                           error={errors["orcid"]}
+                                           name={"orcid"}
+                                           hardHint={"http://orcid.org/"}
+                                           validationRegex={"^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{3}[0-9X]$"}
+                                           register={register}
+                                           setValue={setValue}
+                                           defaultValue={profileData.orcid}
+                                           hasGeneratedOrcid={hasGeneratedOrcid}
+                                />
+                                {!hasGeneratedOrcid && <Tooltip text={t("profile.tooltips.orcid")}/>}
+                            </FormFieldContainerLarge>
+
+                            <FormFieldContainerLarge className={"form-field-container"}>
+                                <FormField key={"persistentIdentifier"}
+                                           type={"text"}
+                                           hardHint={"info:eu-repo/dai/nl/"}
+                                           label={t("profile.profile_persistent_identifier")}
+                                           isRequired={false}
+                                           extraValidation={Mod11Helper.mod11Validator}
+                                           validationRegex={"^[0-9]{8,9}[0-9X]$"}
+                                           readonly={!makingNewProfile && profileData.permissions.canEdit !== true}
+                                           error={errors["persistentIdentifier"]}
+                                           name={"persistentIdentifier"}
+                                           register={register}
+                                           setValue={setValue}
+                                           defaultValue={profileData.persistentIdentifier}
+                                />
+                                <Tooltip text={t("profile.tooltips.dai")}/>
+                            </FormFieldContainerLarge>
+
+                            <FormFieldContainerLarge className={"form-field-container"}>
+                                <FormField key={"isni"}
+                                           type={"text"}
+                                           hardHint={"https://isni.org/isni/"}
+                                           label={t("profile.profile_isni")}
+                                           isRequired={false}
+                                           extraValidation={Mod11Helper.mod11_2Validator}
+                                           validationRegex={"^[0]{4}[0-9]{4}[0-9]{4}[0-9]{3}[0-9X]$"}
+                                           readonly={!makingNewProfile && profileData.permissions.canEdit !== true}
+                                           error={errors["isni"]}
+                                           name={"isni"}
+                                           register={register}
+                                           setValue={setValue}
+                                           defaultValue={profileData.isni}
+                                />
+                                <Tooltip text={t("profile.tooltips.isni")}/>
+                            </FormFieldContainerLarge>
+
+
+
+                            <FormFieldContainerLarge className={"form-field-container"}>
+                                <FormField key={"hogeschoolId"}
+                                           type={"text"}
+                                           label={t("profile.profile_hogeschool_id")}
+                                           isRequired={false}
+                                           readonly={!makingNewProfile && profileData.permissions.canEdit !== true}
+                                           error={errors["hogeschoolId"]}
+                                           name={"hogeschoolId"}
+                                           register={register}
+                                           setValue={setValue}
+                                           defaultValue={profileData.hogeschoolId}
+                                />
+                                <Tooltip text={t("profile.tooltips.hogeschool_id")}/>
+                            </FormFieldContainerLarge>
+                        </FormGrid>
+                    </Accordion>
+
                     <Accordion faIcon={faShareAlt} title={t("profile.social_media")}>
                         <FormGrid>
                             <FormFieldContainerLarge className={"form-field-container"}>
+                                <SocialMediaSvgIcon />
+                                <FormField key={"socialMediaUrl"}
+                                           type={"text"}
+                                           label={"\u00a0"}
+                                           readonly={!makingNewProfile && profileData.permissions.canEdit !== true}
+                                           error={errors["socialMediaUrl"]}
+                                           name={"socialMediaUrl"}
+                                           placeholder={t("profile.profile_social_media_placeholder")}
+                                           register={register}
+                                           setValue={setValue}
+                                           defaultValue={profileData.socialMediaUrl}
+                                />
+                            </FormFieldContainerLarge>
+
+                            <FormFieldContainerLarge className={"form-field-container"}>
                                 <SocialMediaIcon icon={faLinkedin}/>
                                 <FormField key={"linkedInUrl"}
-                                           classAddition={''}
                                            type={"text"}
                                            label={"\u00a0"}
                                            readonly={!makingNewProfile && profileData.permissions.canEdit !== true}
@@ -425,9 +438,8 @@ function ProfileContent(props) {
                             </FormFieldContainerLarge>
 
                             <FormFieldContainerLarge className={"form-field-container"}>
-                                <SocialMediaIcon icon={faTwitterSquare}/>
+                                <SocialMediaIcon icon={faXTwitter}/>
                                 <FormField key={"twitterUrl"}
-                                           classAddition={''}
                                            type={"text"}
                                            label={"\u00a0"}
                                            readonly={!makingNewProfile && profileData.permissions.canEdit !== true}
@@ -443,7 +455,6 @@ function ProfileContent(props) {
                             <FormFieldContainerLarge className={"form-field-container"}>
                                 <SocialMediaIcon icon={faResearchgate}/>
                                 <FormField key={"researchGateUrl"}
-                                           classAddition={''}
                                            type={"text"}
                                            label={"\u00a0"}
                                            readonly={!makingNewProfile && profileData.permissions.canEdit !== true}
@@ -494,9 +505,9 @@ function ProfileContent(props) {
             GlobalPageMethods.setFullScreenLoading(false)
 
             if (responseData.permissions.canView) {
-                props.history.push(props.history.replace('../profile/' + responseData.id))
+                navigate('../profile/' + responseData.id, {replace: true})
             } else {
-                props.history.goBack()
+                navigate(-1)
             }
         }
 
@@ -504,22 +515,26 @@ function ProfileContent(props) {
             GlobalPageMethods.setFullScreenLoading(false)
             Toaster.showServerError(error)
             if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             }
         }
 
         function onLocalFailure(error) {
             GlobalPageMethods.setFullScreenLoading(false)
-            Toaster.showDefaultRequestError()
+            Toaster.showServerError(error)
         }
     }
 
     function saveForm(formData) {
-        saveProfile(formData)
+        saveProfile(formData, (error) => {
+            GlobalPageMethods.setFullScreenLoading(false)
+            Toaster.showServerError(error)
+            console.log(error);
+        })
         savePersonConfig()
     }
 
-    function saveProfile(formData) {
+    function saveProfile(formData, errorCallback = () => {}) {
         GlobalPageMethods.setFullScreenLoading(true)
 
         const config = {
@@ -567,18 +582,14 @@ function ProfileContent(props) {
         }
 
         function onServerFailure(error) {
-            GlobalPageMethods.setFullScreenLoading(false)
-            console.log(error);
-            Toaster.showServerError(error)
+            errorCallback(error)
             if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             }
         }
 
         function onLocalFailure(error) {
-            GlobalPageMethods.setFullScreenLoading(false)
-            Toaster.showDefaultRequestError()
-            console.log(error);
+            errorCallback(error)
         }
     }
 
@@ -609,6 +620,12 @@ function ProfileContent(props) {
         Api.patch('personConfigs/' + personConfig.id, () => {
         }, onSuccess, onLocalFailure, onServerFailure, config, patchData);
 
+        const errorCallback = (error) => {
+            GlobalPageMethods.setFullScreenLoading(false)
+            Toaster.showServerError(error)
+            console.log(error);
+        }
+
         function onSuccess(response) {
             const responseData = Api.dataFormatter.deserialize(response.data);
             setPersonConfig(responseData);
@@ -616,18 +633,14 @@ function ProfileContent(props) {
         }
 
         function onServerFailure(error) {
-            GlobalPageMethods.setFullScreenLoading(false)
-            console.log(error);
-            Toaster.showServerError(error)
+            errorCallback(error)
             if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             }
         }
 
         function onLocalFailure(error) {
-            GlobalPageMethods.setFullScreenLoading(false)
-            Toaster.showDefaultRequestError()
-            console.log(error);
+            errorCallback(error)
         }
     }
 
@@ -701,3 +714,9 @@ const FormFieldContainerFullWidth = styled.div`
 const SocialMediaIcon = styled(FontAwesomeIcon)`
     align-self: center;
 `;
+
+const SocialMediaSvgIcon = styled(SocialMediaIconSvg)`
+        align-self: center;
+        width: 16px;
+        height: 16px;
+    `;

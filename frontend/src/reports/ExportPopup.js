@@ -7,7 +7,7 @@ const SwalAddPersonToGroupPopup = withReactContent(Swal)
 
 class ExportPopup {
     static show() {
-        SwalAddPersonToGroupPopup.fire({
+        return SwalAddPersonToGroupPopup.fire({
             html: (
                 <ExportPopupContent
                     onCancel={() => {
@@ -22,9 +22,7 @@ class ExportPopup {
                 container: "export-container",
                 content: "export-content",
             }
-        }).then(function (result) {
-            console.log("Export popup result = ", result)
-        });
+        })
     }
 }
 

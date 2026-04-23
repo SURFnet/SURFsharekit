@@ -5,10 +5,12 @@ import Toaster from "../util/toaster/Toaster";
 import Api from "../util/api/Api";
 import ValidationHelper from "../util/ValidationHelper";
 import ValidationError from "../util/ValidationError";
+import {useParams} from "react-router-dom";
 
 function PublicPage(props) {
     const [isLoading, setIsLoading] = useState(false);
     const [pageData, setPageData] = useState(null);
+    const params = useParams()
 
     useEffect(() => {
         getPageData();
@@ -90,7 +92,7 @@ function PublicPage(props) {
 
         function onLocalFailure(error) {
             setIsLoading(false)
-            Toaster.showDefaultRequestError();
+            Toaster.showServerError(error);
         }
 
         function onServerFailure(error) {
@@ -102,7 +104,7 @@ function PublicPage(props) {
             baseURL: process.env.REACT_APP_JSON_API_URL
         }
 
-        Api.jsonApiGet(`repoItems/${props.match.params.uuid}`, onValidate, onSuccess, onLocalFailure, onServerFailure, config);
+        Api.jsonApiGet(`repoItems/${params.uuid}`, onValidate, onSuccess, onLocalFailure, onServerFailure, config);
     }
 }
 

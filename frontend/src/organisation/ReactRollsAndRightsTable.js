@@ -13,6 +13,7 @@ import Api from "../util/api/Api";
 import Toaster from "../util/toaster/Toaster";
 import {HelperFunctions} from "../util/HelperFunctions";
 import {ReactTableSearchInput} from "../components/reacttable/filterrow/ReacTableFilterItems";
+import {useNavigation} from "../providers/NavigationProvider";
 
 function ReactRollsAndRightsTable(props) {
     const [currentSortBy, setCurrentSortBy] = useState([]);
@@ -26,7 +27,7 @@ function ReactRollsAndRightsTable(props) {
     const reactTableLoadingIndicator = <ReactTableLoadingIndicator loadingText={t('loading_indicator.loading_text')}/>;
     const debouncedQueryChange = HelperFunctions.debounce(setCurrentQuery)
     const reactTableEmptyState = <ReactTableEmptyState title={t('organisation.roles_rights.groups_empty_title')}/>
-
+    const navigate = useNavigation()
 
     const columns = React.useMemo(
         () => [
@@ -126,7 +127,7 @@ function ReactRollsAndRightsTable(props) {
     )
 
     const navigateToGroupDetailPage = (row) => {
-        props.props.history.push('../groups/' + row.original.id)
+        navigate('../groups/' + row.original.id)
     }
 
     const handleReloadData = (sortBy, pageIndex) => {
@@ -221,7 +222,7 @@ function ReactRollsAndRightsTable(props) {
 
         function onLocalFailure(error) {
             setIsLoading(false);
-            Toaster.showDefaultRequestError();
+            Toaster.showServerError(error);
         }
 
         function onServerFailure(error) {

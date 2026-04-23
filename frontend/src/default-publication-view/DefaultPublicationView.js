@@ -1,18 +1,28 @@
-import React, {useEffect, useRef, useState} from "react";
-import '../publish-publication-view/publish-publication.scss'
-import {StorageKey, useAppStorageState} from "../util/AppStorage";
-import Page, {GlobalPageMethods} from "../components/page/Page";
-import {Link, Redirect, useHistory, useLocation} from "react-router-dom";
-import {useTranslation} from "react-i18next";
-import styled from "styled-components";
-import {Form, FormSection} from "../components/field/FormField";
-import LoadingIndicator from "../components/loadingindicator/LoadingIndicator";
-import RepoItemHelper from "../util/RepoItemHelper";
-import RepoItemApiRequests from "../util/api/RepoItemApiRequests";
-import Toaster from "../util/toaster/Toaster";
+import axios from "axios";
 import Api from "../util/api/Api";
-import {useForm} from "react-hook-form";
+import DefaultPublicationViewHeader from "./DefaultPublicationViewHeader";
 import FormFieldHelper from "../util/FormFieldHelper";
+import {Form} from "../components/field/FormField";
+import {HelperFunctions} from "../util/HelperFunctions";
+import i18n from "../i18n";
+import LoadingIndicator from "../components/loadingindicator/LoadingIndicator";
+import {
+    majorelle,
+    majorelleLight,
+    mobileTabletMaxWidth,
+    spaceCadet,
+    spaceCadetLight,
+    white
+} from "../Mixins";
+import Page, {GlobalPageMethods} from "../components/page/Page";
+import '../publish-publication-view/publish-publication.scss';
+import React, {useEffect, useRef, useState} from "react";
+import ReactRouterPrompt from "react-router-prompt";
+import {
+    archiveRepoItem,
+    deleteRepoItem,
+    requestDeleteRepoItem
+} from "../components/reacttable/tables/publication/ReactPublicationTable";
 import {
     createRelatedRepoItem,
     createValues,
@@ -21,62 +31,62 @@ import {
     setRelatedRepoItemOrder,
     showRepoItemPopup
 } from "../components/field/repoitem/RelatedRepoItemHandles";
-import {HelperFunctions} from "../util/HelperFunctions";
-import VerificationPopup from "../verification/VerificationPopup";
-import {deleteRepoItem, requestDeleteRepoItem} from "../components/reacttable/tables/publication/ReactPublicationTable";
-import {useDirtyNavigationCheck} from "../util/hooks/useDirtyNavigationCheck";
-import ValidationHelper, {VALIDATION_RESULT} from "../util/ValidationHelper";
-import {
-    desktopSideMenuWidth,
-    greyMedium,
-    majorelle,
-    majorelleLight, mobileTabletMaxWidth,
-    nunitoBold,
-    roundedBackgroundPointyUpperLeft,
-    spaceCadet,
-    spaceCadetLight,
-    white
-} from "../Mixins";
-import {ThemedButton} from "../Elements";
-import {useGlobalState} from "../util/GlobalState";
-import SURFButton from "../styled-components/buttons/SURFButton";
-import DefaultPublicationViewHeader from "./DefaultPublicationViewHeader";
+import RepoItemHelper from "../util/RepoItemHelper";
+import RestorePublicationPopup from "../publications/restorepublicationpopup/RestorePublicationPopup";
 import ReviewFooter from "../styled-components/footer/ReviewFooter";
-import {TASK_ACTION} from "../util/TaskHelper";
-import axios from "axios";
+import {StorageKey, useAppStorageState} from "../util/AppStorage";
+import styled from "styled-components";
+import SURFButton from "../styled-components/buttons/SURFButton";
 import {SwalRepoItemPopup} from "../components/field/relatedrepoitempopup/RelatedRepoItemPopup";
-import i18n from "../i18n";
+import {TASK_ACTION} from "../util/TaskHelper";
+import Toaster from "../util/toaster/Toaster";
+import {useForm} from "react-hook-form";
+import {useGlobalState} from "../util/GlobalState";
+import {Link, Navigate, useLocation, useParams} from "react-router-dom";
+import {useNavigation} from "../providers/NavigationProvider";
+import {useTranslation} from "react-i18next";
+import ValidationHelper, {VALIDATION_RESULT} from "../util/ValidationHelper";
+import VerificationPopup from "../verification/VerificationPopup";
+import {ReactComponent as IconPencil } from "../resources/icons/ic-pencil.svg";
+import UpdateOrganisationPopup from "./update-organisation-popup/UpdateOrganisationPopup";
 
 function DefaultPublicationView(props) {
     const contentRef = useRef();
     const {t} = useTranslation();
     const [isSideMenuCollapsed, setIsSideMenuCollapsed] = useGlobalState('isSideMenuCollapsed', false);
     const [user] = useAppStorageState(StorageKey.USER);
-    const [repoItemAnswers, setRepoItemAnswers] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
     const [isReviewing, setIsReviewing] = useState(false)
-    const repoItemApiRequests = new RepoItemApiRequests();
-    const {formState, register, handleSubmit, errors, setValue, getValues, trigger, reset, clearErrors} = useForm();
+    const {
+        formState,
+        register,
+        handleSubmit,
+        formState: {errors, isDirty},
+        setValue,
+        getValues,
+        trigger,
+        reset,
+        clearErrors
+    } = useForm({
+        shouldUnregister: false,
+        defaultValues: {}
+    });
     const {dirtyFields} = formState
-    const history = useHistory()
+    const navigate = useNavigation()
+    const params = useParams()
+    const location = useLocation()
     const formFieldHelper = new FormFieldHelper();
     const publicationHeaderRef = useRef(0);
     const [formSubmitActionType, setFormSubmitActionType] = useState(null);
     const [declineReason, setDeclineReason] = useState("");
     const [marginTop, setMarginTop] = useState(0);
-    const isProject = !!(history.location.state && history.location.state.isProject)
+    const isProject = !!(location.state && location.state.isProject)
     const [showOnlyRequiredFields, setShowOnlyRequiredFields] = useState(0)
-
-    const location = useLocation();
     const queryParams = new URLSearchParams(location.search);
-
-    let scrollSectionsContainer = null
-    let scrollSections = null
 
     const formIsDraft = props.repoItem ? props.repoItem.status.toLowerCase() === "draft" : null
     const formIsRevising = props.repoItem ? props.repoItem.status.toLowerCase() === "revising" : null
     const formIsSubmitted = props.repoItem ? props.repoItem.status.toLowerCase() === "submitted" : null
-    const formIsDeclined = props.repoItem ? props.repoItem.status.toLowerCase() === "declined" : null
     const permissionCanPublish = props.repoItem ? props.repoItem.permissions.canPublish && !props.repoItem.isRemoved : null
     const needsToBeFinished = props.repoItem ? props.repoItem.needsToBeFinished : false;
 
@@ -86,10 +96,8 @@ function DefaultPublicationView(props) {
     let repoItemSections = props.repoItem ? RepoItemHelper.getSectionsFromSteps(props.repoItem) : [];
     let hasUncompletedReviewTasks = props.repoItem && props.repoItem.tasks && props.repoItem.tasks.length > 0
 
-    useDirtyNavigationCheck(history, dirtyFields)
-
     useEffect(() => {
-        if (props.repoItem){
+        if (props.repoItem) {
             if (props.repoItem.title !== null) {
                 document.title = props.repoItem.title
             } else {
@@ -113,14 +121,14 @@ function DefaultPublicationView(props) {
     }, [props.repoItem])
 
     useEffect(() => {
-        if (formSubmitActionType === "publish"){
+        setIsSideMenuCollapsed(true)
+    }, [])
+
+    useEffect(() => {
+        if (formSubmitActionType === "publish") {
             changeFormPublishState(getValues())
         }
     }, [formSubmitActionType]);
-
-    useEffect(() => {
-        setIsSideMenuCollapsed(true)
-    }, [])
 
     useEffect(() => {
         if (props.repoItem) {
@@ -136,10 +144,38 @@ function DefaultPublicationView(props) {
                     newFormData[field.key] = formFieldAnswer
                 });
             });
-            reset(newFormData)
+
+            // Only reset if there are actual differences to prevent unnecessary dirty state changes
+            const currentValues = getValues();
+            const hasChanges = Object.keys(newFormData).some(key => {
+                const currentValue = currentValues[key];
+                const newValue = newFormData[key];
+
+                // Handle null/undefined comparisons
+                if (currentValue == null && newValue == null) return false;
+                if (currentValue == null || newValue == null) return true;
+
+                return currentValue !== newValue;
+            });
+
+            if (hasChanges || Object.keys(currentValues).length === 0) {
+                reset(newFormData);
+            }
         }
 
     }, [props.repoItem])
+
+    // Additional useEffect to handle dirty state reset after form initialization
+    useEffect(() => {
+        if (props.repoItem && !isEditing && !isReviewing) {
+            // Small delay to ensure form is fully initialized before clearing dirty state
+            const timer = setTimeout(() => {
+                reset(getValues(), {keepValues: true, keepDirty: false});
+            }, 100);
+
+            return () => clearTimeout(timer);
+        }
+    }, [props.repoItem, isEditing, isReviewing]);
 
     useEffect(() => {
         if (publicationHeaderRef.current) {
@@ -152,14 +188,18 @@ function DefaultPublicationView(props) {
     }, [props.repoItem, publicationHeaderRef, marginTop]);
 
     useEffect(() => {
-        if (Object.keys(errors).length > 0) {
-            VerificationPopup.show(t("publication.required_error.title"), t("publication.required_error.subtitle"), () => {
-            }, true)
+        if (errors && Object.keys(errors).length > 0) {
+            VerificationPopup.show(
+                t("publication.required_error.title"),
+                t("publication.required_error.subtitle"),
+                () => {
+                },
+                true)
         }
     }, [errors])
 
     if (!user) {
-        return <Redirect to={'/unauthorized?redirect=publications/' + props.match.params.id}/>
+        return <Navigate to={'/unauthorized?redirect=publications/' + params.id}/>
     }
 
     let content;
@@ -171,19 +211,15 @@ function DefaultPublicationView(props) {
 
     function getPageContent() {
         const permissionCanEdit = props.repoItem.permissions.canEdit && !props.repoItem.isRemoved
-        const permissionCanPublish = props.repoItem.permissions.canPublish && !props.repoItem.isRemoved
-        const permissionCanDelete = props.repoItem.permissions.canDelete
-
-        // Only make fields editable when item has draft or revising status
-        const formIsDraft = props.repoItem.status.toLowerCase() === "draft"
-        const formIsRevising = props.repoItem.status.toLowerCase() === "revising"
-        const formEditable = permissionCanEdit && (formIsDraft || formIsRevising)
+        const permissionCanMoveRepoItem = props.repoItem.permissions.canMoveRepoItem && !props.repoItem.isRemoved
 
         return (
             <>
                 <FormContainer marginTop={marginTop} className={"form-elements-container"}>
                     <div className={"left-pane-container"}>
-                        <RepoItemDetails/>
+                        <RepoItemDetails
+                            canMoveRepoItem={permissionCanMoveRepoItem}
+                        />
                     </div>
 
                     <Spacer/>
@@ -198,15 +234,16 @@ function DefaultPublicationView(props) {
                           onSubmit={handleSubmit(() => changeFormPublishState(getValues()))}
                           register={register}
                           setValue={setValue}
+                          getValues={getValues}
                           formReducerState={formReducerStateRef.current}
-                          readonly={!isEditing}
+                          readonly={!isEditing || !permissionCanEdit}
                           showOnlyRequiredFields={showOnlyRequiredFields}/>
                 </FormContainer>
             </>
         )
     }
 
-    function RepoItemDetails() {
+    function RepoItemDetails({ canMoveRepoItem }) {
         const dateFormatOptions = {
             year: 'numeric',
             month: '2-digit',
@@ -230,7 +267,10 @@ function DefaultPublicationView(props) {
             </div>
         }
 
-        return <div className={`repo-item-details ${props.repoItem.status === "Declined" ? "rejected" : ""}`}>
+        const relatedInstitute = props.repoItem?.relatedTo;
+        const relatedInstituteTitle = relatedInstitute?.title ?? 'N/A';
+
+        return <div className={`repo-item-details ${(props.repoItem.status === "Declined") ? "rejected" : ""}`}>
 
             <div className={"section"}>
                 <div className={"section-title"}>{t("publication.created")}</div>
@@ -246,16 +286,43 @@ function DefaultPublicationView(props) {
                 <CreatedLastEditedPersonLink person={props.repoItem.lastEditor}/>
             </div>
 
+            {relatedInstitute &&
+                <div className={"section"}>
+                    <div className={"section-title"}>{t("publication.organisation")}</div>
+                    <div className={"flex-row"}>
+                        <div className={"date"}>{relatedInstituteTitle}</div>
+                        {canMoveRepoItem && relatedInstitute?.id &&
+                            <IconPencil
+                                className={"pencil-icon"}
+                                onClick={(e) => {
+                                    e.stopPropagation()
+                                    UpdateOrganisationPopup.show(relatedInstitute.id, (selectedInstitute) => {
+                                        updateRepoItemWithNewInstitute(props.repoItem, selectedInstitute)
+                                    })
+                                }}
+                            />
+                        }
+                    </div>
+                </div>
+            }
+
             <div className={"section"}>
-                <div className={"section-title"}>{t("publication.organisation")}</div>
-                <div className={"date"}>{props.repoItem.relatedTo.title}</div>
+                {(props.repoItem.status === "Declined" || props.repoItem.deletionHasBeenDeclined) ?
+                    <div className={"decline-reason-text"}
+                         onClick={() => VerificationPopup.show(props.repoItem.deletionHasBeenDeclined ? t("publication.delete_request_declined_popup.title") : t("publication.decline_reason_popup.title"), props.repoItem.declineReason, () => {
+                         }, true, null, true)}>{props.repoItem.deletionHasBeenDeclined ? t("publication.decline_delete_reason") : t("publication.decline_reason")}</div>
+                    :
+                    <></>
+                }
             </div>
 
             <div className={"section"}>
-                {props.repoItem.status === "Declined" &&
-                <div className={"decline-reason-text"}
-                     onClick={() => VerificationPopup.show(t("publication.decline_reason_popup.title"), props.repoItem.declineReason, () => {
-                     }, true, null, true)}>{t("publication.decline_reason")}</div>
+                {(props.repoItem.permissions.canEdit && props.repoItem.permissions.canDelete && !!props.repoItem.isRemoved) ?
+                    <div className={"delete-reason-text"}
+                         onClick={() => VerificationPopup.show(t("publication.delete_reason_popup.title"), props.repoItem.deleteReason, () => {
+                         }, true, null, true)}>{t("publication.delete_reason")}</div>
+                    :
+                    <></>
                 }
             </div>
         </div>
@@ -286,7 +353,7 @@ function DefaultPublicationView(props) {
         }
     }
 
-    function handlePublish(){
+    function handlePublish() {
         trigger().then(result => {
             if (result === false) {
                 VerificationPopup.show(t("publication.validation_error.title"), t("publication.validation_error.subtitle"), () => {
@@ -295,9 +362,9 @@ function DefaultPublicationView(props) {
                 setIsEditing(false);
                 setFormSubmitActionType('publish');
             }
-                handleSubmit(() => changeFormPublishState(getValues()))
         });
     }
+
     const saveEditButton = (
         <SURFButton
             disabled={isReviewing}
@@ -335,7 +402,8 @@ function DefaultPublicationView(props) {
                             setIsEditing(!isEditing);
                         } else {
                             GlobalPageMethods.setFullScreenLoading(false)
-                            VerificationPopup.show(t("publication.validation_error.title"), t("publication.validation_error.subtitle"), () => {}, true)
+                            VerificationPopup.show(t("publication.validation_error.title"), t("publication.validation_error.subtitle"), () => {
+                            }, true)
                             setIsEditing(isEditing);
                         }
                     });
@@ -384,6 +452,17 @@ function DefaultPublicationView(props) {
 
     return (
         <>
+            <ReactRouterPrompt when={isDirty}>
+                {({onConfirm, onCancel}) => {
+                    VerificationPopup.show(
+                        t("verification.unsaved_changes.title"),
+                        t("verification.unsaved_changes.subtitle"),
+                        onConfirm,
+                        onCancel
+                    );
+                    return null;
+                }}
+            </ReactRouterPrompt>
             <Page id="add-publication"
                   fixedElements={[
                       <DefaultPublicationViewHeader
@@ -394,14 +473,15 @@ function DefaultPublicationView(props) {
                           saveEditButton={saveEditButton}
                           reviseButton={reviseButton}
                           deletePublication={() => deletePublication()}
-                          requestDeletePublication={() => requestDeletePublication()}
+                          archivePublication={() => archivePublication()}
+                          restorePublicationFromArchive={() => restorePublicationFromArchive()}
+                          requestDeletePublication={(reason) => requestDeletePublication(reason)}
                           publicationHeaderRef={publicationHeaderRef}
                           showOnlyRequiredFields={showOnlyRequiredFields}
                           setShowOnlyRequiredFields={setShowOnlyRequiredFields}
                       />
                   ]}
                   contentRef={contentRef}
-                  history={props.history}
                   activeMenuItem={isProject ? "projects" : "publications"}
                   breadcrumbs={[
                       {
@@ -420,7 +500,7 @@ function DefaultPublicationView(props) {
                   content={content}
                   showBackButton={true}/>
 
-            { isReviewing &&
+            {isReviewing &&
                 <ReviewFooter
                     onStop={() => {
                         setIsReviewing(false)
@@ -437,7 +517,7 @@ function DefaultPublicationView(props) {
                         GlobalPageMethods.setFullScreenLoading(true)
                         let repoItem = props.repoItem
                         repoItem.declineReason = declineReason
-                        if(hasUncompletedReviewTasks) {
+                        if (hasUncompletedReviewTasks) {
                             patchTask(repoItem.tasks[0].id, TASK_ACTION.DECLINE, declineReason);
                         } else {
                             patchRepoItem(repoItem, null, "Declined");
@@ -448,11 +528,13 @@ function DefaultPublicationView(props) {
         </>
     );
 
-    function requestDeletePublication() {
-        requestDeleteRepoItem(props.repoItem.id, history, () => {
+    function requestDeletePublication(reason) {
+        requestDeleteRepoItem(props.repoItem.id, reason, navigate, () => {
             reset();
             Toaster.showToaster({type: "success", message: i18n.t("toast.repo_item.delete_request_success")})
-            history.replace("/publications");
+            navigate("/publications");
+        }, (error) => {
+            Toaster.showServerError(error);
         })
     }
 
@@ -460,17 +542,17 @@ function DefaultPublicationView(props) {
         const title = isProject ? t("projects.delete_popup.title") : t("publication.delete_popup.title")
         const subtitle = isProject ? t("projects.delete_popup.subtitle") : t("publication.delete_popup.subtitle")
 
-        const deleteFunction = () => deleteRepoItem(props.repoItem.id, history, (responseData) => {
+        const deleteFunction = () => deleteRepoItem(props.repoItem.id, navigate, (responseData) => {
             reset();
             GlobalPageMethods.setFullScreenLoading(false)
             if (isProject) {
-                history.replace('/projects')
+                navigate('/projects')
             } else {
-                history.replace('/publications')
+                navigate('/publications')
             }
         }, (error) => {
             GlobalPageMethods.setFullScreenLoading(false)
-            Toaster.showDefaultRequestError();
+            Toaster.showServerError(error);
         })
 
         if (!formIsDraft) {
@@ -486,8 +568,37 @@ function DefaultPublicationView(props) {
         }
     }
 
-    function restoreRepoItem() {
-        VerificationPopup.show(t("verification.restore.title"), "", () => {
+    function archivePublication() {
+        const title = isProject ? t("projects.archive_popup.title") : t("publication.archive_popup.title")
+        const subtitle = isProject ? t("projects.archive_popup.subtitle") : t("publication.archive_popup.subtitle")
+
+        const archiveFunction = () => archiveRepoItem(props.repoItem.id, navigate, (responseData) => {
+            reset();
+            GlobalPageMethods.setFullScreenLoading(false)
+            if (isProject) {
+                navigate('/projects')
+            } else {
+                navigate('/publications')
+            }
+        }, (error) => {
+            GlobalPageMethods.setFullScreenLoading(false)
+            Toaster.showServerError(error);
+        })
+
+
+        VerificationPopup.show(title, subtitle, () => {
+            GlobalPageMethods.setFullScreenLoading(true)
+            archiveFunction()
+        })
+    }
+
+    function restorePublicationFromArchive() {
+        const title = t("publication.restore_from_archive_popup.title")
+        const subtitle = t("publication.restore_from_archive_popup.subtitle")
+
+        VerificationPopup.show(title, subtitle, () => {
+            GlobalPageMethods.setFullScreenLoading(true)
+
             const config = {
                 headers: {
                     "Content-Type": "application/vnd.api+json",
@@ -498,7 +609,7 @@ function DefaultPublicationView(props) {
                     "type": 'repoItem',
                     "id": props.repoItem.id,
                     "attributes": {
-                        "isRemoved": false
+                        "status": "Draft"
                     }
                 }
             }
@@ -514,7 +625,7 @@ function DefaultPublicationView(props) {
 
             function onFailure(error) {
                 GlobalPageMethods.setFullScreenLoading(false)
-                Toaster.showDefaultRequestError()
+                Toaster.showServerError(error)
             }
 
             GlobalPageMethods.setFullScreenLoading(true)
@@ -522,20 +633,76 @@ function DefaultPublicationView(props) {
         })
     }
 
+    function restoreRepoItem() {
+        const sourceFromUrl = queryParams.get('source');
+        const isFromTask = sourceFromUrl === 'tasks' || props.repoItem?.tasks?.length > 0;
+        const task = props.repoItem.recoverTasks[0];
+
+        if (isFromTask && task) {
+            // If we're restoring from a task, use patchTask
+            const confirmAction = (reason) => {
+                patchTask(task.id, TASK_ACTION.DECLINE, reason);
+            };
+            RestorePublicationPopup.show(confirmAction, 'tasks');
+        } else {
+            // Original restore logic for non-task cases
+            const confirmAction = (reason) => {
+                const config = {
+                    headers: {
+                        "Content-Type": "application/vnd.api+json",
+                    },
+                };
+                const patchData = {
+                    "data": {
+                        "type": 'repoItem',
+                        "id": props.repoItem.id,
+                        "attributes": {
+                            "isRemoved": false,
+                            ...(reason && {restoreReason: reason})
+                        }
+                    }
+                }
+
+                function onValidate(response) {
+                }
+
+                function onSuccess(response) {
+                    GlobalPageMethods.setFullScreenLoading(false)
+                    const repo = Api.dataFormatter.deserialize(response.data);
+                    props.onRepoItemChanged(repo)
+                }
+
+                function onFailure(error) {
+                    GlobalPageMethods.setFullScreenLoading(false)
+                    Toaster.showServerError(error)
+                }
+
+                GlobalPageMethods.setFullScreenLoading(true)
+                Api.patch(`repoItems/${props.repoItem.id}`, onValidate, onSuccess, onFailure, onFailure, config, patchData);
+            };
+            RestorePublicationPopup.show(confirmAction, null);
+        }
+    }
+
     function saveForm(formData) {
         const currentRepoItem = props.repoItem;
         GlobalPageMethods.setFullScreenLoading(true)
         patchRepoItem(currentRepoItem, formData, props.repoItem.status);
+
+        /** Used to reset the dirtfields **/
+        reset(getValues(), {keepDirty: false, keepValues: true});
     }
 
     function patchFormToDraft() {
         GlobalPageMethods.setFullScreenLoading(true)
-        patchRepoItem(props.repoItem, null, "Draft", () => {}, true);
+        patchRepoItem(props.repoItem, null, "Draft", () => {
+        }, true);
     }
 
     function patchFormToRevising() {
         GlobalPageMethods.setFullScreenLoading(true)
-        patchRepoItem(props.repoItem, null, "Revising", () => {}, true);
+        patchRepoItem(props.repoItem, null, "Revising", () => {
+        }, true);
     }
 
     function changeFormPublishState(formData) {
@@ -600,7 +767,7 @@ function DefaultPublicationView(props) {
             }
         };
         const requestList = []
-        for(let i = 0; i < (count); i++) {
+        for (let i = 0; i < (count); i++) {
             requestList.push(axios.post("repoItems", postData, Api.getRequestConfig(config)))
         }
         return Promise.all(requestList)
@@ -625,31 +792,36 @@ function DefaultPublicationView(props) {
                 let fieldValuesAsString = getValues()[field.key];
                 let fieldValuesAsArray = []
                 if (fieldValuesAsString !== undefined && fieldValuesAsString !== null && fieldValuesAsString !== '') {
-                    fieldValuesAsArray = JSON.parse(fieldValuesAsString).map(ri => ri.summary.repoItem ? ri.summary.repoItem.id : ri.id)
+                    try {
+                        fieldValuesAsArray = JSON.parse(fieldValuesAsString).map(ri => ri.summary.repoItem ? ri.summary.repoItem.id : ri.id)
+                    } catch (e) {
+                        console.error('Error parsing field values:', e);
+                        fieldValuesAsArray = [];
+                    }
                 }
 
-                if (fieldType === 'attachment'){
+                if (fieldType === 'attachment') {
                     createExtraRepoItems(repoTypeMap[fieldType], props.repoItem.relatedTo.id, action.value.length).then(axios.spread((...responses) => {
                         const repoItemList = responses.map((response) => {
                             return Api.dataFormatter.deserialize(response.data);
                         })
 
-                        showRepoItemPopup (
+                        showRepoItemPopup(
                             formReducerStateRef.current,
                             field,
                             props.repoItem.id,
                             action.value,
                             (newValues) => {
-                                props.dispatch({ type: 'FORM_FIELD_ANSWERS', formFieldAnswers: newValues });
+                                props.dispatch({type: 'FORM_FIELD_ANSWERS', formFieldAnswers: newValues});
                             },
                             props.repoItem,
                             fieldValuesAsArray,
                             null,
                             repoItemList
                         );
-                    })).catch(errors => {
+                    })).catch(error => {
                         SwalRepoItemPopup.close()
-                        Toaster.showDefaultRequestError()
+                        Toaster.showServerError(error)
                     })
                 } else {
                     showRepoItemPopup(
@@ -663,7 +835,7 @@ function DefaultPublicationView(props) {
                         props.repoItem,
                         fieldValuesAsArray,
                         (onSuccess, onFailure) => {
-                            createRelatedRepoItem(repoTypeMap[fieldType], props.repoItem.relatedTo.id, history, onSuccess, onFailure)
+                            createRelatedRepoItem(repoTypeMap[fieldType], props.repoItem.relatedTo.id, navigate, onSuccess, onFailure)
                         }
                     )
                 }
@@ -702,7 +874,8 @@ function DefaultPublicationView(props) {
         }
     }
 
-    function patchRepoItem(currentRepoItem, formData, status, onSuccessCallback = () => {}, disableToaster = false) {
+    function patchRepoItem(currentRepoItem, formData, status, onSuccessCallback = () => {
+    }, disableToaster = false) {
         const answers = (formData) ? formFieldHelper.getAllFormAnswersForRepoItem(props.repoItem, formData) : null;
 
         const shouldCheckChannelDependencyErrors = ValidationHelper.shouldCheckChannelDependencyErrors(status)
@@ -739,17 +912,20 @@ function DefaultPublicationView(props) {
             onSuccessCallback()
         }
 
-        function onServerFailure(error) {
+        const errorCallback = (error) => {
             GlobalPageMethods.setFullScreenLoading(false)
             Toaster.showServerError(error)
+        };
+
+        function onServerFailure(error) {
+            errorCallback(error);
             if (error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             }
         }
 
         function onLocalFailure(error) {
-            GlobalPageMethods.setFullScreenLoading(false)
-            Toaster.showDefaultRequestError();
+            errorCallback(error);
         }
 
         const config = {
@@ -792,24 +968,27 @@ function DefaultPublicationView(props) {
 
         function onSuccess(response) {
             GlobalPageMethods.setFullScreenLoading(false)
-            history.go(0)
+            navigate(0)
         }
 
-        function onServerFailure(error) {
+        const errorCallback = (error) => {
             GlobalPageMethods.setFullScreenLoading(false)
-            if(error.response.status === 404) {
+            if (error?.response?.status === 404) {
                 Toaster.showToaster({type: "info", message: t("dashboard.tasks.not_found")})
             } else {
                 Toaster.showServerError(error)
             }
+        };
+
+        function onServerFailure(error) {
+            errorCallback(error);
             if (error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             }
         }
 
         function onLocalFailure(error) {
-            GlobalPageMethods.setFullScreenLoading(false)
-            Toaster.showDefaultRequestError();
+            errorCallback(error);
         }
 
         const config = {
@@ -833,201 +1012,68 @@ function DefaultPublicationView(props) {
         const url = "tasks/" + taskId
         Api.patch(url, onValidate, onSuccess, onLocalFailure, onServerFailure, config, patchData)
     }
+
+    function updateRepoItemWithNewInstitute(currentRepoItem, selectedInstitute){
+        GlobalPageMethods.setFullScreenLoading(true)
+
+        function onValidate(response) {
+        }
+
+        function onSuccess(response) {
+            GlobalPageMethods.setFullScreenLoading(false)
+            navigate(0)
+        }
+
+        const errorCallback = (error) => {
+            GlobalPageMethods.setFullScreenLoading(false)
+            if (error?.response?.status === 404) {
+                Toaster.showToaster({type: "info", message: t("dashboard.tasks.not_found")})
+            } else {
+                Toaster.showServerError(error)
+            }
+        };
+
+        function onServerFailure(error) {
+            errorCallback(error);
+            if (error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
+                navigate('/login?redirect=' + window.location.pathname);
+            }
+        }
+
+        function onLocalFailure(error) {
+            errorCallback(error);
+        }
+
+        const config = {
+            headers: {
+                "Content-Type": "application/vnd.api+json",
+            }
+        }
+
+        const patchData = {
+            "data": {
+                "type": "institute",
+                "id": selectedInstitute
+            }
+        };
+
+        const url = "repoItems/" + currentRepoItem.id + "/relationships/relatedTo"
+        Api.patch(url, onValidate, onSuccess, onLocalFailure, onServerFailure, config, patchData)
+    }
 }
 
 const Spacer = styled.div`
     width: 242px;
 
     @media only screen and (max-width: ${mobileTabletMaxWidth}px) {
-    width: 0;
-    }
-`;
-
-
-const ThemedFieldSet = styled.fieldset`
-    display: flex;
-    align-items: baseline;
-    justify-content: end;
-    gap: 60px;
-    
-    :checked + label:before {
-        border: 5.04px solid #F3BA5A;
-    }
-    //hide the original checkbox by just moving it waaaaaay left
-    [type="radio"] {
-        position: absolute;
-        opacity: 0;
         width: 0;
-        height: 0;
-    }
-
-    //show the label on a location relative to new button
-    label {
-        @include open-sans;
-        font-size: 14px;
-        position: relative;
-        line-height: $selectable-size;
-        padding-left: $selectable-size + 10px;
-        display: inline-block;
-        color: $text-color;
-    }
-
-    .option:first-child {
-        margin-top: 5px;
-    }
-
-    .option:not(:first-child) {
-        margin-top: 10px;
     }
 `;
 
-const StepFooterContainer = styled.div`
-    width: ${props => props.isSideMenuCollapsed ? "100%" : `calc(100% - ${desktopSideMenuWidth})`};
-    margin-left: ${props => props.isSideMenuCollapsed ? 0 : desktopSideMenuWidth};
-    height: 95px;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    background-color: white;
-    transition: margin width 0.2s ease;
-`;
-
-const StepFooterProgressBar = styled.div`
-    width: 100vw;
-    height: 5px;
-    background-color: ${greyMedium};
-`;
-
-const StepFooterIndicators = styled.div`
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    height: 100%;
-`;
-
-const Steps = styled.div``;
-
-const DeclineOrApproveTitle = styled.div`
-    display: flex;
-    flex-grow: 1;
-    color: white;
-    ${nunitoBold()}
-    font-size: 25px;
-`
-
-const Label = styled.label`
-    color: white;
-    font-weight: bold;
-`;
-
-const RadioLabel = styled(Label)`
-    font-size: 14px;
-    position: relative;
-    line-height: 18px;
-    padding-left: calc(18px + 10px);
-    display: inline-block;
-        
-    //show new checkbox
-    :before {
-        content: '';
-        position: absolute;
-        cursor: pointer;
-        left: 0;
-        top: 0;
-        width: 18px;
-        height: 18px;
-        border: 1px solid #E5E5E5;
-        border-radius: 50%;
-        background-color: #F8F8F8;
-    }
-
-    :after {
-        width: 18px;
-        height: 18px;
-        position: absolute;
-        top: 0;
-        left: 0;
-    }
-`
-
-const DeclineReasonWrapper = styled.div`
-    display: flex;
-    flex-direction: column;
-    margin-top: 30px;
-`;
-
-const ThemedTextArea = styled.textarea`
-    background: white;
-    border-radius: 2px 15px 15px;
-    border: 1px solid #E5E5E5;
-    font-family: 'Open Sans', sans-serif;
-    font-weight: 400;
-    font-size: 12px;
-    line-height: 14px;
-    vertical-align: center;
-    height: 100px;
-    width: 500px;
-    margin-top: 5px;
-    padding: 12px;
-    outline: none;
-    resize: none;
-    &:focus {
-        border: 1px solid $ocean-green;
-    }
-`
-
-const ThemedOption = styled.div`
-    transform: scale(1.2) translateX(-9px);
-`
-
-const ThemedRadio = styled.input`
-    display: flex;
-    flex-direction: column;
-
-    :checked + label:before {
-        border: 5.04px solid #F3BA5A;
-    }
-
-    :checked + label:before {
-        border: ($selectable-size * 0.28) solid $text-color-active;
-    }
-
-    :disabled + label:before {
-        opacity: 0.33;
-        cursor: auto;
-    }
-`
-
-const Inputs = styled.div`
-    display: flex;
-    flex-direction: column;
-`
-
-const ApproveOrDeclineButton = styled(ThemedButton)`
-    margin-top: 30px;
-    width: 130px;
-    height: 40px;
-    ${roundedBackgroundPointyUpperLeft()}
-    color: white;
-    ${nunitoBold()}
-    font-size: 14px;
-    line-height: 19px;
-    background-color: #64C3A5;
-    align-self: end;
-    ${props => props.enabled ? '' : 'background: #A5AAAE;'};
-`
-
-const DeclineOrApprovedFormSection = styled(FormSection)`
-    display: flex;
-    min-height: 120px;
-    background-color: #7344EE;
-`
-
-export const FormContainer = styled.div`
+const FormContainer = styled.div`
     margin-top: ${props => `${props.marginTop}px`};
-      padding-left: 80px;
-      padding-right: 80px;
+    padding-left: 80px;
+    padding-right: 80px;
 `;
 
 export default DefaultPublicationView;

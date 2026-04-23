@@ -16,7 +16,7 @@ import collapseLeft from "../resources/icons/collapse-left.svg";
 import collapseRight from "../resources/icons/collapse-right.svg";
 import Toaster from "../util/toaster/Toaster";
 import {HelperFunctions} from "../util/HelperFunctions";
-import {Link, NavLink, useHistory, useLocation} from "react-router-dom";
+import {Link, NavLink, useNavigate, useLocation} from "react-router-dom";
 import IconButtonText from "../components/buttons/iconbuttontext/IconButtonText";
 import styled from "styled-components";
 import {useGlobalState} from "../util/GlobalState";
@@ -27,6 +27,9 @@ import {
     SURFShapeLeft,
     white
 } from "../Mixins";
+import {useNavigation} from "../providers/NavigationProvider";
+import defaultLogo from "../resources/images/surf-sharekit-logo-new.svg";
+import {faArchive} from "@fortawesome/free-solid-svg-icons/faArchive";
 
 
 function SideMenu(props) {
@@ -39,20 +42,23 @@ function SideMenu(props) {
     const [canViewOrganisations, setCanViewOrganisations] = useAppStorageState(StorageKey.USER_CAN_VIEW_ORGANISATION);
     const [canViewTemplates, setCanViewTemplates] = useAppStorageState(StorageKey.USER_CAN_VIEW_TEMPLATES);
     const [canViewBin, setCanViewBin] = useAppStorageState(StorageKey.USER_CAN_VIEW_BIN);
+    const [canViewArchive, setCanViewArchive] = useAppStorageState(StorageKey.USER_CAN_VIEW_ARCHIVE);
     const [isSideMenuCollapsed, setIsSideMenuCollapsed] = useGlobalState('isSideMenuCollapsed', false);
     const [userRoles, setUserRoles] = useAppStorageState(StorageKey.USER_ROLES);
     const [userInstitute, setUserInstitute] = useAppStorageState(StorageKey.USER_INSTITUTE);
-    const history = useHistory()
-    const [defaultInstituteImageUrl, setDefaultInstituteImageUrl] = useState((userInstitute?.image?.url) ?? require('../resources/images/surf-sharekit-logo-new.svg'))
+    const [defaultInstituteImageUrl, setDefaultInstituteImageUrl] = useState(
+        userInstitute?.image?.url || defaultLogo
+    );
 
-    const [isEnvironmentBannerVisible, setIsEnvironmentBannerVisible] = useGlobalState("isEnvironmentBannerVisible", false);
+    const [isEnvironmentBannerVisible] = useGlobalState("isEnvironmentBannerVisible", false);
     const {t} = useTranslation();
     const location = useLocation();
+    const navigate = useNavigation()
 
 
     useEffect(() => {
         if (user) {
-            ApiRequests.getExtendedPersonInformation(user, history,
+            ApiRequests.getExtendedPersonInformation(user, navigate,
                 (personInformationData) => {
                     setUserRoles(personInformationData.groups.map(group => group.roleCode).filter(roleCode => !!roleCode && roleCode !== 'null'))
                     const permissions = personInformationData.groups.map((group) => {
@@ -61,8 +67,8 @@ function SideMenu(props) {
                     setSideMenuPermissions(permissions)
                     setUserPermissions(permissions)
                     setSideMenuLogoAndUserInstitute(personInformationData);
-                }, () => {
-                    Toaster.showDefaultRequestError()
+                }, (error) => {
+                    Toaster.showServerError(error)
                 });
         } else {
             setSideMenuPermissions(userPermissions)
@@ -137,12 +143,14 @@ function SideMenu(props) {
         }
     ];
 
-    function MenuItem(menuItemProps) {
+     function MenuItem(menuItemProps) {
         return (
             <MenuItemRoot
                 to={menuItemProps.link}
                 isActive={menuItemProps.isActive}
                 disableIndicator={menuItemProps.disableIndicator}
+                target={menuItemProps.target}
+                rel={menuItemProps.rel}
             >
                 {!menuItemProps.disableIndicator &&
                     <SelectionIndicator isVisible={menuItemProps.isActive || props.disableIndicator}/>}
@@ -199,22 +207,31 @@ function SideMenu(props) {
                         }
                     </MenuSection>
 
-                    <MenuSectionSingle className="menu-section single-item">
+                    <MenuSection>
+                        {
+                            canViewArchive && <MenuItem
+                                link={"/archive"}
+                                isActive={location.pathname === '/archive'}
+                                title={t('side_menu.archive')}
+                                icon={faArchive}
+                            />
+                        }
                         <MenuItem
                             link={"/trashcan"}
                             isActive={location.pathname === '/trashcan'}
                             title={t('side_menu.trash_can')}
                             icon={faTrash}
                         />
-                    </MenuSectionSingle>
+                    </MenuSection>
                 </MenuNavigation>
 
                 <MenuTextPages>
                     <MenuItem
-                        link={"/privacy"}
+                        link={"https://servicedesk.surf.nl/wiki/spaces/WIKI/pages/248316093/Privacyverklaring"}
                         title={t('side_menu.privacy')}
-                        isActive={location.pathname === '/privacy'}
                         disableIndicator={true}
+                        target={"_blank"}
+                        rel={"noopener,noreferrer"}
                     />
                     {/*<MenuItem*/}
                     {/*    link={"/cookies"}*/}
@@ -235,6 +252,7 @@ function SideMenu(props) {
         let canViewReportsTemp = false;
         let canViewTemplatesTemp = false;
         let canViewBinTemp = false;
+        let canViewArchive = false;
         if (permissions && permissions.length > 0) {
             permissions.forEach((codeMatrix) => {
                 if (codeMatrix.FRONTEND_PUBLICATIONS.VIEW.isSet) {
@@ -258,6 +276,9 @@ function SideMenu(props) {
                 if (codeMatrix.FRONTEND_BIN.VIEW.isSet) {
                     canViewBinTemp = true
                 }
+                if (codeMatrix.FRONTEND_ARCHIVE.VIEW.isSet) {
+                    canViewArchive = true
+                }
             })
         }
         setCanViewPublications(canViewPublicationsTemp)
@@ -267,6 +288,7 @@ function SideMenu(props) {
         setCanViewReports(canViewReportsTemp)
         setCanViewTemplates(canViewTemplatesTemp)
         setCanViewBin(canViewBinTemp)
+        setCanViewArchive(canViewArchive)
     }
 
     function setSideMenuLogoAndUserInstitute(personInformationData) {

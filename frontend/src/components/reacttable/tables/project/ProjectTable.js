@@ -1,6 +1,6 @@
 import React, {useEffect, useRef, useState} from "react";
 import '../../../field/formfield.scss'
-import {useHistory} from "react-router-dom";
+import {useNavigate} from "react-router-dom";
 import Api from "../../../../util/api/Api";
 import Toaster from "../../../../util/toaster/Toaster";
 import {StorageKey, useAppStorageState} from "../../../../util/AppStorage";
@@ -19,6 +19,7 @@ import VerificationPopup from "../../../../verification/VerificationPopup";
 import {GlobalPageMethods} from "../../../page/Page";
 import {ReactTableSearchInput} from "../../filterrow/ReacTableFilterItems";
 import {copyRepoItem, deleteRepoItem} from "../publication/ReactPublicationTable";
+import {useNavigation} from "../../../../providers/NavigationProvider";
 
 function ProjectTable(props) {
     const [user] = useAppStorageState(StorageKey.USER);
@@ -28,7 +29,7 @@ function ProjectTable(props) {
     const [query, setQuery] = useState('');
     const debouncedQueryChange = HelperFunctions.debounce(setQuery)
     const [currentSortBy, setCurrentSortBy] = useState([]);
-    const history = useHistory()
+    const navigate = useNavigation()
     const {t} = useTranslation();
     const paginationCountRef = useRef();
     const tableRows = projects;
@@ -68,20 +69,34 @@ function ProjectTable(props) {
                     width: "18%"
                 },
                 Cell: (tableInfo) => {
-                    let subOrgs = tableInfo.cell.value;
-                    let publisher = tableInfo.row.original.extra.publisher
-                    if (subOrgs) {
-                        if (publisher) {
-                            if (Array.isArray(subOrgs)) {
-                                subOrgs = [publisher, ...subOrgs]
-                            } else {
-                                subOrgs = publisher + "\n" + subOrgs
+                    const list = Array.isArray(tableInfo.cell.value) ? tableInfo.cell.value : [tableInfo.cell.value]
+                    const institute = tableInfo.row.original.instituteName
+                    const publisher = tableInfo.row.original.extra.publisher
+
+                    let finalList = [];
+
+                    if (institute) {
+                        list.unshift(institute)
+                    }
+
+                    if (publisher) {
+                        if (Array.isArray(publisher)) {
+                            // Filter out the institute if given
+                            finalList.push(...publisher.filter(pub => pub !== institute));
+                        } else {
+                            if (!institute || !publisher.includes(institute)) {
+                                finalList.push(publisher);
                             }
                         }
-                    } else if (publisher) {
-                        subOrgs = [publisher]
                     }
-                    return <div>{ReactTableHelper.concatenateCellValue(subOrgs)}</div>
+
+                    list.forEach(item => {
+                        if (finalList.indexOf(item) === -1) {
+                            finalList.push(item);
+                        }
+                    });
+
+                    return <div>{ReactTableHelper.concatenateCellValue(finalList)}</div>
                 }
             },
             {
@@ -173,16 +188,16 @@ function ProjectTable(props) {
         if (repoItem.permissions.canDelete) {
             VerificationPopup.show(t("projects.delete_popup.title"), t("projects.delete_popup.subtitle"), () => {
                 GlobalPageMethods.setFullScreenLoading(true)
-                deleteRepoItem(repoItem.id, history, (responseData) => {
+                deleteRepoItem(repoItem.id, navigate, (responseData) => {
                     GlobalPageMethods.setFullScreenLoading(false)
 
                     const tempProjects = projects.filter((tempRepoItem) => {
                         return tempRepoItem.id !== responseData.data.id;
                     });
                     setProjects(tempProjects);
-                }, () => {
+                }, (error) => {
                     GlobalPageMethods.setFullScreenLoading(false)
-                    Toaster.showDefaultRequestError();
+                    Toaster.showServerError(error);
                 })
             })
         }
@@ -192,11 +207,12 @@ function ProjectTable(props) {
         if (repoItem.permissions.canCopy) {
             VerificationPopup.show(t("publication.copy_confirmation.title"), t("publication.copy_confirmation.subtitle"), () => {
                 GlobalPageMethods.setFullScreenLoading(true)
-                copyRepoItem(repoItem.id, history, (responseData) => {
+                copyRepoItem(repoItem.id, navigate, (responseData) => {
                     getUserProjects(currentSortBy);
                     GlobalPageMethods.setFullScreenLoading(false)
-                }, () => {
+                }, (error) => {
                     GlobalPageMethods.setFullScreenLoading(false)
+                    Toaster.showServerError(error);
                 })
             })
         }
@@ -249,6 +265,11 @@ function ProjectTable(props) {
         setProjects([])
         setIsLoading(true)
 
+        const errorCallback = (error) => {
+            setIsLoading(false)
+            Toaster.showServerError(error)
+        }
+
         function onValidate(response) {
         }
 
@@ -266,16 +287,14 @@ function ProjectTable(props) {
         }
 
         function onServerFailure(error) {
-            setIsLoading(false)
-            Toaster.showServerError(error)
+            errorCallback(error)
             if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             }
         }
 
         function onLocalFailure(error) {
-            setIsLoading(false);
-            Toaster.showDefaultRequestError();
+            errorCallback(error)
         }
 
         const config = {

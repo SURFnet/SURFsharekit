@@ -6,10 +6,12 @@ import {useTranslation} from "react-i18next";
 import ButtonText from "../components/buttons/buttontext/ButtonText";
 import {useLocation} from "react-router-dom";
 import styled from "styled-components";
+import {useNavigation} from "../providers/NavigationProvider";
 
 function Forbidden(props) {
     const {t} = useTranslation();
     const location = useLocation()
+    const navigate = useNavigation()
 
     function navigateToDashboard() {
         const errorCode = getErrorCodeFromQueryParams()
@@ -17,11 +19,11 @@ function Forbidden(props) {
 
         // Only try to download file on dashboard when a user is not yet authenticated and a file id is present
         if (errorCode === "FJAC_401" && fileId) {
-            props.history.push({
+            navigate({
                 pathname: "/publicationfiles/" + getFileId(),
             })
         } else {
-            props.history.push({
+            navigate({
                 pathname: "/dashboard"
             })
         }

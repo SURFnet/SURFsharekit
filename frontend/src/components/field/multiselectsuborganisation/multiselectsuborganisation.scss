@@ -6,6 +6,13 @@
 .multi-select-suborganisation-container {
     flex-grow: 1;
 
+    .field-input.switch {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        height: 50px;
+    }
+
     &.readonly {
         .surf-multi-select-suborganisation {
             .surf-multi-select__control {

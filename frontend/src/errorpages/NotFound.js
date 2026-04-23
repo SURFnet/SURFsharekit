@@ -5,17 +5,11 @@ import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {useTranslation} from "react-i18next";
 import ButtonText from "../components/buttons/buttontext/ButtonText";
 import IconButton from "../components/buttons/iconbutton/IconButton";
+import {useNavigation} from "../providers/NavigationProvider";
 
-function NotFound(props) {
+function NotFound() {
     const {t} = useTranslation();
-
-    function navigateToDashboard() {
-        props.history.push('/dashboard')
-    }
-
-    function helpPressed() {
-
-    }
+    const navigate = useNavigation()
 
     return (
         <div id={"not-found"} className="main">
@@ -31,10 +25,11 @@ function NotFound(props) {
                                 <div className={"buttons-wrapper"}>
                                     <ButtonText text={t("error_pages.to_dashboard")}
                                                 buttonType={"callToAction"}
-                                                onClick={navigateToDashboard}/>
+                                                onClick={() => navigate('/dashboard')}
+                                    />
                                     <IconButton icon={faInfoCircle}
                                                 text={t("error_pages.help")}
-                                                onClick={helpPressed}/>
+                                    />
                                 </div>
                             </div>
                         </div>

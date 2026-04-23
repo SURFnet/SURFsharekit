@@ -1,6 +1,6 @@
 import React, {useEffect, useRef, useState} from 'react';
 import './tasktable.scss';
-import {useHistory} from "react-router-dom";
+import {useNavigate} from "react-router-dom";
 import {useTranslation} from "react-i18next";
 import Api from "../../../util/api/Api";
 import Toaster from "../../../util/toaster/Toaster";
@@ -19,13 +19,14 @@ import EmptyPlaceholder from "../../../resources/images/tasks-empty.png"
 import CompletedActionCell from "../action-cell/CompletedActionCell";
 import {EventDispatcher, TestEvent, UpdateTaskCountEvent} from "../../../util/events/Events";
 import app from "../../../App";
+import {useNavigation} from "../../../providers/NavigationProvider";
 
 function ReactTaskTable(props) {
 
     const [user] = useAppStorageState(StorageKey.USER);
     const [tasks, setTasks] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
-    const history = useHistory()
+    const navigate = useNavigation()
     const {t} = useTranslation();
     const paginationCountRef = useRef();
     const cancelToken = useRef();
@@ -38,7 +39,7 @@ function ReactTaskTable(props) {
     useEffect(() => {
         // TODO: get sortBy if needed
         handleReloadData([], 0, true)
-    }, [props.filters])
+    }, [props.filters, props.search])
 
     const columns = React.useMemo(
         () => [
@@ -219,6 +220,10 @@ function ReactTaskTable(props) {
             }
         }
 
+        if (props.search?.length) {
+            config.params[`additionalFilter[search][EQ]`] = props.search
+        }
+
         config.cancelToken = cancelToken.current;
         cancelToken.current = Api.jsonApiGet('tasks', onValidate, onSuccess, onLocalFailure, onServerFailure, config);
 
@@ -250,12 +255,12 @@ function ReactTaskTable(props) {
         function onServerFailure(error) {
             Toaster.showServerError(error)
             if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             }
         }
 
         function onLocalFailure(error) {
-            Toaster.showDefaultRequestError()
+            Toaster.showServerError(error)
         }
     }
 }
@@ -277,7 +282,7 @@ const EmptyTaskTablePlaceholderWrapper = styled.div`
     ${SURFShapeLeft};
     padding: 30px;
     gap: 20px;
-    display: flexbox;
+    display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: center;

@@ -12,15 +12,13 @@ import {ProfileBanner} from "../profilebanner/ProfileBanner";
 import Toaster from "../../util/toaster/Toaster";
 import ButtonText from "../buttons/buttontext/ButtonText";
 import Api from "../../util/api/Api";
-import {InputField} from "../field/FormField";
+import { InputField } from "../field/FormField";
 import {roleKeyToTranslationKey} from "../../util/MemberPositionOptionsHelper";
-import {useHistory} from "react-router-dom";
 import styled from "styled-components";
 import {cultured, majorelle, openSans} from "../../Mixins";
-import {GlobalPageMethods} from "../page/Page";
-import ValidationError from "../../util/ValidationError";
 import axios from "axios";
 import {SwalRepoItemPopup} from "../field/relatedrepoitempopup/RelatedRepoItemPopup";
+import {useNavigation} from "../../providers/NavigationProvider";
 
 function SearchAndSelectPersonTable(props) {
     const [user] = useAppStorageState(StorageKey.USER);
@@ -31,7 +29,7 @@ function SearchAndSelectPersonTable(props) {
     const {t} = useTranslation();
     const [query, setQuery] = useState('');
     const tableRows = persons;
-    const history = useHistory();
+    const navigate = useNavigation();
     const cancelToken = useRef();
 
     const selectedPersonsNotEmptyOrNull = props.selectedPersons && props.selectedPersons.length > 0;
@@ -135,7 +133,7 @@ function SearchAndSelectPersonTable(props) {
                 disableLink: true,
                 Cell: (tableInfo) => {
                     if (tableInfo.cell.value) {
-                        return <StatusIcon color='purple' text={t('person.active')}/>
+                        return <StatusIcon color='green' text={t('person.active')}/>
                     } else {
                         return <StatusIcon color='red' text={t('person.inactive')}/>
                     }
@@ -271,9 +269,9 @@ function SearchAndSelectPersonTable(props) {
                 return Api.dataFormatter.deserialize(response.data);
             })
             props.setAdditionalRepoItems(repoItemList)
-        })).catch(errors => {
+        })).catch(error => {
             SwalRepoItemPopup.close()
-            Toaster.showDefaultRequestError()
+            Toaster.showServerError(error)
         })
     }
 
@@ -283,6 +281,7 @@ function SearchAndSelectPersonTable(props) {
 
         const config = {
             params: {
+                'fields[personSummaries]': 'name,position,rootInstitutesSummary,institutes,hasLoggedIn',
                 'filter[search]': query,
                 'filter[isRemoved]': false,
                 'page[size]': '20',
@@ -303,6 +302,10 @@ function SearchAndSelectPersonTable(props) {
         console.log(config.cancelToken);
         cancelToken.current = Api.jsonApiGet('personSummaries', onValidate, onSuccess, onLocalFailure, onServerFailure, config);
 
+        const errorCallback = (error) => {
+            setIsLoading(false)
+            Toaster.showServerError(error)
+        }
 
         function onValidate(response) {
         }
@@ -313,16 +316,14 @@ function SearchAndSelectPersonTable(props) {
         }
 
         function onServerFailure(error) {
-            setIsLoading(false)
-            Toaster.showServerError(error)
+            errorCallback(error)
             if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             }
         }
 
         function onLocalFailure(error) {
-            setIsLoading(false);
-            Toaster.showDefaultRequestError();
+            errorCallback(error)
         }
     }
 }

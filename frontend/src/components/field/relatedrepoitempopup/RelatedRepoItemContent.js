@@ -23,7 +23,6 @@ import SearchAndSelectPersonTable, {
 import HorizontalTabList from "../../horizontaltablist/HorizontalTabList";
 import CreatePersonForm from "../../createpersonform/CreatePersonForm";
 import SearchRepoItemTable from "../../searchrepoitemtable/SearchRepoItemTable";
-import {useHistory} from "react-router-dom";
 import {calculateChunkSize, finishUpload, uploadParts} from "./AWSUploader";
 import ProgressBar from "../../progressbar/ProgressBar";
 import {
@@ -31,13 +30,14 @@ import {
     flameLight,
     greyLight,
     openSans,
-    openSansBold,
+    openSansBold, spaceCadet,
     spaceCadetLight,
     SURFShapeLeft,
     textColor
 } from "../../../Mixins";
 import axios from "axios";
 import SURFButton from "../../../styled-components/buttons/SURFButton";
+import {useNavigation} from "../../../providers/NavigationProvider";
 
 const initialState = {};
 
@@ -56,6 +56,7 @@ function reducer(state, action) {
 function RelatedRepoItemContent(props) {
     const [formReducerState, dispatch] = useReducer(reducer, initialState);
     const formReducerStateRef = useRef();
+    const navigate = useNavigation()
     const {t} = useTranslation();
     formReducerStateRef.current = formReducerState;
 
@@ -68,7 +69,6 @@ function RelatedRepoItemContent(props) {
     const [progress, setProgress] = useState(null);
     const repoItemApiRequests = new RepoItemApiRequests();
     const formFieldHelper = new FormFieldHelper();
-    const history = useHistory()
     const onSubmit = submitFormData;
     const formSubmitButton = useRef([]);
     let answerValues = null;
@@ -128,7 +128,12 @@ function RelatedRepoItemContent(props) {
                 setupStateFromRepoItemData({data: repoItem}, false)
             })
         } else {
-            getRepoItem(props.repoItemId)
+            getRepoItem(props.repoItemId, (error) => {
+                if (error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
+                    navigate('/login?redirect=' + window.location.pathname);
+                }
+                Toaster.showServerError(error);
+            })
         }
     }, [])
 
@@ -162,6 +167,7 @@ function RelatedRepoItemContent(props) {
             {fileUploadCompleted && (
                 <UploadButtonContainer>
                     <SURFButton
+                        backgroundColor={spaceCadet}
                         highlightColor={spaceCadetLight}
                         width={"130px"}
                         text={t("action.continue")}
@@ -468,7 +474,7 @@ function RelatedRepoItemContent(props) {
             })
             if (fileFieldAnswerArray && fileFieldAnswerArray.values && fileFieldAnswerArray.values.length > 0 && fileFieldAnswerArray.values[0]) {
                 const tempServerFile = fileFieldAnswerArray.values[0]
-                if (tempServerFile.summary.title) {
+                if (tempServerFile?.summary?.title) {
                     setServerFile(tempServerFile)
                 }
             }
@@ -481,7 +487,7 @@ function RelatedRepoItemContent(props) {
             })
             if (personSelectedArray && personSelectedArray.values && personSelectedArray.values.length > 0 && personSelectedArray.values[0]) {
                 const person = personSelectedArray.values[0]
-                if (person.summary.name) {
+                if (person?.summary?.name) {
                     setSelectedRepoItems([...selectedRepoItems, person.summary])
                     setCurrentStepIndex(1)
                 }
@@ -495,7 +501,7 @@ function RelatedRepoItemContent(props) {
             })
             if (repoItemSelectedArray && repoItemSelectedArray.values && repoItemSelectedArray.values.length > 0 && repoItemSelectedArray.values[0]) {
                 const tempRepoItem = repoItemSelectedArray.values[0]
-                if (tempRepoItem.summary.title) {
+                if (tempRepoItem?.summary?.title) {
                     setSelectedRepoItems([...selectedRepoItems, tempRepoItem.summary])
                     setCurrentStepIndex(1)
                 }
@@ -524,20 +530,16 @@ function RelatedRepoItemContent(props) {
         setSelectedRepoItems(newSelectedRepoItems)
     }
 
-    function getRepoItem(repoItemId) {
-
+    function getRepoItem(repoItemId, errorCallback = () => {}) {
         function onValidate(response) {
         }
 
         function onServerFailure(error) {
-            Toaster.showDefaultRequestError();
-            if (error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                history.push('/login?redirect=' + window.location.pathname);
-            }
+            errorCallback(error)
         }
 
         function onLocalFailure(error) {
-            Toaster.showDefaultRequestError();
+            errorCallback(error)
         }
 
         repoItemApiRequests.getRepoItem(repoItemId, onValidate, setupStateFromRepoItemData, onLocalFailure, onServerFailure)
@@ -666,17 +668,15 @@ function RelatedRepoItemContent(props) {
             }
 
             function onLocalFailure(error) {
-                setProgress(null);
                 console.log(error);
-                Toaster.showDefaultRequestError();
+                setProgress(null);
+                Toaster.showServerError(error);
             }
 
             function onServerFailure(error) {
+                console.log(error);
                 setProgress(null);
                 Toaster.showServerError(error);
-                if (error.response.status === 401) {
-                    // history.push('/login?redirect=' + window.location.pathname);
-                }
             }
 
 
@@ -727,6 +727,14 @@ function RelatedRepoItemContent(props) {
         }
         const answers = formFieldHelper.getAllFormAnswersForRepoItem(currentRepoItem, formData)
 
+        const errorCallback = (error) => {
+            setIsLoading(false)
+            if (error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
+                navigate('/login?redirect=' + window.location.pathname);
+            }
+            Toaster.showServerError(error);
+        }
+
         function onValidate(response) {
             setIsLoading(false)
         }
@@ -737,16 +745,11 @@ function RelatedRepoItemContent(props) {
         }
 
         function onServerFailure(error) {
-            Toaster.showServerError(error)
-            if (error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                history.push('/login?redirect=' + window.location.pathname);
-            }
-            setIsLoading(false)
+           errorCallback(error)
         }
 
         function onLocalFailure(error) {
-            Toaster.showDefaultRequestError();
-            setIsLoading(false)
+            errorCallback(error)
         }
 
         const config = {

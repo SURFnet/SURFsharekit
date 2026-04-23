@@ -3,7 +3,7 @@ import Dropdown from "../../dropdown/Dropdown";
 import React, {useEffect, useState} from "react";
 import Api from "../../../util/api/Api";
 import {useTranslation} from "react-i18next";
-import {useHistory} from "react-router-dom";
+import {useNavigation} from "../../../providers/NavigationProvider";
 
 export function OrganisationDropdownField(props) {
     let classAddition = '';
@@ -12,7 +12,7 @@ export function OrganisationDropdownField(props) {
     classAddition += (props.hasError ? ' invalid' : '');
     const [organisations, setOrganisations] = useState(props.defaultValue ? [props.defaultValue] : [])
     const [showError, setShowError] = useState(false)
-    const history = useHistory();
+    const navigate = useNavigation();
 
     useEffect(() => {
         if (!props.readonly) {
@@ -43,11 +43,12 @@ export function OrganisationDropdownField(props) {
             disableDefaultSort={true}
             isSearchable={props.isSearchable}
             defaultValue={props.defaultValue ? props.defaultValue.id : undefined}
-            options={organisations.map(organisation => {
+            options={organisations.filter(o => o != null).map(organisation => {
+                const label = organisation?.summary?.title ?? t('organisation.unknown');
                 return {
                     value: organisation.id,
-                    labelNL: organisation.summary.title,
-                    labelEN: organisation.summary.title
+                    labelNL: label,
+                    labelEN: label
                 }
             })}
             setValue={(name, value, shouldValidate) => {
@@ -85,17 +86,17 @@ export function OrganisationDropdownField(props) {
             console.log(error);
             setShowError(true)
             if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             }
         }
 
         const config = {
             params: {
                 'filter[level]': 'organisation,consortium',
-                'filter[scope]': 'off',
+                'filter[scope]': props.onlyScopedInstitutes ? 'on' : 'off',
                 'filter[isRemoved]': 'false',
                 'fields[institutes]': 'title,summary',
-                'sort': 'relevancy'
+                'page[size]': 200
             }
         };
 

@@ -1,4 +1,5 @@
 import React from "react";
+import {validateDependencyKeyGroup} from "../../../util/DependencyKeyValidation";
 
 export function NumberField(props) {
     let classAddition = '';
@@ -49,9 +50,19 @@ export function NumberField(props) {
 
                        oldValue = e.target.value;
                    }}
-                   ref={props.register && props.register({
+                   {...props.register(props.name, {
                        required: props.isRequired,
-                       validate: (v => validateWithRegex(v, props.validationRegex))
+                       validate: (v) => {
+                           if (!validateWithRegex(v, props.validationRegex)) {
+                               return false;
+                           }
+                           return validateDependencyKeyGroup({
+                               dependencyKey: props.dependencyKey,
+                               dependencyGroupKeys: props.dependencyGroupKeys,
+                               dependencyGroupLabels: props.dependencyGroupLabels,
+                               getValues: props.getValues
+                           });
+                       }
                    })}
                    name={props.name}
                    onClick={(e) => {

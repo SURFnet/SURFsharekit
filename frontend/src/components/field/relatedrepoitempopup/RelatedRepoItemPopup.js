@@ -29,7 +29,8 @@ class RelatedRepoItemPopup {
                         cancelToken.cancel()
                         SwalRepoItemPopup.clickCancel();
                         onCancel();
-                    }}/>
+                    }}
+                />
             ),
             heightAuto: false,
             showCancelButton: false,

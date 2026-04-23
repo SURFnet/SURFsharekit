@@ -1,7 +1,7 @@
 import React, {useEffect, useReducer, useState} from 'react';
 import {useTranslation} from "react-i18next";
 import {StorageKey, useAppStorageState} from "../util/AppStorage";
-import {Redirect, useHistory} from "react-router-dom";
+import {Navigate, useParams} from "react-router-dom";
 import RepoItemHelper from "../util/RepoItemHelper";
 import Toaster from "../util/toaster/Toaster";
 import RepoItemApiRequests from "../util/api/RepoItemApiRequests";
@@ -9,6 +9,7 @@ import PublishPublicationView from "../publish-publication-view/PublishPublicati
 import DefaultPublicationView from "../default-publication-view/DefaultPublicationView";
 import FormFieldHelper from "../util/FormFieldHelper";
 import PublishPublicationCompletion from "../publish-publication-view/PublishPublicationCompletion";
+import {useNavigation} from "../providers/NavigationProvider";
 
 export const PublicationViewMode = {
     DEFAULT: "DEFAULT",
@@ -33,7 +34,8 @@ function reducer(state, action) {
 function Publication(props) {
 
     const {t} = useTranslation();
-    const history = useHistory();
+    const navigate = useNavigation();
+    const params = useParams()
     const [user] = useAppStorageState(StorageKey.USER);
     const [repoItem, setRepoItem] = useState(null);
     const [viewMode, setViewMode] = useState(PublicationViewMode.DEFAULT);
@@ -42,8 +44,8 @@ function Publication(props) {
 
     const repoItemApiRequests = new RepoItemApiRequests();
 
-    const repoItemIsDraft = repoItem && repoItem.status.toLowerCase() === "draft"
-    const userIsRepoItemOwner = repoItem && repoItem.creator.id === user.id // unused for now
+    const repoItemIsDraft = repoItem?.status?.toLowerCase() === "draft"
+    const userIsRepoItemOwner = repoItem?.creator?.id === user?.id // unused for now
     const repoItemHasNeverBeenPublished = repoItem && !repoItem.isHistoricallyPublished // unused for now
 
     useEffect(() => {
@@ -58,24 +60,23 @@ function Publication(props) {
         if (!user) {
             return
         }
-        if (props.match.params.id) {
+        if (params.id) {
             getRepoItem()
         }
-    }, [props.match.params.id])
+    }, [params.id])
 
     useEffect(() => {
         setPublicationViewMode()
     }, [repoItem])
 
     if (!user) {
-        return <Redirect to={'/unauthorized?redirect=publications/' + props.match.params.id}/>
+        return <Navigate to={'/unauthorized?redirect=publications/' + params.id}/>
     }
 
     function getPageContent() {
         if (viewMode === PublicationViewMode.PUBLISH_COMPLETED) {
             return <PublishPublicationCompletion
                 repoItem={repoItem}
-                history={history}
                 setViewMode={(newViewMode) => setViewMode(newViewMode)}
             />
         } else {
@@ -108,14 +109,16 @@ function Publication(props) {
     );
 
     function setPublicationViewMode() {
-        if (repoItem) {
-            if (repoItemIsDraft && !repoItem.isHistoricallyPublished) {
-                setViewMode(PublicationViewMode.PUBLISH)
-            } else if (viewMode === PublicationViewMode.PUBLISH && (repoItem.status === "Submitted" || repoItem.status === "Published")) {
-                setViewMode(PublicationViewMode.PUBLISH_COMPLETED)
-            } else {
-                setViewMode(PublicationViewMode.DEFAULT)
-            }
+        if (!repoItem) {
+            return;
+        }
+        
+        if (repoItemIsDraft && !repoItem.isHistoricallyPublished) {
+            setViewMode(PublicationViewMode.PUBLISH)
+        } else if (viewMode === PublicationViewMode.PUBLISH && repoItem?.status && (repoItem.status === "Submitted" || repoItem.status === "Published")) {
+            setViewMode(PublicationViewMode.PUBLISH_COMPLETED)
+        } else {
+            setViewMode(PublicationViewMode.DEFAULT)
         }
     }
 
@@ -146,24 +149,29 @@ function Publication(props) {
         }
 
         function onServerFailure(error) {
+            if (!error?.response) {
+                Toaster.showServerError(error);
+                return;
+            }
 
-            if (error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                props.history.push('/login?redirect=' + window.location.pathname);
-            } else if (error.response.status === 403) { //We're not authorized to see this page
-                props.history.replace('/forbidden')
-            } else if (error && error.response && (error.response.status === 423)) { //The object is inaccesible
-                props.history.replace('/removed');
+            const status = error.response.status;
+            
+            if (status === 401) { //We're not logged, thus try to login and go back to the current url
+                navigate('/login?redirect=' + window.location.pathname);
+            } else if (status === 403) { //We're not authorized to see this page
+                navigate('/forbidden', {replace: true})
+            } else if (status === 423) { //The object is inaccesible
+                navigate('/removed', {replace: true});
             } else {
                 Toaster.showServerError(error)
             }
         }
 
         function onLocalFailure(error) {
-
-            Toaster.showDefaultRequestError();
+            Toaster.showServerError(error);
         }
 
-        repoItemApiRequests.getRepoItem(props.match.params.id, onValidate, onSuccess, onLocalFailure, onServerFailure, ['relatedTo.lastEditor', 'creator', "tasks"])
+        repoItemApiRequests.getRepoItem(params.id, onValidate, onSuccess, onLocalFailure, onServerFailure, ['relatedTo.lastEditor', 'creator', "tasks"])
     }
 }
 

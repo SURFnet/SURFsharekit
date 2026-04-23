@@ -4,6 +4,28 @@
     "dutch": "Nederlands",
     "english": "English"
   },
+  "login":  {
+    "error": {
+      "unauthorized": "Login failed. Please check your credentials and try again.",
+      "invalid_credentials": "Invalid username or password.",
+      "account_locked": "Your account has been locked. Please contact support.",
+      "account_disabled": "Your account has been disabled. Please contact your administrator.",
+      "session_expired": "Your session has expired. Please login again.",
+      "too_many_attempts": "Too many login attempts. Please try again later.",
+      "network_error": "Cannot connect to the server. Please check your internet connection.",
+      "server_error": "An error occurred on the server. Please try again later.",
+      "authentication_failed": "Authentication failed. Please try again.",
+      "invalid_token": "Invalid or expired authentication token. Please login again.",
+      "access_denied": "Access denied. You don't have permission to access this application.",
+      "maintenance": "The system is currently under maintenance. Please try again later.",
+      "institution_not_found": "Your institution could not be found. Please contact support.",
+      "no_permissions": "You don't have the required permissions to login.",
+      "sram_error": "SRAM authentication failed. Please try again.",
+      "conext_error": "SURFconext authentication failed. Please try again.",
+      "authorization_code_invalid": "The authorization code is invalid or has expired. Please try logging in again.",
+      "generic": "An unexpected error occurred during login. Please try again."
+    }
+  },
   "action": {
     "previous": "Previous",
     "next": "Next",
@@ -32,11 +54,13 @@
       "subtitle": "SURFsharekit is a repository for materials that are developed within higher education, such as graduation products, research publications and educational materials. By using Sharekit, students, researchers and teachers are able to share these materials with a specific group or with the whole wide world. The latter can be done on various portals such as the HBO Knowledge Base and edusources.\n\nSURFsharekit is a facility from SURF, the collaborative organisation for ICT in Dutch education and research.",
       "login": "Login",
       "help": "How does it work?",
-      "login_sram": "Login with SRAM",
-      "login_conext": "Login with SURFconext"
+      "login_sram": "Login",
+      "login_conext": "Login with SURFconext",
+      "privacy": "Privacy statement"
     },
     "institute_step": {
-      "title": "Education"
+      "title": "Education",
+      "no_results": "No results."
     },
     "profile_step": {
       "title": "Profile",
@@ -52,6 +76,18 @@
       "title": "Let's share",
       "text": "You are all set! With Sharekit you can easily and quickly store material and make it freely available.",
       "start": "Start"
+    },
+    "suggestion_step": {
+      "title": "Is this you too?",
+      "description": "It looks like we've already come across your name on Sharekit. Link your profiles here.",
+      "loading": {
+        "title": "Your profile is being created"
+      },
+      "person_card": {
+        "found_in": "Found in",
+        "publication": "publication",
+        "publications": "publications"
+      }
     }
   },
   "dashboard": {
@@ -136,7 +172,10 @@
         "claim": "{{institute}} wants to add {{personName}} to the Member group {{institute}}",
         "review": "{{personName}} submitted '{{objectTitle}}' to be reviewed",
         "fill": "'{{objectTitle}}' is ready to be reviewed.",
-        "recover": "'{{objectTitle}}' has been moved to the trash. Please restore or approve this action."
+        "recover": {
+          "v2": "{{personName}} has moved '{{objectTitle}}' to the trash. Please restore or approve this action.",
+          "v1": "'{{objectTitle}}' has been moved to the trash. Please restore or approve this action."
+        }
       },
       "actions": {
         "approve": "Approve",
@@ -173,7 +212,7 @@
   },
   "export": {
     "publication_type": "Publication type",
-    "institute_level": "Organisation level",
+    "institute_level": "Organisation",
     "date_start": "From",
     "date_until": "Until",
     "date_format_tooltip": "dd-mm-yyyy, mm-yyyy or yyyy"
@@ -194,10 +233,60 @@
     "date_format_tooltip": "dd-mm-yyyy, mm-yyyy or yyyy"
   },
   "report": {
+    "tabs": {
+      "dashboard": {
+        "title": "Dashboard"
+      },
+      "exports": {
+        "title": "Exports",
+        "description": "On this page you can generate a report of the statistics, metadata and downloads and export it to an Excel file. Choose an organisation and/or a publication type you want to generate a report for within a specified period. Generating a report can take a while. You can check the status at any time on this page. When the report is ready, you can download and/or delete it here.",
+        "table":  {
+          "loading": "Loading all exports...",
+          "empty": "No exports found",
+          "status": {
+            "title": "Status",
+            "cell": {
+              "PENDING": "Pending",
+              "IN_PROGRESS": "Pending",
+              "FINISHED": "Finished",
+              "FAILED": "Failed"
+            }
+          },
+          "repo_type": {
+            "title": "Publication type"
+          },
+          "institutes": {
+            "title": "Insitutes"
+          },
+          "created": {
+            "title": "Created at"
+          },
+          "from": {
+            "title": "From"
+          },
+          "until": {
+            "title": "Until"
+          },
+          "report_type": {
+            "title": "Export type",
+            "cell": {
+              "export": "Metadata",
+              "statistics": "Statistics",
+              "downloads": "Downloads"
+            }
+          }
+        }
+      }
+    },
+    "filters": {
+      "organisation": "Organisation",
+      "from": "From",
+      "until": "Until"
+    },
     "explanation": "Here you can create an overview of the metadata that are stored in Sharekit, and export it to an Excel file. Choose an organisational unit and / or a publication within a specified period. If you choose to leave all fields empty, all metadata will be exported.\n\nPublic downloads are downloads originating from a external portal. Private downloads are downloads originating from an active user on Sharekit.",
     "download": "Download report",
     "title": "Reports",
-    "export": "Export",
+    "export": "Generate export",
     "remediate": "Remediate",
     "dashboard_title": "Report",
     "report_empty": "No report available.",
@@ -207,7 +296,19 @@
     "research_objects": "Research",
     "datasets": "Datasets",
     "projects": "Projects",
-    "export_type": "Export type"
+    "export_type": "Generate export of",
+    "imported_publications": "Imported publications",
+    "downloads": "Downloads",
+    "active_users": "Active users",
+    "type_publications": "Publication types",
+    "status_publications": "Publication Statuses",
+    "downloads_per_channel": "Downloads per channel",
+    "channel": "Channel",
+    "total": "Total",
+    "link": "Link",
+    "file": "File",
+    "total_publications_per_department": "Total publications per department",
+    "unknown": "Unknown"
   },
   "search": {
     "title": "Search results",
@@ -236,6 +337,10 @@
     "delete_popup": {
       "title": "Delete project?",
       "subtitle": "Are you sure you want to move this item to the Recycle Bin?"
+    },
+    "archive_popup": {
+      "title": "Archive project?",
+      "subtitle": "Are you sure you want to archive this item?"
     },
     "table": {
       "title": "Project title",
@@ -276,6 +381,7 @@
   },
   "organisation": {
     "title": "Organisation",
+    "unknown": "Unknown organisation",
     "loading": "Fetching organisations...",
     "save_organisation_success_message": "Successfully saved organisation!",
     "add_layer_popup": {
@@ -345,6 +451,7 @@
     "dataset": "Dataset",
     "project": "Project",
     "researchobject": "Research publication",
+    "unknown": "Unknown item",
     "popup": {
       "selectperson": "Person",
       "selectlearningobject": "Learning material",
@@ -363,7 +470,8 @@
       "publicationrecord": "Thesis",
       "learningobject": "Learning material",
       "researchobject": "Research publication",
-      "dataset": "Dataset"
+      "dataset": "Dataset",
+      "all": "All"
     },
     "personinvolved_field": {
       "add": "Add involved person",
@@ -388,7 +496,11 @@
         "closedaccess": "Closed access"
       }
     },
-    "visible_on": "Visible on"
+    "visible_on": "Visible on",
+    "visible_for": "Visible for",
+    "right_of_use": {
+      "title": "Terms of use"
+    }
   },
   "add_publication": {
     "button_save": "Save",
@@ -406,12 +518,22 @@
       "organisation_title": "For which organisation do you want to add a publication?",
       "type_title": "What sort of material do you want to add?",
       "confirm": "Confirm",
-      "use_template": "Use template",
+      "next": "Next",
+      "use_template": "USE TEMPLATE",
+      "upload_from_lms": "Upload from LMS",
       "step1_title": "Organisation",
       "step2_title": "Publication type",
       "step3_title": "Choose template",
       "template_title": "Which template would you like to use?",
-      "no_template": "Don't use template"
+      "no_template": "Don't use template",
+      "lms": {
+        "empty_search": "Start typing to find learning materials",
+        "no_results": "No LMS items found matching your search."
+      },
+      "lms_flagged": {
+        "title": "The item is being retrieved",
+        "subtitle": "It can take a few minutes before you can see the item."
+      }
     },
     "channel_dependency_error": {
       "title": "Channel dependency errors",
@@ -431,6 +553,7 @@
     "templates": "Templates",
     "reports": "Reports",
     "trash_can": "Recycle Bin",
+    "archive": "Archive",
     "logout": "Log out",
     "help": "Help",
     "need_help": "Need help?",
@@ -507,8 +630,16 @@
     "created_last_edited_prefix": "By ",
     "decline_reason_label": "Reason",
     "decline_reason": "View the reason for rejection here",
+    "decline_delete_reason": "View reason for rejecting removal request here",
     "decline_reason_popup": {
       "title": "Reason for rejection"
+    },
+    "delete_request_declined_popup": {
+      "title": "Delete request declined"
+    },
+    "delete_reason": "View the reason for deletion here",
+    "delete_reason_popup": {
+      "title": "Reason for deletion"
     },
     "missing_decline_reason_popup": {
       "title": "Missing decline reason",
@@ -518,25 +649,62 @@
       "title": "Delete publication?",
       "subtitle": "Are you sure you want to move this item to the Recycle Bin?"
     },
+    "archive_popup": {
+      "title": "Archive publication",
+      "subtitle": "Are you sure you want to archive this item?"
+    },
+    "restore_from_archive_popup": {
+      "title": "Remove publication from Archive",
+      "subtitle": "Are you sure you want to remove this item from the archive?"
+    },
+    "update_organisation_popup": {
+      "title": "Adjust organisation",
+      "tooltip": "Select an institute you have access to in order to transfer the publication."
+    },
+    "delete_request": {
+      "title": "Delete request"
+    },
     "generate_doi_confirmation": {
       "title": "Confirmation",
       "subtitle": "You're about to request a DOI. This can't be undone. Are you sure?"
     }
   },
+  "datepicker": {
+    "placeholder": "Maak een keuze"
+  },
   "vocabulary_field": {
-    "add": "Add vocabulary",
+    "actions": {
+      "add": "Add vocabulary",
+      "generate": "Generate",
+      "cancel": "Cancel"
+    },
     "popup": {
+      "title": "Vocabularies",
+      "explanation": "Here you can select from various vocabularies",
+      "ai": "Generate with AI",
+      "ai_warning": "By selecting this option, you agree to send the data in your file to a third party.",
+      "ai_discretion": "If the option to generate a vocabulary is greyed out, you have not marked your file as publicly accessible. This means that scanning for suggestions is not possible",
+      "diy": "Create your own vocabulary",
       "step_1_title": "Vocabulary",
       "step_1_content_title": "Make a choice",
       "step_2_title": "Main concept",
       "step_3_title": "Sub concept",
       "step_4_title": "Sub concept(2)",
-      "empty": "There are no options to choose from."
+      "empty": "There are no options to choose from.",
+      "suggestions": {
+        "title": "Selecteer from the following suggestions"
+      },
+      "selected_file": {
+        "no_result": "No file found",
+        "result": "Selected file: "
+      }
     }
   },
   "switch_field": {
     "on": "on",
     "off": "off",
+    "yes": "yes",
+    "no": "no",
     "only_required_fields": "Only required fields"
   },
   "dropdown_field": {
@@ -549,6 +717,9 @@
   "multi_select_suborganisation_field": {
     "placeholder": "Search or select...",
     "inactive": "inactive"
+  },
+  "datepicker": {
+    "placeholder": "Choose a date"
   },
   "error_message": {
     "load_options_failed": "Loading failed, click here to try again",
@@ -572,9 +743,9 @@
     "page_removed": "Page removed",
     "page_removed_subtitle": "",
     "page_removed_text": "It appears this page has been removed and is now inaccessible.",
-    "unauthorized": "Page not available",
-    "unauthorized_subtitle": "Oops! We have no idea what happened here!",
-    "unauthorized_text": "It appears this page does not exist. Possible causes could be an outdated bookmark or favorite page, a search engine that points to an outdated page, an incorrectly spelled address or you do not have rights to view this page.",
+    "unauthorized": "Access denied",
+    "unauthorized_subtitle": "You don't have access to this page",
+    "unauthorized_text": "It appears you don't have the necessary permissions to view this page. Please contact your administrator if you believe you should have access.",
     "forbidden": "Forbidden",
     "forbidden_subtitle": "You are not allowed to view this page",
     "forbidden_text": "It appears you're trying to access information unavailable to your account, contact your Site Manager to gain permission",
@@ -622,7 +793,30 @@
     "empty": "No objects were linked"
   },
   "treemultiselect_field": {
-    "empty": "No vocabularies were added"
+    "empty": "No answers were given",
+    "search": "Search",
+    "selected": "Selected",
+    "nothing_selected": "Nothing selected yet",
+    "loading": "Loading data...",
+    "load_more": "Load more",
+    "loading_children": "Loading sub-options…",
+    "resolving_option": "Loading option from server…",
+    "search_results": "Results",
+    "search_no_results": "No results",
+    "search_load_more": "Load more results",
+    "search_alt_prefix": "Alt:",
+    "search_selected_one": "item selected",
+    "search_selected_other": "items selected",
+    "items_selected_none": "No items selected",
+    "item_selected_label": "item selected",
+    "items_selected_label": "items selected",
+    "synonym_badge": "Synonym",
+    "categories": {
+      "category": "Category",
+      "sub_category": "Sub-Category",
+      "sub_sub_category": "Sub-Sub-Category",
+      "details": "Details"
+    }
   },
   "file_drop": {
     "open": "Drag your file(s) here to upload them",
@@ -657,6 +851,7 @@
     "role": "Role",
     "organisation": "Organisation",
     "groups": "Groups",
+    "organization": "Organization",
     "identifiers": "Identifiers",
     "organisationlevel": "Organisation level",
     "status": "Status",
@@ -676,6 +871,7 @@
   "profile": {
     "personal_data": "Personal data",
     "social_media": "Social media",
+    "identifiers": "Identifiers",
     "tab_profile": "Profile",
     "details": "View details",
     "profile_merge": "Merge profile",
@@ -707,6 +903,7 @@
     "profile_surname_prefix": "SURNAME PREFIX",
     "profile_surname": "SURNAME",
     "organisation": "Organisation",
+    "root_organisation": "Root organization",
     "profile_city": "CITY",
     "profile_email": "EMAIL",
     "profile_email_alt": "ALTERNATIVE EMAIL",
@@ -714,7 +911,7 @@
     "profile_titulatuur": "TITLE",
     "profile_academic_title": "ACADEMIC TITLE",
     "profile_initials": "INITIALS",
-    "profile_persistent_identifier": "PERSISTENT IDENTIFIER",
+    "profile_persistent_identifier": "DAI (Digital Author Identifier)",
     "profile_orcid": "ORCID",
     "profile_isni": "ISNI",
     "profile_hogeschool_id": "INSTITUTE ID",
@@ -731,9 +928,15 @@
       "phd": "PhD",
       "other": "Other"
     },
-    "profile_linkedin_placeholder": "Enter the url to your linkedin account here",
-    "profile_twitter_placeholder": "Enter the url to your twitter account here",
+    "profile_linkedin_placeholder": "Enter the url to your LinkedIn account here",
+    "profile_twitter_placeholder": "Enter the url to your X account here",
+    "profile_social_media_placeholder": "Enter the url to a social media account here",
     "profile_research_gate_placeholder": "Enter the url to your research gate account here",
+    "orcid_verified": "Your ORCID has been verified.",
+    "orcid_popup": {
+      "title": "ORCID successfully linked",
+      "subtitle": "We have successfully linked your ORCID to the profile below:"
+    },
     "tooltips": {
       "isni": "An ISNI consists of 16 numeric digits, e.g. 0000000115033938",
       "hogeschool_id": "A unique institute identification number",
@@ -742,7 +945,8 @@
       "email": {
         "no_permission": "No permission has been given to share the email address"
       }
-    }
+    },
+    "register_orcid": "Register or connect ORCID ID"
   },
   "group": {
     "group": "Group",
@@ -824,7 +1028,15 @@
       "message": "Do you want to open this item?"
     },
     "restore": {
-      "title": "Are you sure you want to restore this item from the Recycle Bin?"
+      "title": "Are you sure you want to restore this item from the Recycle Bin?",
+      "reason": "Reason"
+    },
+    "undo_archive": {
+      "title": "Are you sure you want to move this item from the archive"
+    },
+    "unarchived": {
+      "title": "Item unarchived",
+      "message": "Do you want to open this item?"
     },
     "profile": {
       "delete": {
@@ -863,7 +1075,8 @@
       },
       "delete_request": {
         "title": "You are about to send a removal request.",
-        "subtitle": "Your request will be processed, this may take a few days."
+        "subtitle": "You'll be notified when your request has been resolved, this may take a few days.",
+        "reason": "Reason"
       }
     }
   },
@@ -872,14 +1085,19 @@
     "subtitle": "The author will be automatically notified after reviewing."
   },
   "toast": {
-    "server_error": "Something went wrong. Please contact the servicedesk and report the following error code:",
+    "server_error": "An unexpected error has occurred. Please refresh the page or try again later. If the problem persists, please contact the service desk and quote the error code:",
+    "server_error_generic": "Something went wrong on our side. Please contact the administrator.",
     "repo_item": {
       "delete_request": "The removal request has been submitted to the site manager."
-    }
+    },
+    "organisation_already_selected": "The publication is already linked to this organisation."
   },
   "email_field": {
     "unknown": "Unknown",
     "known": "Known",
     "no_permission": "No permission"
+  },
+  "validation": {
+    "email": "Please enter a valid email address."
   }
 }

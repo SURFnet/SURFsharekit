@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from "react";
 import './switch.scss'
 import {useTranslation} from "react-i18next";
+import {validateDependencyKeyGroup} from "../../../util/DependencyKeyValidation";
 
 export function SwitchField(props) {
     const {t} = useTranslation();
@@ -13,7 +14,15 @@ export function SwitchField(props) {
 
     useEffect(() => {
         if (props.register) {
-            props.register({name: props.name}, {required: props.isRequired})
+            props.register(props.name, {
+                required: props.isRequired,
+                validate: () => validateDependencyKeyGroup({
+                    dependencyKey: props.dependencyKey,
+                    dependencyGroupKeys: props.dependencyGroupKeys,
+                    dependencyGroupLabels: props.dependencyGroupLabels,
+                    getValues: props.getValues
+                })
+            })
             props.setValue(props.name, isChecked)
         }
     }, [props.register])
@@ -45,8 +54,8 @@ export function SwitchField(props) {
 
     function OnIcon(iconProps) {
         return <div className={'switch-icon on'}>
-            <div className={'switch-text'}>
-                {t('switch_field.on')}
+            <div className={`switch-text ${props.trueText && "switch-text-left" || ""}`}>
+                {props.trueText && props.trueText || t('switch_field.on')}
             </div>
             <div className={'switch-bulb'}>
                 {iconProps.props.disabled === 1 && <i className="fas fa-lock"/>}
@@ -60,7 +69,7 @@ export function SwitchField(props) {
                 {iconProps.props.disabled === 1 && <i className="fas fa-lock"/>}
             </div>
             <div className={'switch-text'}>
-                {t('switch_field.off')}
+                {props.falseText && props.falseText || t('switch_field.off')}
             </div>
         </div>
     }

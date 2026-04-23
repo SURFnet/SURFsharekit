@@ -10,6 +10,7 @@ function SURFButton(props) {
         backgroundColor,
         disabled,
         border,
+        borderColor,
         highlightColor,
         width,
         minWidth,
@@ -23,6 +24,7 @@ function SURFButton(props) {
         iconEnd,
         iconEndSize,
         iconEndColor,
+        iconEndRotation,
         padding,
         margin,
         shape,
@@ -38,6 +40,7 @@ function SURFButton(props) {
             backgroundColor={backgroundColor}
             disabled={disabled}
             border={border}
+            borderColor={borderColor}
             highlightColor={highlightColor}
             minWidth={minWidth}
             width={width}
@@ -69,7 +72,7 @@ function SURFButton(props) {
                         icon={iconEnd}
                         fontSize={iconEndSize}
                         color={iconEndColor}
-                        rotation={dropdownIsOpen ? '180' : '0'}
+                        rotation={iconEndRotation ?? (dropdownIsOpen ? '180' : '0')}
                     />
                 }
             </Content>
@@ -101,6 +104,7 @@ const SURFButtonRoot = styled.div`
     width: ${props => props.width ?? undefined};
     padding: ${props => props.padding ?? '0px 70px 0px 70px'}; 
     border: ${props => props.border ?? undefined};
+    borderColor: ${props => props.borderColor ?? undefined};
     height: ${props => props.height ?? "40px"};
     cursor: ${props => props.disabled ? "auto" : "pointer"};
     margin: ${props => props.margin ?? undefined};
@@ -118,7 +122,7 @@ const DisabledOverlay = styled.div`
     width: 100%;
     height: 100%;
     opacity: 0.8;
-    z-index: 10;
+    z-index: 1;
 `;
 
 const Content = styled.div`
@@ -136,7 +140,7 @@ const Icon= styled(FontAwesomeIcon)`
     transform: rotate(${props => (props.rotation)});
 `;
 
-const Text = styled.div`
+const Text = styled.p`
     color: ${props => props.textColor ?? 'white'};
     ${nunitoBold};
     font-size: ${props => props.textSize ?? '14px'};

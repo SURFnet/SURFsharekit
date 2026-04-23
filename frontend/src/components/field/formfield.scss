@@ -8,11 +8,22 @@
     flex-direction: row;
     width: 100%;
 
+    // Does the spacing for channel switches
+    .switch {
+        padding: 7px 0;
+    }
+
     .form-field {
         flex-grow: 1;
 
         &.hidden {
             display: none;
+        }
+
+        &.export {
+            flex-grow: 0 !important;
+            width: 50% !important;
+            max-width: 50% !important;
         }
 
         &.small {
@@ -113,7 +124,6 @@
             vertical-align: center;
             min-height: 50px;
             padding: 0px 12px;
-
             outline: none;
             flex-grow: 1;
 
@@ -393,6 +403,7 @@
     .tooltip-popup {
         @include open-sans;
         min-width: 200px;
+        max-width: 250px;
         top: -20px;
         font-size: 12px;
         color: transparent;
@@ -405,6 +416,8 @@
             padding: 10px;
             background-color: $background-color;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            word-break: break-word;
+            overflow-wrap: break-word;
         }
 
         .fa-caret-left {

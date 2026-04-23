@@ -80,27 +80,33 @@ class RepoItemHelper {
 
         if (field !== null) {
             const fieldType = formFieldHelper.getFieldType(field.fieldType);
-            if (fieldType === 'tag' || fieldType === 'dropdowntag') {
-                // let tagAnswers = formDataAnswerValue ? JSON.parse(formDataAnswerValue) : [];
-                let tagAnswers = formDataAnswerValue ?? [];
-                tagAnswers.forEach((tagOption) => {
-                    if (tagOption.id) {
-                        answerArray.push({
-                            "repoItemID": null,
-                            "optionKey": tagOption.id,
-                            "value": null
-                        })
-                    } else {
-                        answerArray.push({
-                            "repoItemID": null,
-                            "optionKey": null,
-                            "labelNL": tagOption.labelNL,
-                            "labelEN": tagOption.labelEN,
-                            "coalescedLabelEN": tagOption.coalescedLabelEN,
-                            "coalescedLabelNL": tagOption.coalescedLabelNL,
-                        })
-                    }
-                })
+            if (fieldType === 'tag' || fieldType === 'dropdowntag' || fieldType === 'multiselectdropdown') {
+                let tagAnswers =  (typeof formDataAnswerValue === 'string' && formDataAnswerValue)
+                    ? JSON.parse(formDataAnswerValue)
+                    : formDataAnswerValue;
+                
+                if (tagAnswers) {
+                    tagAnswers.forEach((tagOption) => {
+                        if (tagOption) {
+                            if (tagOption.id) {
+                                answerArray.push({
+                                    "repoItemID": null,
+                                    "optionKey": tagOption.id,
+                                    "value": null
+                                })
+                            } else {
+                                answerArray.push({
+                                    "repoItemID": null,
+                                    "optionKey": null,
+                                    "labelNL": tagOption.labelNL,
+                                    "labelEN": tagOption.labelEN,
+                                    "coalescedLabelEN": tagOption.coalescedLabelEN,
+                                    "coalescedLabelNL": tagOption.coalescedLabelNL,
+                                })
+                            }
+                        }
+                    })
+                }
             } else if (fieldType === "checkbox") {
                 if (!formDataAnswerValue) {
                     return [];
@@ -135,23 +141,35 @@ class RepoItemHelper {
                 });
             } else if (fieldType === "radio" || fieldType === "dropdown" || fieldType === "rightofusedropdown") {
                 if (formDataAnswerValue) {
+                    const extractOptionKey = (rawValue) => {
+                        if (!rawValue) {
+                            return null;
+                        }
+                        if (typeof rawValue === 'object') {
+                            return rawValue.id ?? rawValue.value ?? rawValue.optionKey ?? null;
+                        }
+                        if (typeof rawValue === 'string') {
+                            const trimmed = rawValue.trim();
+                            if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+                                try {
+                                    const parsed = JSON.parse(trimmed);
+                                    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                                        return parsed.id ?? parsed.value ?? parsed.optionKey ?? rawValue;
+                                    }
+                                } catch (e) {
+                                    // Use raw value when parsing fails
+                                }
+                            }
+                        }
+                        return rawValue;
+                    };
+
+                    const optionKey = extractOptionKey(formDataAnswerValue);
                     answerArray = [{
                         "repoItemID": null,
-                        "optionKey": formDataAnswerValue,
+                        "optionKey": optionKey,
                         "value": null
                     }];
-                } else {
-                    answerArray = [];
-                }
-            } else if (fieldType === "multiselectdropdown") {
-                if (formDataAnswerValue) {
-                    answerArray = formDataAnswerValue.map((answerValue) => {
-                        return {
-                            "repoItemID": null,
-                            "optionKey": answerValue.value,
-                            "value": null
-                        }
-                    })
                 } else {
                     answerArray = [];
                 }
@@ -168,25 +186,33 @@ class RepoItemHelper {
                     answerArray = []
                 }
             } else if(fieldType === 'multiselectsuborganisation' || fieldType === 'multiselectsuborganisationswitch') {
-                // let instituteAnswer = formDataAnswerValue ? JSON.parse(formDataAnswerValue) : null;
                 answerArray = [];
                 if(formDataAnswerValue) {
-                    formDataAnswerValue.map(formDataAnswerJsonObject => {
-                        const formDataAnswerOption = JSON.parse(formDataAnswerJsonObject)
-                        answerArray.push({
-                            "instituteID": formDataAnswerOption.id,
-                            "optionKey": null,
-                            "value": null,
-                            "summary": formDataAnswerOption.summary //used to store title, subtitle and such
-                        })
+                    const parsedFormDataAnswerValue = typeof formDataAnswerValue === 'string'
+                        ? JSON.parse(formDataAnswerValue)
+                        : formDataAnswerValue;
+                    parsedFormDataAnswerValue.map(formDataAnswerJsonObject => {
+                        const formDataAnswerOption = typeof formDataAnswerJsonObject === 'string'
+                            ? JSON.parse(formDataAnswerJsonObject)
+                            : formDataAnswerJsonObject;
+                        if(formDataAnswerOption){
+                            answerArray.push({
+                                "instituteID": formDataAnswerOption.id,
+                                "optionKey": null,
+                                "value": null,
+                                "summary": formDataAnswerOption.summary //used to store title, subtitle and such
+                            })
+                        }
                     })
                 }
             } else if(fieldType === 'multiselectpublisher' || fieldType === 'multiselectpublisherswitch' || fieldType === 'multiselectinstitute') {
                 // let instituteAnswer = formDataAnswerValue ? JSON.parse(formDataAnswerValue) : null;
                 answerArray = [];
                 if(formDataAnswerValue) {
-                    formDataAnswerValue.map(formDataAnswerJsonObject => {
-                        const formDataAnswerOption = JSON.parse(formDataAnswerJsonObject)
+                    const parsedFormDataAnswerValue = typeof formDataAnswerValue === 'string'
+                        ? JSON.parse(formDataAnswerValue)
+                        : formDataAnswerValue;
+                    parsedFormDataAnswerValue.map(formDataAnswerOption => {
                         answerArray.push({
                             "instituteID": formDataAnswerOption.id,
                             "optionKey": null,
@@ -269,6 +295,27 @@ class RepoItemHelper {
                 } else {
                     answerArray = [];
                 }
+            } else if (fieldType === "date" || fieldType === "datepicker") {
+                if (formDataAnswerValue) {
+                    let parsedValue = formDataAnswerValue;
+                    try {
+                        // Try to parse if it's a JSON string array
+                        const parsed = JSON.parse(formDataAnswerValue);
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            parsedValue = parsed[0];
+                        }
+                    } catch (e) {
+                        // If parsing fails, use the original value
+                        parsedValue = formDataAnswerValue;
+                    }
+                    answerArray = [{
+                        "repoItemID": null,
+                        "optionKey": null,
+                        "value": parsedValue
+                    }];
+                } else {
+                    answerArray = [];
+                }
             } else {
                 if (formDataAnswerValue) {
                     answerArray = [{
@@ -334,6 +381,8 @@ class RepoItemHelper {
                 return "#64C3A5";
             case 'submitted':
                 return "#F3BA5A";
+            case 'archived':
+                return "#5AC4ED";
             case 'revising':
                 return "#F3BA5A";
             case 'approved':
@@ -351,10 +400,6 @@ class RepoItemHelper {
             return i18n.t('publication.state.deleted');
         }
 
-        if (repoItem.isArchived) {
-            return i18n.t('publication.state.archived');
-        }
-
         switch (repoItem.status.toLowerCase()) {
             case 'draft':
                 return i18n.t('publication.state.draft');
@@ -370,6 +415,8 @@ class RepoItemHelper {
                 return i18n.t('publication.state.declined');
             case 'embargo':
                 return i18n.t('publication.state.embargo');
+            case 'archived':
+                return i18n.t('publication.state.archived');
             default:
                 return "#"
         }

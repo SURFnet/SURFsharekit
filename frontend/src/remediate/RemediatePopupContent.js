@@ -18,6 +18,7 @@ import {RemediateTypeOptionsEnum} from "./RemediateTypeOptionsEnum";
 import VerificationPopup from "../verification/VerificationPopup";
 import i18n from "i18next";
 import {RemediateProgressPopup} from "./RemediateProgressPopup";
+import {filter} from "rxjs";
 
 export function RemediatePopupContent(props) {
     const remediateTypeRadioGroupOptions = RemediateTypeOptionsEnum().map((option) => {
@@ -49,7 +50,7 @@ export function RemediatePopupContent(props) {
 
     const [selectedRemediateType, setSelectedRemediateType] = useState(defaultRemediateType);
     const {t} = useTranslation()
-    const {register, handleSubmit, errors, setValue, getValues, trigger} = useForm();
+    const {register, handleSubmit, formState: {errors}, setValue, getValues, trigger} = useForm();
     const formSubmitButton = useRef();
     const repoItemTypeOptionsObjects = RepoItemTypePluralOptionsEnum().map((option) => {
             return {
@@ -84,7 +85,7 @@ export function RemediatePopupContent(props) {
                                        isRequired={true}
                                        options={statusOptionObjects}
                                        label={t("remediate.status")}
-                                       error={errors["status"]}
+                                       error={errors && errors["status"]}
                                        name={"status"}
                                        register={register}
                                        setValue={setValue}/>
@@ -94,7 +95,7 @@ export function RemediatePopupContent(props) {
                                        isSmallField={true}
                                        isRequired={true}
                                        classAddition={''}
-                                       error={errors["repoType"]}
+                                       error={errors && errors["repoType"]}
                                        name={"repoType"}
                                        options={repoItemTypeOptionsObjects}
                                        register={register}
@@ -110,7 +111,7 @@ export function RemediatePopupContent(props) {
                                            getOptions={HelperFunctions.debounce(institutesCall)}
                                            options={organisationLevelOptionObjects}
                                            label={t("remediate.institute_level")}
-                                           error={errors["institutes"]}
+                                           error={errors && errors["institutes"]}
                                            name={"institutes"}
                                            register={register}
                                            setValue={setValue}/>
@@ -123,7 +124,7 @@ export function RemediatePopupContent(props) {
                                            isSmallField={true}
                                            classAddition={''}
                                            label={t("remediate.date_start")}
-                                           error={errors["dateFrom"]}
+                                           error={errors && errors["dateFrom"]}
                                            name={"dateFrom"}
                                            isRequired={true}
                                            validationRegex={dutchDateRegex}
@@ -135,7 +136,7 @@ export function RemediatePopupContent(props) {
                                            isSmallField={true}
                                            classAddition={''}
                                            label={t("remediate.date_until")}
-                                           error={errors["dateUntil"]}
+                                           error={errors && errors["dateUntil"]}
                                            name={"dateUntil"}
                                            tooltip={t("remediate.date_format_tooltip")}
                                            isRequired={true}
@@ -224,7 +225,7 @@ export function RemediatePopupContent(props) {
         }
 
         config.params['filter[scope][EQ]'] = formData.institutes.map(i => i.value).reduce((total, cv) => total + (total === '' ? '' : ',') + cv, '')
-        config.params['filter[repoType][EQ]'] = formData.repoType;
+        config.params['filter[repoType][EQ]'] = formData.repoType.charAt(0).toUpperCase() + formData.repoType.slice(1);
         config.params['filter[isRemoved][EQ]'] = 0;
         config.params['filter[publicationDate][GE]'] = getFullEnglishDateFrom(formData.dateFrom, false);
         config.params['filter[publicationDate][LE]'] = getFullEnglishDateFrom(formData.dateUntil, true);
@@ -246,7 +247,7 @@ export function RemediatePopupContent(props) {
         }
 
         if(formData.status !== 'archived'){
-            config.params['filter[status][EQ]'] = formData.status;
+            config.params['filter[status][EQ]'] = formData.status.charAt(0).toUpperCase() + formData.status.slice(1);
             config.params['filter[isArchived][EQ]'] = 0;
             filterJson.status = {
                 'EQ': config.params['filter[status][EQ]']
@@ -280,7 +281,7 @@ export function RemediatePopupContent(props) {
         } else {
             return
         }
-
+        
         const newBulkActions = {
             "data": {
                 "type": "bulkaction",
@@ -305,7 +306,7 @@ export function RemediatePopupContent(props) {
         function onLocalFailure(error) {
             console.log(error);
             GlobalPageMethods.setFullScreenLoading(false)
-            Toaster.showDefaultRequestError()
+            Toaster.showServerError()
         }
 
         function onServerFailure(error) {
@@ -363,7 +364,7 @@ export function RemediatePopupContent(props) {
         function onLocalFailure(error) {
             console.log(error);
             GlobalPageMethods.setFullScreenLoading(false)
-            Toaster.showDefaultRequestError()
+            Toaster.showServerError()
         }
 
         function onServerFailure(error) {

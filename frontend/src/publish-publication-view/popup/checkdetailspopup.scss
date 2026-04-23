@@ -6,9 +6,8 @@
 
 .repo-item-details, .profile-details {
   @include rounded-background-pointy-upper-left();
-  margin-bottom: 20px;
-  top: 63px;
   width: auto;
+  padding: 10px 20px;
 
   .section {
     &:not(:first-child) {

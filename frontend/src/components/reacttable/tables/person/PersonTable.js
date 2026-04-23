@@ -1,10 +1,11 @@
 import React, {useEffect, useRef, useState} from "react";
 import '../../../field/formfield.scss'
 import PersonTableWithSearch from "../../../persontablewithsearch/PersonTableWithSearch";
-import {useHistory} from "react-router-dom";
+import {useNavigate} from "react-router-dom";
 import './persontable.scss'
 import Api from "../../../../util/api/Api";
 import Toaster from "../../../../util/toaster/Toaster";
+import {useNavigation} from "../../../../providers/NavigationProvider";
 
 function PersonTable(props) {
     const [sortOrder, setSortOrder] = useState([]);
@@ -14,7 +15,7 @@ function PersonTable(props) {
     const [pageCount, setPageCount] = useState(1);
     const [pageNumber, setPageNumber] = useState(1);
     const [isLoading, setIsLoading] = useState(true);
-    const history = useHistory()
+    const navigate = useNavigation()
     const cancelToken = useRef();
 
     const onReloadData = (sortBy, pageIndex) => {
@@ -42,7 +43,6 @@ function PersonTable(props) {
                 sortOrder={sortOrder}
                 persons={persons}
                 pageCount={pageCount}
-                history={props.history}
                 canEdit={props.institute && props.institute.permissions.canEdit}
                 showDelete={!props.hideDelete}
                 showAddElement={false}
@@ -60,10 +60,11 @@ function PersonTable(props) {
 
         const config = {
             params: {
+                'fields[personSummaries]': 'firstName,surname,position,rootInstitutesSummary,permissions,persistentIdentifier,isni,orcid,hasLoggedIn',
+                'filter[isRemoved]': false,
+                'filter[scope]': searchOutsideOfScope ? "off" : "on",
                 'filter[search]': query,
                 'page[number]': pageNumber,
-                'filter[scope]': searchOutsideOfScope ? "off" : "on",
-                'filter[isRemoved]': false,
                 'page[size]': 10
             }
         };
@@ -74,6 +75,11 @@ function PersonTable(props) {
         config.cancelToken = cancelToken.current;
         console.log(config.cancelToken);
         cancelToken.current = Api.jsonApiGet('personSummaries', onValidate, onSuccess, onLocalFailure, onServerFailure, config);
+
+        const errorCallback = (error) => {
+            setIsLoading(false)
+            Toaster.showServerError(error)
+        }
 
         function onValidate(response) {
         }
@@ -91,16 +97,14 @@ function PersonTable(props) {
         }
 
         function onServerFailure(error) {
-            setIsLoading(false)
-            Toaster.showServerError(error)
+            errorCallback(error)
             if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             }
         }
 
         function onLocalFailure(error) {
-            setIsLoading(false);
-            Toaster.showDefaultRequestError();
+            errorCallback(error)
         }
     }
 }

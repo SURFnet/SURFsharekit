@@ -12,7 +12,8 @@ import {HelperFunctions} from "../util/HelperFunctions";
 import Toaster from "../util/toaster/Toaster";
 import Api from "../util/api/Api";
 import RepoItemHelper from "../util/RepoItemHelper";
-import {useHistory} from "react-router-dom";
+import {useNavigate} from "react-router-dom";
+import {useNavigation} from "../providers/NavigationProvider";
 
 export function ReactTemplatesTable(props) {
     const {t} = useTranslation();
@@ -24,7 +25,7 @@ export function ReactTemplatesTable(props) {
     const debouncedQueryChange = HelperFunctions.debounce(setCurrentQuery)
     const reactTableLoadingIndicator = <ReactTableLoadingIndicator loadingText={t('loading_indicator.loading_text')}/>;
     const reactTableEmptyState = <ReactTableEmptyState title={t('templates.templates_list_empty')}/>
-    const history = useHistory()
+    const navigate = useNavigation();
 
     const columns = React.useMemo(
         () => [
@@ -72,7 +73,7 @@ export function ReactTemplatesTable(props) {
     };
 
     const navigateToEditTemplatePage = (row) => {
-        props.props.history.push('../templates/' + row.original.id)
+        navigate('../templates/' + row.original.id)
     }
 
     useEffect(() => {
@@ -134,20 +135,22 @@ export function ReactTemplatesTable(props) {
             setTemplates(response.data);
         }
 
+        const errorCallback = (error) => {
+            setIsLoading(false)
+            Toaster.showServerError(error)
+        }
+
         function onLocalFailure(error) {
-            setIsLoading(false);
-            Toaster.showDefaultRequestError();
+            errorCallback(error);
         }
 
         function onServerFailure(error) {
-            setIsLoading(false)
-            Toaster.showServerError(error)
+            errorCallback(error);
             if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             }
         }
 
         Api.jsonApiGet('templates', onValidate, onSuccess, onLocalFailure, onServerFailure, config);
     }
 }
-

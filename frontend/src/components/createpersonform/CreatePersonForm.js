@@ -9,24 +9,24 @@ import LoadingIndicator from "../loadingindicator/LoadingIndicator";
 import Api from "../../util/api/Api";
 import Toaster from "../../util/toaster/Toaster";
 import {Mod11Helper} from "../../util/Mod11Helper"
-import {useHistory} from "react-router-dom";
 import styled from "styled-components";
 import {cultured, greyLight, SURFShapeLeft} from "../../Mixins";
+import {useNavigation} from "../../providers/NavigationProvider";
 
 function CreatePersonForm(props) {
-    const {register, handleSubmit, errors, setValue, getValues, trigger} = useForm();
+    const {register, handleSubmit, formState: {errors}, setValue, getValues, trigger} = useForm();
     const [isLoading, setIsLoading] = useState(false);
     const [emailState, setEmailState] = useState('known')
     const [isInstituteKnown, setIsInstituteKnown] = useState(true);
     const emailStateIsNotDisabled = emailState !== 'no-permission'
     const disableEmailChange = emailState === 'no-permission'
     const emailKnown = (emailState === 'known')
-    const history = useHistory()
+    const navigate = useNavigation()
     const {t} = useTranslation();
     const formSubmitButton = useRef();
 
     useEffect(() => {
-        if (Object.keys(errors).length > 0) {
+        if (errors && Object.keys(errors).length > 0) {
             trigger();
         }
     }, [emailState])
@@ -55,7 +55,7 @@ function CreatePersonForm(props) {
                                        label={t("person.titulatuur")}
                                        isRequired={false}
                                        isSmallField={true}
-                                       error={errors["title"]}
+                                       error={errors && errors["title"]}
                                        name={"title"}
                                        register={register}
                                        setValue={setValue}
@@ -66,7 +66,7 @@ function CreatePersonForm(props) {
                                        isSmallField={true}
                                        classAddition={''}
                                        isRequired={true}
-                                       error={errors["firstName"]}
+                                       error={errors && errors["firstName"]}
                                        name={"firstName"}
                                        register={register}
                                        setValue={setValue}/>
@@ -75,7 +75,7 @@ function CreatePersonForm(props) {
                                        isSmallField={true}
                                        classAddition={''}
                                        label={t("person.surnamePrefix")}
-                                       error={errors["surnamePrefix"]}
+                                       error={errors && errors["surnamePrefix"]}
                                        name={"surnamePrefix"}
                                        register={register}
                                        setValue={setValue}/>
@@ -85,7 +85,7 @@ function CreatePersonForm(props) {
                                        isRequired={true}
                                        classAddition={''}
                                        label={t("person.surname")}
-                                       error={errors["surname"]}
+                                       error={errors && errors["surname"]}
                                        name={"surname"}
                                        register={register}
                                        setValue={setValue}/>
@@ -100,7 +100,7 @@ function CreatePersonForm(props) {
                                            isRequired={false}
                                            extraValidation={Mod11Helper.mod11Validator}
                                            validationRegex={"^[0-9]{8,9}[0-9X]$"}
-                                           error={errors["persistentIdentifier"]}
+                                           error={errors && errors["persistentIdentifier"]}
                                            name={"persistentIdentifier"}
                                            register={register}
                                            setValue={setValue}
@@ -114,7 +114,7 @@ function CreatePersonForm(props) {
                                            label={t("profile.profile_orcid")}
                                            isRequired={false}
                                            extraValidation={Mod11Helper.mod11_2Validator}
-                                           error={errors["orcid"]}
+                                           error={errors && errors["orcid"]}
                                            name={"orcid"}
                                            hardHint={"http://orcid.org/"}
                                            validationRegex={"^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{3}[0-9X]$"}
@@ -132,7 +132,7 @@ function CreatePersonForm(props) {
                                            isRequired={false}
                                            extraValidation={Mod11Helper.mod11_2Validator}
                                            validationRegex={"^[0]{4}[0-9]{4}[0-9]{4}[0-9]{3}[0-9X]$"}
-                                           error={errors["isni"]}
+                                           error={errors && errors["isni"]}
                                            name={"isni"}
                                            register={register}
                                            setValue={setValue}
@@ -147,7 +147,7 @@ function CreatePersonForm(props) {
                                            label={t("person.email")}
                                            isRequired={emailKnown}
                                            readonly={!emailKnown}
-                                           error={errors["email"]}
+                                           error={errors && errors["email"]}
                                            name={"email"}
                                            prefixElement={
                                                <EmailRadioButtons className={"flex-row radio"}
@@ -184,7 +184,7 @@ function CreatePersonForm(props) {
                                            inputHidden={!isInstituteKnown}
                                            isSearchable={true}
                                            isRequired={isInstituteKnown}
-                                           error={errors["institute"]}
+                                           error={errors && errors["institute"]}
                                            name={"institute"}
                                            register={register}
                                            setValue={setValue}
@@ -258,14 +258,14 @@ function CreatePersonForm(props) {
 
         function onLocalFailure(error) {
             setIsLoading(false)
-            Toaster.showDefaultRequestError();
+            Toaster.showServerError(error);
         }
 
         function onServerFailure(error) {
             setIsLoading(false)
             Toaster.showDefaultRequestError(t('error_message.duplicate_email'));
             if (error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             }
         }
 
@@ -294,10 +294,11 @@ export const PrefixRadioButtons = styled.fieldset`
         font-size: 12px;
         margin-right: 8px;
     }
-
-    input {
-        height: 10px;
-        width: 10px;
+    
+    input[type='radio']{
+        width: ${props => props.width || '10px'};
+        height: ${props => props.height || '10px'};
+        color: ${props => props.color || 'default'};
     }
 `
 

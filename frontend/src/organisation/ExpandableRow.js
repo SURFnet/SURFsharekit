@@ -9,9 +9,24 @@ import Api from "../util/api/Api";
 import {OrganisationStatusLabel} from "./OrganisationStatusLabel";
 import {GlobalPageMethods} from "../components/page/Page";
 import AddOrganisationLayerPopup from "./addorganisationlayerpopup/AddOrganisationLayerPopup";
-import {useHistory} from "react-router-dom";
+import {useNavigate} from "react-router-dom";
 import VerificationPopup from "../verification/VerificationPopup";
+import styled from "styled-components";
+import {useNavigation} from "../providers/NavigationProvider";
 
+const ReportsData = styled.div`
+    display: flex;
+    width: 350px;
+    justify-content: flex-end;
+    gap: 50px;
+    
+    span {
+        font-weight: 600;
+        font-size: 12px;
+        width: 80px;
+    }
+    
+`
 export function ExpandableRow(props) {
     const {t} = useTranslation()
     const [institute, setInstitute] = useState(props.data)
@@ -23,7 +38,7 @@ export function ExpandableRow(props) {
     const forceUpdate = useCallback(() => setState(!state), []);
     const hasChildren = institute.childrenInstitutesCount;
     const partOfConsortium = props.partOfConsortium ? true : institute.level === 'consortium'
-    const history = useHistory()
+    const navigate = useNavigation();
 
     const chevronStyle = {
         "visibility": hasChildren ? "visible" : "hidden"
@@ -45,13 +60,14 @@ export function ExpandableRow(props) {
         }
         if (!isExpanded) {
             setIsLoadingChildInstitutes(true)
-            getInstituteChildren(institute.id, partOfConsortium, props.showInactive, history, (data) => {
+            getInstituteChildren(institute.id, partOfConsortium, props.showInactive, navigate, (data) => {
                 setIsLoadingChildInstitutes(false)
                 //Nullify childInstitutes first to force the changes :-(
                 setChildInstitutes(null)
                 setChildInstitutes(data)
-            }, () => {
+            }, (error) => {
                 setIsLoadingChildInstitutes(false)
+                Toaster.showServerError(error);
             })
         }
         setIsExpanded(!isExpanded)
@@ -68,11 +84,12 @@ export function ExpandableRow(props) {
 
     function doDeleteInstitute() {
         GlobalPageMethods.setFullScreenLoading(true)
-        deleteInstitute(institute.id, history, () => {
+        deleteInstitute(institute.id, navigate, () => {
             setIsRemoved(true)
             GlobalPageMethods.setFullScreenLoading(false)
-        }, () => {
+        }, (error) => {
             GlobalPageMethods.setFullScreenLoading(false)
+            Toaster.showServerError(error);
         })
     }
 
@@ -98,7 +115,7 @@ export function ExpandableRow(props) {
                 forceUpdate();
             } else {
                 // Created new institute
-                getInstituteChildren(institute.id, partOfConsortium, props.showInactive, history, (data) => {
+                getInstituteChildren(institute.id, partOfConsortium, props.showInactive, navigate, (data) => {
                     setIsLoadingChildInstitutes(false)
                     //Nullify childInstitutes first to force the changes :-(
                     setChildInstitutes(null)
@@ -106,8 +123,9 @@ export function ExpandableRow(props) {
                     institute.childrenInstitutes = data
                     setInstitute(institute)
                     forceUpdate()
-                }, () => {
+                }, (error) => {
                     setIsLoadingChildInstitutes(false)
+                    Toaster.showServerError(error);
                 })
             }
 
@@ -144,19 +162,29 @@ export function ExpandableRow(props) {
                     </div>
                 </div>
 
-                <div className={"right-row-section"}>
-                    <OrganisationStatusLabel level={institute.level} partOfConsortium={partOfConsortium}/>
-                    <div className={"row-actions " + (partOfConsortium && 'hidden')}>
-                        <FontAwesomeIcon icon={isRemoved ? faToggleOff : faToggleOn}
-                                         className={`${institute.permissions.canDelete && !isRemoved ? "" : " disabled"}`}
-                                         onClick={isRemoved ? {} : onClickDeleteInstitute}/>
-                        <FontAwesomeIcon icon={faEdit} className={`${institute.permissions.canEdit ? "" : " disabled"}`}
-                                         onClick={onClickEditInstitute}/>
-                        <FontAwesomeIcon icon={faPlus}
-                                         className={`${institute.permissions.canCreateSubInstitute ? "" : " disabled"}`}
-                                         onClick={onClickCreateInstitute}/>
+                { props.showReportsData ?
+                    <ReportsData>
+                        <span></span>
+                        <span></span>
+                        <span>{new Intl.NumberFormat('de-DE').format(institute.totalPublicationsCount)}</span>
+                    </ReportsData>
+                    :
+                    <div className={"right-row-section"}>
+                        <OrganisationStatusLabel level={institute.level} partOfConsortium={partOfConsortium}/>
+                        <div className={"row-actions " + (partOfConsortium && 'hidden')}>
+                            <FontAwesomeIcon icon={isRemoved ? faToggleOff : faToggleOn}
+                                             className={`${institute.permissions.canDelete && !isRemoved ? "" : " disabled"}`}
+                                             onClick={isRemoved ? {} : onClickDeleteInstitute}/>
+                            <FontAwesomeIcon icon={faEdit}
+                                             className={`${institute.permissions.canEdit ? "" : " disabled"}`}
+                                             onClick={onClickEditInstitute}/>
+                            <FontAwesomeIcon icon={faPlus}
+                                             className={`${institute.permissions.canCreateSubInstitute ? "" : " disabled"}`}
+                                             onClick={onClickCreateInstitute}/>
+                        </div>
                     </div>
-                </div>
+                }
+
             </div>
             <div className={"child-rows"}>
                 {
@@ -164,12 +192,15 @@ export function ExpandableRow(props) {
                         <ExpandableRowLoadingIndicator/>
                     ) : (
                         isExpanded && childInstitutes && childInstitutes.map((childInstitute, i) => {
+                            const publications = Math.floor(Math.random() * 2000);
                             return <ExpandableRow
                                 partOfConsortium={partOfConsortium}
                                 key={childInstitute.id}
                                 data={childInstitute}
                                 showInactive={props.showInactive}
                                 onClickExpand={props.onClickExpand}
+                                showReportsData={props.showReportsData}
+                                publications={publications}
                             />
                         })
                     )
@@ -191,7 +222,7 @@ export function ExpandableRowLoadingIndicator() {
     )
 }
 
-export function getInstituteChildren(instituteParentId, useConsortiumFilter, showInactive, history, successCallback, errorCallback = () => {
+export function getInstituteChildren(instituteParentId, useConsortiumFilter, showInactive, navigate, successCallback, errorCallback = () => {
 }) {
     function onValidate(response) {
     }
@@ -201,18 +232,16 @@ export function getInstituteChildren(instituteParentId, useConsortiumFilter, sho
     }
 
     function onLocalFailure(error) {
-        errorCallback()
-        Toaster.showDefaultRequestError();
-        console.log(error);
+        console.error(error);
+        errorCallback(error)
     }
 
     function onServerFailure(error) {
-        console.log(error);
-        Toaster.showServerError(error)
+        console.error(error);
         if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-            history.push('/login?redirect=' + window.location.pathname);
+            navigate('/login?redirect=' + window.location.pathname);
         }
-        errorCallback()
+        errorCallback(error)
     }
 
     const config = {
@@ -232,13 +261,13 @@ export function getInstituteChildren(instituteParentId, useConsortiumFilter, sho
     }
 
     //MB limit fields to improve performance
-    config.params['fields[institutes]'] = 'title,permissions,isRemoved,level,abbreviation,summary,type,childrenInstitutesCount';
+    config.params['fields[institutes]'] = 'title,permissions,isRemoved,level,abbreviation,summary,type,childrenInstitutesCount,totalPublicationsCount';
     config.params['sort'] = 'title';
 
     Api.jsonApiGet('institutes', onValidate, onSuccess, onLocalFailure, onServerFailure, config);
 }
 
-export function deleteInstitute(instituteId, history, successCallback, errorCallback = () => {
+export function deleteInstitute(instituteId, navigate, successCallback, errorCallback = () => {
 }) {
 
     function onValidate(response) {
@@ -250,18 +279,16 @@ export function deleteInstitute(instituteId, history, successCallback, errorCall
     }
 
     function onLocalFailure(error) {
-        Toaster.showDefaultRequestError()
-        console.log(error);
-        errorCallback()
+        console.error(error);
+        errorCallback(error)
     }
 
     function onServerFailure(error) {
-        console.log(error);
-        Toaster.showServerError(error)
+        console.error(error);
         if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-            history.push('/login?redirect=' + window.location.pathname);
+            navigate('/login?redirect=' + window.location.pathname);
         }
-        errorCallback()
+        errorCallback(error)
     }
 
     const config = {
@@ -282,4 +309,3 @@ export function deleteInstitute(instituteId, history, successCallback, errorCall
 
     Api.patch(`institutes/${instituteId}`, onValidate, onSuccess, onLocalFailure, onServerFailure, config, patchData);
 }
-

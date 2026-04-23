@@ -1,7 +1,6 @@
 import {useTranslation} from "react-i18next";
 import React, {useCallback, useEffect, useRef, useState} from "react";
 import {StorageKey, useAppStorageState} from "../../util/AppStorage";
-import './searchrepoitemtable.scss'
 import '../field/formfield.scss'
 import Api from "../../util/api/Api";
 import Toaster from "../../util/toaster/Toaster";
@@ -11,9 +10,9 @@ import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faFileInvoice, faPaperclip, faSearch} from "@fortawesome/free-solid-svg-icons";
 import {HelperFunctions} from "../../util/HelperFunctions";
 import {ProfileBanner} from "../profilebanner/ProfileBanner";
-import {useHistory} from "react-router-dom";
 import axios from "axios";
 import {SwalRepoItemPopup} from "../field/relatedrepoitempopup/RelatedRepoItemPopup";
+import {useNavigation} from "../../providers/NavigationProvider";
 
 function SearchRepoItemTable(props) {
     const [user] = useAppStorageState(StorageKey.USER);
@@ -22,7 +21,7 @@ function SearchRepoItemTable(props) {
     const {t} = useTranslation();
     const [query, setQuery] = useState('');
     const tableRows = repoItems;
-    const history = useHistory()
+    const navigate = useNavigation()
     const cancelToken = useRef();
 
     const selectedRepoItemsNotEmptyOrNull = props.selectedRepoItems && props.selectedRepoItems.length > 0;
@@ -126,18 +125,15 @@ function SearchRepoItemTable(props) {
 
     return (
         <div className={'repoitem-search flex-column'}>
-            <div className={'form-field-container query-row'}>
-                <div className={'form-field'}>
-                    <div className="form-row">
-                        <input type="text"
-                               className={"field-input text"}
-                               placeholder={t('action.search')}
-                               onChange={(e) => {
-                                   debouncedQueryChange(e.target.value)
-                               }}
-                        />
-                        <FontAwesomeIcon icon={faSearch}/>
-                    </div>
+            <div className="form-field-container query-row">
+                <div className="form-field search-left">
+                    <FontAwesomeIcon icon={faSearch} />
+                    <input
+                        type="text"
+                        className="field-input text"
+                        placeholder={t('action.search')}
+                        onChange={(e) => debouncedQueryChange(e.target.value)}
+                    />
                 </div>
             </div>
             <ReactTable
@@ -149,6 +145,7 @@ function SearchRepoItemTable(props) {
                 emptyState={<div className={'empty-message'}>{t('error_message.empty_search')}</div>}
                 isLoading={isLoading}
                 onRowClick={onRowClick}
+                enablePagination={true}
             />
             {!props.hideNextButton && <div className={"save-button-wrapper"}>
                 <ButtonText text={props.buttonText ?? t('repoitem.popup.next')}
@@ -203,9 +200,9 @@ function SearchRepoItemTable(props) {
                 return Api.dataFormatter.deserialize(response.data);
             })
             props.setAdditionalRepoItems(repoItemList)
-        })).catch(errors => {
+        })).catch(error => {
             SwalRepoItemPopup.close()
-            Toaster.showDefaultRequestError()
+            Toaster.showServerError(error)
         })
     }
 
@@ -234,6 +231,10 @@ function SearchRepoItemTable(props) {
         console.log(config.cancelToken);
         cancelToken.current = Api.jsonApiGet('repoItems', onValidate, onSuccess, onLocalFailure, onServerFailure, config);
 
+        const errorCallback = (error) => {
+            setIsLoading(false)
+            Toaster.showServerError(error)
+        }
 
         function onValidate(response) {
         }
@@ -244,17 +245,15 @@ function SearchRepoItemTable(props) {
         }
 
         function onServerFailure(error) {
-            console.log(error);
-            setIsLoading(false)
-            Toaster.showServerError(error)
+            errorCallback(error)
             if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             }
+            console.log(error);
         }
 
         function onLocalFailure(error) {
-            setIsLoading(false);
-            Toaster.showDefaultRequestError();
+            errorCallback(error)
             console.log(error);
         }
     }

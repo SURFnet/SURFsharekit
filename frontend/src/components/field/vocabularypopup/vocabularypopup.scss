@@ -2,6 +2,11 @@
 @import "../../../sass/theme/fonts";
 @import "../../../sass/utils/mixins";
 
+
+.swal2-container .swal2-html-container {
+  all: unset;
+}
+
 .swal2-container.add-publication-container {
 
   .swal2-popup.add-publication-popup {

@@ -7,15 +7,15 @@ import {faChevronDown} from "@fortawesome/free-solid-svg-icons";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {useTranslation} from "react-i18next";
 import Api from "../../../util/api/Api";
-import {useHistory} from "react-router-dom";
 import {OrganisationStatusLabel} from "../../../organisation/OrganisationStatusLabel";
 import debounce from "debounce-promise";
-import {register} from "../../../serviceWorker";
 import {SwitchField} from "../switch/Switch";
+import {useNavigation} from "../../../providers/NavigationProvider";
+import {useFormFieldRegistration} from "../../../util/hooks/useFormFieldRegistration";
 
 function MultiSelectSuborganisation(props) {
     const {t} = useTranslation();
-    const history = useHistory();
+    const navigate = useNavigation();
     const [selectedOptionValues, setSelectedOptionValues] = useState(getInitialValues())
     const isFirstLoad = useRef(true);
     const [showInactive, setShowInactive] = useState(0);
@@ -37,22 +37,18 @@ function MultiSelectSuborganisation(props) {
     const style = {
         control: (base, state) => ({
             ...base,
-            border: '1px solid ' + (state.isFocused ? Constants.majorelle : borderColor) + ' !important', //else will be overwritten by field-input style
+            border: '1px solid ' + (state.isFocused ? Constants.majorelle : borderColor) + ' !important',
             boxShadow: 'none'
         }),
         input: (base, state) => ({
             ...base,
-            display: (props.readonly) ? 'none' : 'block'
-        }),
+            display: (props.readonly) ? 'none' : 'flex',
+            margin: 'auto 0', // remove default margin
+            padding: 0,
+            fontSize: '12px',
+            fontFamily: 'Open Sans, sans-serif'
+        })
     };
-
-    useEffect(() => {
-        if (props.register) {
-            props.register({name: props.name}, {required: props.isRequired})
-            props.setValue(props.name, getOptionValues())
-            props.onChange(getOptionValues())
-        }
-    }, [props.register])
 
     useEffect(() => {
         if (props.setValue) {
@@ -62,14 +58,15 @@ function MultiSelectSuborganisation(props) {
     }, [selectedOptionValues])
 
     function getInitialValues() {
-        if(props.defaultValue) {
+        if(props.defaultValue && props.defaultValue.length > 0 && props.defaultValue.every(item => item !== null)) {
             return props.defaultValue.map(optionData => {
+                const summaryTitle = optionData?.summary?.title ?? t('organisation.unknown');
                 return {
                     value: optionData.id,
-                    optionTitle: optionData.summary.title,
+                    optionTitle: summaryTitle,
                     optionLabel: null,
                     isRemoved: null,
-                    label: optionData.summary.title,
+                    label: summaryTitle,
                 }
             });
         }
@@ -95,6 +92,9 @@ function MultiSelectSuborganisation(props) {
         let noDefaultOrSelectedOptionValues = (!props.defaultValue || props.defaultValue.length === 0) && (!selectedOptionValues || selectedOptionValues.length === 0)
         return (noDefaultOrSelectedOptionValues ? null : parseSelectedOptionValues());
     }
+
+    // Use the custom hook for form field registration
+    const { hiddenInput } = useFormFieldRegistration(props, getOptionValues);
 
     const DropdownChevronIcon = () => {
         return <FontAwesomeIcon icon={faChevronDown}/>;
@@ -131,13 +131,14 @@ function MultiSelectSuborganisation(props) {
     const promiseOptions = inputValue =>
         new Promise(resolve => {
             getSuborganisations(inputValue, (data) => {
-                const options = data.map(optionData => {
+                const options = data.filter(o => o != null).map(optionData => {
+                    const summaryTitle = optionData?.summary?.title ?? t('organisation.unknown');
                     return {
                         value: optionData.id,
-                        optionTitle: optionData.summary.title,
+                        optionTitle: summaryTitle,
                         optionLabel: optionData.level,
                         isRemoved: optionData.isRemoved,
-                        label: optionData.summary.title,
+                        label: summaryTitle,
                     }
                 })
                 resolve(options)
@@ -148,6 +149,9 @@ function MultiSelectSuborganisation(props) {
 
     return (
         <div className={"multi-select-suborganisation-container" + classAddition}>
+            {/* Hidden input for react-hook-form registration */}
+            {hiddenInput}
+            
             {!props.readonly && props.showInactiveSwitch && <div className={"inactive-switch"}>
                 <div className={"switch-row-text"}>
                     <h5 className={"bold-text"}>{t("organisation.tab_organizational_inactive")}</h5>
@@ -204,7 +208,7 @@ function MultiSelectSuborganisation(props) {
         function onServerFailure(error) {
             callback([])
             if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             }
         }
 

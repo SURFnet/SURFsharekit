@@ -11,6 +11,7 @@ export const StorageKey = {
     USER_CAN_VIEW_PROFILES: 'userCanViewProfiles',
     USER_CAN_VIEW_PROJECTS: 'userCanViewProjects',
     USER_CAN_VIEW_PUBLICATIONS: 'userCanViewPublications',
+    USER_CAN_VIEW_ARCHIVE: 'userCanViewArchive',
     USER_INSTITUTE: 'userInstitute',
     LANGUAGE_LOCALE: 'languageLocale',
     STATE_REDIRECT: 'stateRedirect',

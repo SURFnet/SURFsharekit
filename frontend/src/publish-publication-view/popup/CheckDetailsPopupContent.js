@@ -31,6 +31,8 @@ export function CheckDetailsPopupContent(props) {
         </div>
     }
 
+    const relatedInstituteTitle = props.repoItem?.relatedTo?.title ?? 'N/A';
+
     return <div className={`repo-item-details ${props.repoItem.status === "Declined" ? "rejected" : ""}`}>
         <div className={"header-container"}>
             <h4>{t("publication_flow.details")}</h4>
@@ -55,10 +57,12 @@ export function CheckDetailsPopupContent(props) {
             <CreatedLastEditedPersonLink person={props.repoItem.lastEditor}/>
         </div>
 
-        <div className={"section"}>
-            <div className={"section-title"}>{t("publication.organisation")}</div>
-            <div className={"date"}>{props.repoItem.relatedTo.title}</div>
-        </div>
+        {props.repoItem?.relatedTo &&
+            <div className={"section"}>
+                <div className={"section-title"}>{t("publication.organisation")}</div>
+                <div className={"date"}>{relatedInstituteTitle}</div>
+            </div>
+        }
 
         {/*<div className={"section"}>*/}
         {/*    {props.repoItem.status === "Declined" &&*/}

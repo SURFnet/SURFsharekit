@@ -55,6 +55,10 @@
                     @include open-sans;
                     font-size: 12px;
                     color: $text-color;
+                    display: -webkit-box;
+                    -webkit-box-orient: vertical;
+                    -webkit-line-clamp: 2;
+                    overflow: hidden;
                 }
             }
         }
@@ -73,6 +77,7 @@
         border-radius: 0 0 $default-radius $default-radius;
         margin-top: 6px;
         margin-bottom: 0;
+        z-index: 20;
 
         .surf-select__menu-list {
             padding-top: 0;
@@ -90,7 +95,12 @@
                 }
 
                 &.surf-select__option--is-selected {
-                    background-color: rgba($majorelle, 0.3);
+                    background-color: rgba($majorelle, 0.15);
+                    color: $majorelle;
+                }
+
+                &.surf-select__option--is-selected.surf-select__option--is-focused {
+                    background-color: rgba(lighten($majorelle, 20%), 0.3);
                     color: $majorelle;
                 }
             }
@@ -117,6 +127,6 @@
     :hover {
         height: 100px;
     }
-
-    max-height: 14px;
+    align-self: center;
+    height: 15px;
 }

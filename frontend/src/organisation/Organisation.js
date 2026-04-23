@@ -7,7 +7,7 @@ import HorizontalTabList from "../components/horizontaltablist/HorizontalTabList
 import ReactRollsAndRightsTable from "./ReactRollsAndRightsTable";
 import PersonTable from "../components/reacttable/tables/person/PersonTable";
 import {StorageKey, useAppStorageState} from "../util/AppStorage";
-import {Redirect, useHistory, useLocation} from "react-router-dom";
+import {Navigate, useLocation} from "react-router-dom";
 import {SwitchRowField} from "../components/field/switchrow/SwitchRowField";
 
 function Organisation(props) {
@@ -41,7 +41,7 @@ function Organisation(props) {
 
 
     if (user === null) {
-        return <Redirect to={'login?redirect=organisation'}/>
+        return <Navigate to={'login?redirect=organisation'}/>
     }
 
     const content = <div>
@@ -89,12 +89,11 @@ function Organisation(props) {
     function Users() {
         return <div id={"tab-notifications"} className={"tab-content-container"}>
             <h2 className={"tab-title"}>{t("organisation.tab_users")}</h2>
-            <PersonTable props={props} history={props.history}/>
+            <PersonTable props={props}/>
         </div>
     }
 
     return <Page id="organisation"
-                 history={props.history}
                  activeMenuItem={"organisation"}
                  breadcrumbs={[{
                      path: './dashboard', title: 'side_menu.dashboard'

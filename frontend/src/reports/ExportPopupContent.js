@@ -22,7 +22,7 @@ export function ExportPopupContent(props) {
 
     const [selectedExportType, setSelectedExportType] = useState(defaultExportType);
     const {t} = useTranslation()
-    const {register, handleSubmit, errors, setValue, getValues, trigger} = useForm();
+    const {register, handleSubmit, formState: {errors}, setValue} = useForm();
     const formSubmitButton = useRef();
     const repoItemTypeOptionsObjects = RepoItemTypeOptionsEnum().map((option) => {
             return {
@@ -55,56 +55,56 @@ export function ExportPopupContent(props) {
     let popupContent = ([
         <div key={"export-title"} className={"export-layer-title"}>
             <h3>{t('report.export')}</h3>
-            <form id={"form-export"} onSubmit={handleSubmit(downloadExport)}>
+            <form id={"form-export"} onSubmit={handleSubmit(async (data) => await downloadExport(data, props.onCancel))}>
                 <div className={"flex-column"}>
-                    <div className={"form-column flex-column"}>
-                        <div className={"form-row flex-row form-field-container"}>
-                            <FormField key={"repoType"}
-                                       type={"dropdown"}
-                                       label={t("export.publication_type")}
-                                       isSmallField={true}
-                                       classAddition={''}
-                                       error={errors["repoType"]}
-                                       name={"repoType"}
-                                       options={repoItemTypeOptionsObjects}
-                                       register={register}
-                                       setValue={setValue}/>
-                            <FormField key={"institutes"}
-                                       type={"multiselectdropdown"}
-                                       isSmallField={true}
-                                       classAddition={''}
-                                       getOptions={HelperFunctions.debounce(institutesCall)}
-                                       options={organisationLevelOptionObjects}
-                                       label={t("export.institute_level")}
-                                       error={errors["institutes"]}
-                                       name={"institutes"}
-                                       register={register}
-                                       setValue={setValue}/>
+                            <div className={"flex-column form-field-container"}>
+                                <FormField key={"repoType"}
+                                           type={"dropdown"}
+                                           label={t("export.publication_type")}
+                                           isSmallField={true}
+                                           classAddition={'export'}
+                                           error={errors && errors["repoType"]}
+                                           name={"repoType"}
+                                           options={repoItemTypeOptionsObjects}
+                                           register={register}
+                                           setValue={setValue}/>
+                                <FormField key={"institute"}
+                                           type={"institute"}
+                                           onlyScopedInstitutes={true}
+                                           isRequired={true}
+                                           isSmallField={true}
+                                           classAddition={'export'}
+                                           getOptions={HelperFunctions.debounce(institutesCall)}
+                                           options={organisationLevelOptionObjects}
+                                           label={t("export.institute_level")}
+                                           error={errors && errors["institute"]}
+                                           name={"institute"}
+                                           register={register}
+                                           setValue={setValue}/>
+                            </div>
                         </div>
                         <div className={"form-row flex-row"}>
                             <div className={"flex-column form-field-container"}>
                                 <FormField key={"dateFrom"}
-                                           type={"text"}
-                                           isSmallField={true}
-                                           classAddition={''}
+                                           isRequired={true}
+                                           type={"datepicker"}
                                            label={t("export.date_start")}
-                                           error={errors["dateFrom"]}
+                                           classAddition={'export'}
+                                           error={errors && errors["dateFrom"]}
                                            name={"dateFrom"}
-                                           validationRegex={dutchDateRegex}
-                                           tooltip={t("export.date_format_tooltip")}
                                            register={register}
-                                           setValue={setValue}/>
+                                           setValue={setValue}
+                                />
                                 <FormField key={"dateUntil"}
-                                           type={"text"}
-                                           isSmallField={true}
-                                           classAddition={''}
+                                           isRequired={true}
+                                           type={"datepicker"}
                                            label={t("export.date_until")}
-                                           error={errors["dateUntil"]}
+                                           classAddition={'export'}
+                                           error={errors && errors["dateUntil"]}
                                            name={"dateUntil"}
-                                           tooltip={t("export.date_format_tooltip")}
-                                           validationRegex={dutchDateRegex}
                                            register={register}
-                                           setValue={setValue}/>
+                                           setValue={setValue}
+                                />
                             </div>
                         </div>
                         <div className={"form-row flex-row"}>
@@ -123,15 +123,13 @@ export function ExportPopupContent(props) {
                                     }}
                                 />
                             </div>
-                        </div>
-                    </div>
                 </div>
                 <div className={"save-button-wrapper"}>
                     <button type="submit"
                             form="form-export"
                             ref={formSubmitButton}
                             style={{display: "none"}}/>
-                    <ButtonText text={t('report.download')}
+                    <ButtonText text={t('report.export')}
                                 buttonType={"callToAction"}
                                 onClick={() => {
                                     formSubmitButton.current.click();
@@ -153,32 +151,15 @@ export function ExportPopupContent(props) {
         </div>
     )
 
-    function downloadExport(formData) {
+    function downloadExport(formData, onCancel) {
         GlobalPageMethods.setFullScreenLoading(true)
 
         const config = {
             params: {}
         };
 
-        function getFullEnglishDateFrom(dutchDateString, getLastDate) {
-            const dutchDateParts = dutchDateString.split("-"); //jjjj-mm-dd , jjjj-mm or jjjj
-            const englishDateParts = dutchDateParts.reverse(); //dd-mm-yyyy, mm-yyyy or yyyy
-            if (englishDateParts.length < 2) {
-                englishDateParts.push(getLastDate ? '12' : '01');
-            }
-            if (englishDateParts.length < 3) {
-                if (getLastDate) {
-                    let firstDayOfNextMonth = new Date(englishDateParts[0], parseInt(englishDateParts[1]), 0);
-                    englishDateParts.push(firstDayOfNextMonth.getDate());
-                } else {
-                    englishDateParts.push('01');
-                }
-            }
-            return englishDateParts.join("-");
-        }
-
-        if (formData.institutes) {
-            config.params['filter[scope]'] = formData.institutes.map(i => i.value).reduce((total, cv) => total + (total === '' ? '' : ',') + cv, '')
+        if (formData.institute) {
+            config.params['filter[scope]'] = formData.institute
         }
         if (formData.repoType) {
             config.params['filter[repoType]'] = formData.repoType;
@@ -193,19 +174,19 @@ export function ExportPopupContent(props) {
         if (selectedExportType === 'downloads') {
             objectType = 'statsDownloads';
             if (formData.dateFrom) {
-                config.params['filter[downloadDate][GE]'] = getFullEnglishDateFrom(formData.dateFrom, false);
+                config.params['filter[downloadDate][GE]'] = formData.dateFrom;
             }
             if (formData.dateUntil) {
-                config.params['filter[downloadDate][LE]'] = getFullEnglishDateFrom(formData.dateUntil, true);
+                config.params['filter[downloadDate][LE]'] = formData.dateUntil
             }
         } else {
             config.params['filter[isRemoved]'] = 0;
 
             if (formData.dateFrom) {
-                config.params['filter[publicationDate][GE]'] = getFullEnglishDateFrom(formData.dateFrom, false);
+                config.params['filter[publicationDate][GE]'] = formData.dateFrom
             }
             if (formData.dateUntil) {
-                config.params['filter[publicationDate][LE]'] = getFullEnglishDateFrom(formData.dateUntil, true);
+                config.params['filter[publicationDate][LE]'] = formData.dateUntil
             }
         }
 
@@ -214,22 +195,23 @@ export function ExportPopupContent(props) {
 
         function onSuccess(response) {
             GlobalPageMethods.setFullScreenLoading(false)
-            window.location = response.headers.location;
+            onCancel()
         }
 
-        function onLocalFailure(error) {
-            console.log(error);
-            GlobalPageMethods.setFullScreenLoading(false)
-            Toaster.showDefaultRequestError()
-        }
-
-        function onServerFailure(error) {
-            console.log(error);
+        const errorCallback = (error) => {
             GlobalPageMethods.setFullScreenLoading(false)
             Toaster.showServerError(error)
         }
 
-        Api.get('csv/' + objectType, onValidate, onSuccess, onLocalFailure, onServerFailure, config)
+        function onLocalFailure(error) {
+            errorCallback(error);
+        }
+
+        function onServerFailure(error) {
+            errorCallback(error);
+        }
+
+        Api.post('csv/' + objectType, onValidate, onSuccess, onLocalFailure, onServerFailure, config)
     }
 }
 

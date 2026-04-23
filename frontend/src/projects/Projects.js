@@ -2,14 +2,14 @@ import React, {useState} from 'react';
 import {UserPermissions} from "../util/UserPermissions";
 import IconButtonText from "../components/buttons/iconbuttontext/IconButtonText";
 import {faPlus} from "@fortawesome/free-solid-svg-icons";
-import PersonTable from "../components/reacttable/tables/person/PersonTable";
 import {useTranslation} from "react-i18next";
 import {StorageKey, useAppStorageState} from "../util/AppStorage";
-import {Redirect} from "react-router-dom";
+import {Navigate} from "react-router-dom";
 import Page, {GlobalPageMethods} from "../components/page/Page";
 import "./projects.scss"
 import ProjectTable from "../components/reacttable/tables/project/ProjectTable";
 import {createAndNavigateToRepoItem} from "../publications/Publications";
+import {useNavigation} from "../providers/NavigationProvider";
 
 function Projects(props) {
     const {t} = useTranslation();
@@ -18,9 +18,10 @@ function Projects(props) {
     const userHasExtendedAccess = userRoles ? userRoles.find(c => c !== 'Student' && c !== 'Default Member') : false;
     const [userPermissions] = useAppStorageState(StorageKey.USER_PERMISSIONS);
     const [searchCount, setSearchCount] = useState(0);
+    const navigate = useNavigation()
 
     if (user === null || !userHasExtendedAccess) {
-        return <Redirect to={'login?redirect=profiles'}/>
+        return <Navigate to={'login?redirect=profiles'}/>
     }
 
     function onTableFiltered(itemProps) {
@@ -39,7 +40,7 @@ function Projects(props) {
                                 buttonText={t("projects.add_project")}
                                 onClick={() => {
                                     GlobalPageMethods.setFullScreenLoading(true)
-                                    createAndNavigateToRepoItem(props, () => {
+                                    createAndNavigateToRepoItem(navigate, props, () => {
                                             GlobalPageMethods.setFullScreenLoading(false)
                                         },
                                         () => {
@@ -50,7 +51,6 @@ function Projects(props) {
         </div>
         <ProjectTable
             props={props}
-            history={props.history}
             onTableFiltered={onTableFiltered}
             hideDelete={true}
             enablePagination={true}
@@ -61,7 +61,6 @@ function Projects(props) {
     </div>;
 
     return <Page id="projects"
-                 history={props.history}
                  breadcrumbs={[
                      {
                          path: './dashboard',
@@ -77,7 +76,7 @@ function Projects(props) {
                  content={content}/>;
 
     function onClickEditProject(itemProps) {
-        props.history.push(`../projects/${itemProps.id}`, {isProject: true})
+        navigate(`../projects/${itemProps.id}`, {isProject: true})
     }
 }
 

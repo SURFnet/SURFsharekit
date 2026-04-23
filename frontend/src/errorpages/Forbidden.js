@@ -4,13 +4,11 @@ import {faInfoCircle} from "@fortawesome/free-solid-svg-icons";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {useTranslation} from "react-i18next";
 import ButtonText from "../components/buttons/buttontext/ButtonText";
+import {useNavigation} from "../providers/NavigationProvider";
 
 function Forbidden(props) {
     const {t} = useTranslation();
-
-    function navigateToDashboard() {
-        props.history.push('/dashboard')
-    }
+    const navigate = useNavigation()
 
     return (
         <div id={"not-found"} className="main">
@@ -26,7 +24,7 @@ function Forbidden(props) {
                                 <div className={"buttons-wrapper"}>
                                     <ButtonText text={t("error_pages.to_dashboard")}
                                                 buttonType={"callToAction"}
-                                                onClick={navigateToDashboard}/>
+                                                onClick={() => navigate('/dashboard')}/>
                                 </div>
                             </div>
                         </div>

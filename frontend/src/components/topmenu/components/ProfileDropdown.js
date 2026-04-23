@@ -14,8 +14,10 @@ import UserIconWhite from '../../../resources/icons/ic-user-white.svg';
 import InfoIcon from '../../../resources/icons/ic-info.svg';
 import SignOutIcon from '../../../resources/icons/ic-sign-out.svg';
 import DropdownItemWithIcon from "../../../styled-components/dropdowns/dropdown-items/DropdownItemWithIcon";
-import {useHistory, useLocation} from "react-router-dom";
+import {useNavigate, useLocation} from "react-router-dom";
 import { redirect } from "react-router-dom";
+import {useNavigation} from "../../../providers/NavigationProvider";
+import { logoutUser } from "../../../util/authUtils";
 
 function ProfileDropdown() {
 
@@ -34,16 +36,30 @@ function ProfileDropdown() {
 
     const [isExpanded, setExpanded] = useState(false);
     const {t, i18n} = useTranslation();
-    const history = useHistory();
+    const navigate = useNavigation();
 
     const dropdownItems = [
-        new DropdownItemWithIcon(UserIcon, t("top_menu.profile_dropdown.my_profile"),() => window.location.href = "/profile"),
+        new DropdownItemWithIcon(UserIcon, t("top_menu.profile_dropdown.my_profile"), () => navigate('/profile')),
         new DropdownItemWithIcon(InfoIcon, t("top_menu.profile_dropdown.help"), () => window.open('https://servicedesk.surf.nl/wiki/display/WIKI/SURFsharekit', '__blank')),
-        new DropdownItemWithIcon(SignOutIcon, t("top_menu.profile_dropdown.sign_out"),  () => logout()),
+        new DropdownItemWithIcon(SignOutIcon, t("top_menu.profile_dropdown.sign_out"),  () => {
+            const setters = {
+                setUser,
+                setUserInstitute,
+                setUserRoles,
+                setUserPermissions,
+                setCanViewTemplates,
+                setCanViewOrganisations,
+                setCanViewPublications,
+                setCanViewProfiles,
+                setCanViewProjects,
+                setCanViewReports,
+                setCanViewBin
+            };
+            logoutUser(setters, navigate);
+        }),
     ]
 
     return (
-
         <ModalButton
             onModalVisibilityChanged={(isModalVisible) => setExpanded(isModalVisible)}
             modalHorizontalAlignment={MODAL_ALIGNMENT.RIGHT}
@@ -65,21 +81,6 @@ function ProfileDropdown() {
             }
         />
     )
-
-    function logout() {
-        setUser(null);
-        setUserInstitute(null);
-        setUserRoles(null);
-        setUserPermissions(null);
-        setCanViewTemplates(null);
-        setCanViewOrganisations(null);
-        setCanViewPublications(null)
-        setCanViewProfiles(null);
-        setCanViewProjects(null);
-        setCanViewReports(null);
-        setCanViewBin(null);
-        history.replace('/login')
-    }
 }
 
 const ProfileDropdownRoot = styled.div`

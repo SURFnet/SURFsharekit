@@ -2,7 +2,10 @@
 @import "../sass/theme/mixins";
 
 .expandable-list {
-    margin-top: 30px;
+
+    &.with-margin {
+        margin-top: 30px;
+    }
 
     .expandable-row-container {
 

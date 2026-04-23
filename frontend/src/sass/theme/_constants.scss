@@ -6,6 +6,7 @@ $flame: rgb(227, 95, 60) !default;
 $flame-light: #F69E90 !default;
 $majorelle: rgb(115,68,238) !default;
 $majorelle-light: #906AF1 !default;
+$majorelle-super-light: #f4ebff !default;
 $maximum-yellow: rgb(243, 186, 90) !default;
 $maximum-yellow-light: #FACD34 !default;
 $ocean-green: rgb(100, 195, 165) !default;
@@ -43,4 +44,5 @@ $page-background-gradient: linear-gradient(270deg, #F8F8F8 0%, #F0F0F0 82.57%);
     inputBorderColor: $input-border-color;
     textColorValid: $text-color-valid;
     textColorError: $text-color-error;
+    textColor: $text-color;
 }

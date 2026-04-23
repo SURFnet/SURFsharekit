@@ -10,14 +10,16 @@ import LoadingIndicator from "../components/loadingindicator/LoadingIndicator";
 import {FormField, FormSection, FormSectionsContainer} from "../components/field/FormField";
 import {useForm} from "react-hook-form";
 import RepoItemHelper from "../util/RepoItemHelper";
+import {useParams} from "react-router-dom";
 
 function EditTemplate(props) {
     const {t} = useTranslation();
+    const params = useParams()
     const contentRef = useRef();
     const formSubmitButton = useRef();
     const [template, setTemplate] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
-    const {register, handleSubmit, errors, setValue} = useForm();
+    const {register, handleSubmit, formState: { errors}, setValue} = useForm();
     let templatePatchData = null;
     // let setActiveSection = null
     let scrollSectionsContainer = null
@@ -152,7 +154,6 @@ function EditTemplate(props) {
     }
 
     return <Page id="edit-template"
-                 history={props.history}
                  activeMenuItem={"templates"}
                  contentRef={contentRef}
                  content={content}
@@ -296,6 +297,11 @@ function EditTemplate(props) {
             }
         }
 
+        const errorCallback = (error) => {
+            setIsLoading(false)
+            Toaster.showServerError(error)
+        }
+
         function onValidate(response) {
         }
 
@@ -305,16 +311,14 @@ function EditTemplate(props) {
         }
 
         function onLocalFailure(error) {
-            setIsLoading(false);
-            Toaster.showDefaultRequestError()
+            errorCallback(error)
         }
 
         function onServerFailure(error) {
-            setIsLoading(false);
-            Toaster.showServerError(error)
+            errorCallback(error)
         }
 
-        Api.jsonApiGet('templates/' + props.match.params.id, onValidate, onSuccess, onLocalFailure, onServerFailure, config);
+        Api.jsonApiGet('templates/' + params.id, onValidate, onSuccess, onLocalFailure, onServerFailure, config);
     }
 
     function patchTemplate(templatePatchDataTemp) {
@@ -348,7 +352,7 @@ function EditTemplate(props) {
                 }
             }
 
-            Api.patch('templates/' + props.match.params.id, onValidate, onSuccess, onLocalFailure, onServerFailure, config, templatePatchDataTemp);
+            Api.patch('templates/' + params.id, onValidate, onSuccess, onLocalFailure, onServerFailure, config, templatePatchDataTemp);
         }
     }
 }

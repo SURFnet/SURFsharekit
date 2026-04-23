@@ -2,7 +2,7 @@ import React, {useState} from "react";
 import './publications.scss'
 import AppStorage, {StorageKey, useAppStorageState} from "../util/AppStorage";
 import Page, {GlobalPageMethods} from "../components/page/Page";
-import {Redirect} from "react-router-dom";
+import {Navigate, useNavigate} from "react-router-dom";
 import {useTranslation} from "react-i18next";
 import {faPlus} from "@fortawesome/free-solid-svg-icons";
 import IconButtonText from "../components/buttons/iconbuttontext/IconButtonText";
@@ -15,21 +15,23 @@ import {UserPermissions} from "../util/UserPermissions";
 import ButtonText from "../components/buttons/buttontext/ButtonText";
 import RemediatePopup from "../remediate/RemediatePopup";
 import useDocumentTitle from "../util/useDocumentTitle";
+import {useNavigation} from "../providers/NavigationProvider";
 
 function Publications(props) {
     const {t} = useTranslation();
     const [user] = useAppStorageState(StorageKey.USER);
     const [userPermissions] = useAppStorageState(StorageKey.USER_PERMISSIONS);
     const [searchCount, setSearchCount] = useState(0);
+    const navigate = useNavigation()
 
     useDocumentTitle('Publications')
 
     if (user === null) {
-        return <Redirect to={'login?redirect=publications'}/>
+        return <Navigate to={'login?redirect=publications'}/>
     }
 
     function onClickEditPublication(itemProps) {
-        goToEditPublication(props, itemProps)
+        goToEditPublication(navigate, itemProps)
     }
 
     function onTableFiltered(itemProps) {
@@ -58,7 +60,7 @@ function Publications(props) {
                                 buttonText={t("my_publications.add_publication")}
                                 onClick={() => {
                                     GlobalPageMethods.setFullScreenLoading(true)
-                                    createAndNavigateToRepoItem(props, () => {
+                                    createAndNavigateToRepoItem(navigate, props, () => {
                                             GlobalPageMethods.setFullScreenLoading(false)
                                         },
                                         () => {
@@ -73,11 +75,10 @@ function Publications(props) {
             allowOutsideScope={true}
             onTableFiltered={onTableFiltered}
             onClickEditPublication={onClickEditPublication}
-            history={props.history}/>
+        />
     </div>;
 
     return <Page id="publications"
-                 history={props.history}
                  breadcrumbs={[
                      {
                          path: './dashboard',
@@ -93,23 +94,29 @@ function Publications(props) {
                  content={content}/>;
 }
 
-export function createAndNavigateToRepoItem(props, successCallback = () => {
+export function createAndNavigateToRepoItem(navigate, props, successCallback = () => {
 }, errorCallback = () => {
 }, isProject = false) {
     const user = AppStorage.get(StorageKey.USER);
 
     function onLocalFailure(error) {
-        Toaster.showDefaultRequestError()
-        errorCallback()
+        Toaster.showServerError(error)
+        errorCallback(error)
     }
 
     function onServerFailure(error) {
-        Toaster.showServerError(error)
-        if (error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-            props.history.push('/login?redirect=' + window.location.pathname);
+        if (!error?.response) {
+            Toaster.showServerError(error);
+            errorCallback(error);
+            return;
         }
 
-        errorCallback()
+        const status = error.response.status;
+        if (status === 401) { //We're not logged, thus try to login and go back to the current url
+            navigate('/login?redirect=' + window.location.pathname);
+        }
+
+        errorCallback(error)
     }
 
     function getUserWithGroups() {
@@ -168,7 +175,7 @@ export function createAndNavigateToRepoItem(props, successCallback = () => {
             params: {
                 'filter[distinctTemplates]': "1",
                 "filter[scope]": institutes.map(i => i.id).join(","),
-                "fields[institutes]": "title,permissions"
+                "fields[institutes]": "title,permissions,lmsEnabled"
             }
         };
 
@@ -203,11 +210,17 @@ export function createAndNavigateToRepoItem(props, successCallback = () => {
                         createRepoItem(instituteAndType.institute, instituteAndType.selectedPublicationType)
                     }, (repoItemToCopy) => {
                         GlobalPageMethods.setFullScreenLoading(true)
-                        copyRepoItem(repoItemToCopy.id, props.history, (response) => {
+                        copyRepoItem(repoItemToCopy.id, navigate, (response) => {
                             GlobalPageMethods.setFullScreenLoading(false)
-                            props.history.push(`../publications/${response.data.id}`)
+                            navigate(`../publications/${response.data.id}`)
                             successCallback()
+                        }, (error) => {
+                            GlobalPageMethods.setFullScreenLoading(false)
+                            Toaster.showServerError(error)
                         })
+                    }, () => {
+                        GlobalPageMethods.setFullScreenLoading(false)
+                        navigate(`/dashboard`)
                     }, () => {
                         successCallback()
                     }, isProject)
@@ -233,7 +246,7 @@ export function createAndNavigateToRepoItem(props, successCallback = () => {
         function onSuccess(response) {
             GlobalPageMethods.setFullScreenLoading(false)
             const repoItemData = response.data.data
-            isProject ? props.history.push(`../projects/${repoItemData.id}`, {isProject: true}) : props.history.push(`../publications/${repoItemData.id}`)
+            isProject ? navigate(`../projects/${repoItemData.id}`, {isProject: true}) : navigate(`../publications/${repoItemData.id}`)
             successCallback()
         }
 
@@ -296,6 +309,9 @@ export function instituteCreateRepoItemPermissions(institute) {
     if (institute.permissions.canCreateDataset === true) {
         permissions.push("canCreateProject")
     }
+    // if (institute.permissions.canRequestLmsItem === true) {
+    //     permissions.push("canRequestLmsItem")
+    // }
     return permissions
 }
 
@@ -321,8 +337,8 @@ export function instituteCreateRepoItemPermissionToString(permission, translatio
     return permissionsMapped[permission]
 }
 
-export function goToEditPublication(props, itemProps) {
-    props.history.push(`../publications/${itemProps.id}`)
+export function goToEditPublication(navigate, itemProps) {
+    navigate(`../publications/${itemProps.id}`)
 }
 
 export default Publications;

@@ -1,5 +1,5 @@
-import React, {useEffect, useState} from 'react';
-import {BrowserRouter as Router, Redirect, Route, Switch, useLocation} from "react-router-dom";
+import React, {useEffect} from 'react';
+import {createBrowserRouter, RouterProvider, Outlet} from "react-router-dom";
 import "./sass/main.scss";
 import Dashboard from "./dashboard/Dashboard";
 import Login from "./login/Login";
@@ -22,25 +22,61 @@ import Unauthorized from "./errorpages/Unauthorized";
 import PublicPage from "./publicpage/PublicPage";
 import Profiles from "./profiles/Profiles";
 import NewProfile from "./profiles/newprofile/NewProfile";
-import {version} from "./appversion.json"
 import Removed from "./errorpages/Removed";
 import Projects from "./projects/Projects";
 import {useGlobalState} from "./util/GlobalState";
-import {mobileTabletMaxWidth} from "./Mixins";
 import Publication from "./publication/Publication";
 import ForbiddenFile from "./errorpages/ForbiddenFile";
-import PrivacyStatement from "./privacystatement/PrivacyStatement";
 import TextPage from "./components/textpage/TextPage";
+import Archive from "./archive/Archive";
+import RootLayout from "./RootLayout";
+
+const router = createBrowserRouter([
+    {
+        path: "/",
+        element: <RootLayout><Outlet /></RootLayout>,
+        children: [
+            { path: "", element: <Dashboard /> },
+            { path: "dashboard", element: <Dashboard /> },
+            { path: "login", element: <Login /> },
+            { path: "publications", element: <Publications /> },
+            { path: "publications/:id", element: <Publication />},
+            { path: "organisation", element: <Organisation /> },
+            { path: "templates", element: <Templates /> },
+            { path: "templates/:id", element: <EditTemplate /> },
+            { path: "projects", element: <Projects /> },
+            { path: "projects/:id", element: <Publication /> },
+            { path: "reports", element: <Reports /> },
+            { path: "groups/:id", element: <Group /> },
+            { path: "profile/:id", element: <Profile /> },
+            { path: "profile", element: <Profile /> },
+            { path: "profiles", element: <Profiles /> },
+            { path: "profiles/newprofile", element: <NewProfile /> },
+            { path: "search/:searchQuery", element: <Search /> },
+            { path: "forbidden", element: <Forbidden /> },
+            { path: "trashcan", element: <TrashCan /> },
+            { path: "onboarding", element: <Onboarding /> },
+            { path: "unauthorized", element: <Unauthorized /> },
+            { path: "removed", element: <Removed /> },
+            { path: "forbiddenfile", element: <ForbiddenFile /> },
+            { path: "archive", element: <Archive /> },
+            { path: "*", element: <NotFound /> },
+            { path: "notfound", element: <NotFound /> },
+            { path: "cookies", element: <TextPage /> },
+            { path: ":type/:id", element: <Dashboard /> },
+            { path: 'public/:uuid', element: <PublicPage />}
+        ]
+    }
+]);
 
 function App() {
-
-    const [isEnvironmentBannerVisible, setIsEnvironmentBannerVisible] = useGlobalState("isEnvironmentBannerVisible",false);
+    const [, setIsEnvironmentBannerVisible] = useGlobalState("isEnvironmentBannerVisible",false);
 
     useEffect(() => {
         if (process.env.REACT_APP_ENVIRONMENT_TYPE !== 'live') {
             setIsEnvironmentBannerVisible(true);
         }
-    }, [])
+    }, [setIsEnvironmentBannerVisible])
 
     function includeToastify() {
         return <ToastContainer
@@ -57,167 +93,14 @@ function App() {
         />
     }
 
-    localStorage.setItem(`cached-version`, version)
-
     return (
-        <Router>
-            <div className={"App"}>
-                <Switch>
-                    <Redirect from="/:url*(/+)" to={window.location.pathname.slice(0, -1)} />
-                    {appRoutes.map(r => <Route path={r.path} exact={r.exact} component={r.component}/>)}
-                </Switch>
-                {includeToastify()}
-            </div>
-        </Router>
+        <>
+            <RouterProvider router={router}>
+                <div className={"App"} />
+            </RouterProvider>
+            {includeToastify()}
+        </>
     );
 }
-
-export const appRoutes = [
-    {
-        path: '/public/:uuid',
-        exact: true,
-        component: PublicPage
-    },
-    {
-        path: '/dashboard',
-        exact: true,
-        component: Dashboard
-    },
-    {
-        path: '/publications',
-        exact: true,
-        component: Publications
-    },
-    {
-        path: '/publications/:id',
-        exact: true,
-        component: Publication
-    },
-    {
-        path: '/organisation',
-        exact: true,
-        component: Organisation
-    },
-    {
-        path: '/templates',
-        exact: true,
-        component: Templates
-    },
-    {
-        path: '/templates/:id',
-        exact: true,
-        component: EditTemplate
-    },
-    {
-        path: '/projects',
-        exact: true,
-        component: Projects
-    },
-    {
-        path: '/projects/:id',
-        exact: true,
-        component: Publication
-    },
-    {
-        path: '/reports',
-        exact: true,
-        component: Reports
-    },
-    {
-        path: '/groups/:id',
-        exact: true,
-        component: Group
-    },
-    {
-        path: '/profile/:id',
-        exact: true,
-        component: Profile
-    },
-    {
-        path: '/profile',
-        exact: true,
-        component: Profile
-    },
-    {
-        path: '/profiles',
-        exact: true,
-        component: Profiles
-    },
-    {
-        path: '/profiles/newprofile',
-        exact: true,
-        component: NewProfile
-    },
-    {
-        path: '/search/:searchQuery',
-        exact: true,
-        component: Search
-    },
-    {
-        path: '/trashcan/',
-        exact: false,
-        component: TrashCan
-    },
-    {
-        path: '/login',
-        exact: false,
-        component: Login
-    },
-    {
-        path: '/onboarding',
-        exact: false,
-        component: Onboarding
-    },
-    {
-        path: '/unauthorized',
-        exact: false,
-        component: Unauthorized
-    },
-    {
-        path: '/forbiddenfile',
-        exact: false,
-        component: ForbiddenFile
-    },
-    {
-        path: '/forbidden',
-        exact: false,
-        component: Forbidden
-    },
-    {
-        path: '/notfound',
-        exact: false,
-        component: NotFound
-    },
-    {
-        path: '/removed',
-        exact: false,
-        component: Removed
-    },
-    {
-        path: '/:type/:id',
-        exact: false,
-        component: Dashboard
-    },
-    {
-        path: '/',
-        exact: true,
-        component: Dashboard
-    },
-    {
-        path: '/privacy',
-        exact: true,
-        component: TextPage
-    },
-    {
-        path: '/cookies',
-        exact: true,
-        component: TextPage
-    },
-    {
-        path: '/',
-        exact: false,
-        component: NotFound
-    }
-]
 
 export default App;

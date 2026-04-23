@@ -4,7 +4,7 @@ import RepoItemHelper from "./RepoItemHelper";
 class FormFieldHelper {
 
     fieldTypeMap = {
-        "date": "singledatepicker",
+        "date": "datepicker",
         "text": "text",
         "doi": "doi",
         "number": "number",
@@ -35,7 +35,8 @@ class FormFieldHelper {
         "personinvolved": "personinvolved",
         "repoitemresearchobject": "repoitemresearchobject",
         "repoitemlink": "repoitemlink",
-        "repoitemlearningobject": "repoitemlearningobject"
+        "repoitemlearningobject": "repoitemlearningobject",
+        "richtexteditor": "richtexteditor"
     };
 
     singleAnswerFieldType = [
@@ -52,7 +53,9 @@ class FormFieldHelper {
         "discipline",
         "lectorate",
         "organisationdropdown",
-        "switch-row"
+        "switch-row",
+        "checkbox",
+        "richtexteditor"
     ];
 
     getFieldType(fieldType) {
@@ -76,6 +79,10 @@ class FormFieldHelper {
 
     getFieldAnswer(repoItem, field) {
         let answer = RepoItemHelper.getAnswerFromRepoItemForField(repoItem, field);
+        const formFieldHelper = new FormFieldHelper();
+        const fieldType = formFieldHelper.getFieldType(field.fieldType);
+        const isMultiSelectOptionField = fieldType === 'multiselectdropdown' || fieldType === 'dropdowntag';
+        const isOptionFieldWithSummary = isMultiSelectOptionField || fieldType === 'dropdown' || fieldType === 'rightofusedropdown';
 
         if (answer) {
             answer = answer.values.map(v => {
@@ -85,6 +92,12 @@ class FormFieldHelper {
                         summary: v.summary
                     }
                 } else if (v.optionKey) {
+                    if (isOptionFieldWithSummary && v.summary) {
+                        return {
+                            id: v.optionKey,
+                            summary: v.summary
+                        }
+                    }
                     return v.optionKey
                 } else if (v.instituteID) {
                     return {
@@ -104,8 +117,6 @@ class FormFieldHelper {
                 }
                 return v.value;
             });
-            const formFieldHelper = new FormFieldHelper()
-            const fieldType = formFieldHelper.getFieldType(field.fieldType);
 
             if (this.singleAnswerFieldType.includes(fieldType) && answer.length > 0) {
                 answer = answer[0];
@@ -125,6 +136,8 @@ class FormFieldHelper {
                 };
             }
         );
+
+        console.log(answers)
 
         return answers.filter(a => a.values.length > 0);
     }

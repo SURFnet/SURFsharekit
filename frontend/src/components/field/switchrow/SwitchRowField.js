@@ -30,8 +30,7 @@ const SwitchRowFieldRoot= styled.div`
     flex-direction: row;
     align-items: center;
     font-size: 12px;
-    padding 20px 0;
-    margin: 0 0 5px 10px;
+    margin: 0 0 0 10px;
     border-bottom: 1px solid ${greyLight};
     display: ${props => props.isHidden ? "none" : "flex"};
 `;

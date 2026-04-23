@@ -1,6 +1,5 @@
 import StatusIcon from "../components/statusicon/StatusIcon";
 import RepoItemHelper from "../util/RepoItemHelper";
-import i18n from "i18next";
 import warningIcon from "../resources/icons/warning_icon.svg"
 import IconButtonText from "../components/buttons/iconbuttontext/IconButtonText";
 import {faCaretLeft, faCaretRight, faTrash} from "@fortawesome/free-solid-svg-icons";
@@ -8,32 +7,34 @@ import React, {useEffect, useRef, useState} from "react";
 import {useGlobalState} from "../util/GlobalState";
 import {useTranslation} from "react-i18next";
 import styled from "styled-components";
-import {desktopSideMenuWidth, greyLight, spaceCadet, SURFShapeLeft} from "../Mixins";
-import {useHistory} from "react-router-dom";
+import {desktopSideMenuWidth, spaceCadet, SURFShapeLeft} from "../Mixins";
 import {ThemedH3} from "../Elements";
-import {Tooltip} from "../components/field/FormField";
 import {useOutsideElementClicked} from "../util/hooks/useOutsideElementClicked";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import ValidationHelper from "../util/ValidationHelper";
 import "../../src/default-publication-view/default-publication-view.scss"
 import SURFButton from "../styled-components/buttons/SURFButton";
-import VerificationPopup from "../verification/VerificationPopup";
 import {SwitchField} from "../components/field/switch/Switch";
+import {faArchive} from "@fortawesome/free-solid-svg-icons/faArchive";
+import {faUndo} from "@fortawesome/free-solid-svg-icons/faUndo";
+import DeletePublicationPopup from "../publications/deletepublicationpopup/DeletePublicationPopup";
+import {StorageKey, useAppStorageState} from "../util/AppStorage";
 
 function DefaultPublicationViewHeader({showOnlyRequiredFields, setShowOnlyRequiredFields, ...props}){
-
     const {t} = useTranslation()
     const [isSideMenuCollapsed, setIsSideMenuCollapsed] = useGlobalState('isSideMenuCollapsed', false);
-    const isAuthor = props.repoItem?.author.id === props.repoItem?.author.id;
+    const [user] = useAppStorageState(StorageKey.USER);
+
+    const isOwner = props.repoItem?.creator?.id === user?.id;
     const permissionCanEdit =  props.repoItem ? props.repoItem.permissions.canEdit && !props.repoItem.isRemoved : null
     const permissionCanPublish = props.repoItem ? props.repoItem.permissions.canPublish && !props.repoItem.isRemoved : null
     const permissionCanDelete = props.repoItem ? props.repoItem.permissions.canDelete : null
-    const history = useHistory()
+    const permissionCanArchive = props.repoItem ? props.repoItem.permissions.canArchive : null
 
-    const formIsDraft = props.repoItem ? props.repoItem.status.toLowerCase() === "draft" : null
-    const formIsRevising = props.repoItem ? props.repoItem.status.toLowerCase() === "revising" : null
-    const formIsSubmitted = props.repoItem ? props.repoItem.status.toLowerCase() === "submitted" : null
-    const formIsPublished = props.repoItem ? props.repoItem.status.toLowerCase() === "published" : null
+    const repoItemIsDraft = props.repoItem ? props.repoItem.status.toLowerCase() === "draft" : null
+    const repoItemIsRevising = props.repoItem ? props.repoItem.status.toLowerCase() === "revising" : null
+    const repoItemIsSubmitted = props.repoItem ? props.repoItem.status.toLowerCase() === "submitted" : null
+    const repoItemIsPublished = props.repoItem ? props.repoItem.status.toLowerCase() === "published" : null
+    const repoItemIsArchived = props.repoItem ? props.repoItem.status.toLowerCase() === "archived" : null
     const isRemoved = props.repoItem ? props.repoItem.isRemoved : false
     const needsToBeFinished = props.repoItem ? props.repoItem.needsToBeFinished : false
 
@@ -47,13 +48,13 @@ function DefaultPublicationViewHeader({showOnlyRequiredFields, setShowOnlyRequir
                                 <PublicationStatus>
                                     <StatusIcon
                                         colorHex={RepoItemHelper.getStatusColor(props.repoItem)}
-                                        text={props.repoItem.isArchived ? i18n.t('publication.state.archived') : RepoItemHelper.getStatusText(props.repoItem)}
+                                        text={RepoItemHelper.getStatusText(props.repoItem)}
                                     />
-                                    { (formIsDraft && !props.repoItem.isRemoved && props.repoItem.isHistoricallyPublished) ?
+                                    { (repoItemIsDraft && !props.repoItem.isRemoved && props.repoItem.isHistoricallyPublished) ?
                                         <WarningIcon /> : <></> }
                                 </PublicationStatus>
                                 <HeaderButtonContainer>
-                                    {(formIsRevising || (formIsDraft && props.isEditing)) && (
+                                    {(repoItemIsRevising || (repoItemIsDraft && props.isEditing)) && (
                                         <SwitchField
                                             placeholder={t("switch_field.only_required_fields")}
                                             defaultValue={showOnlyRequiredFields}
@@ -63,6 +64,7 @@ function DefaultPublicationViewHeader({showOnlyRequiredFields, setShowOnlyRequir
                                         />
                                     )}
                                     <PublicationActions>
+                                        {getArchiveButton()}
                                         {getDeleteButton()}
                                         <FormActions>
                                             {getButtons()}
@@ -82,26 +84,44 @@ function DefaultPublicationViewHeader({showOnlyRequiredFields, setShowOnlyRequir
     function getButtons() {
         let buttons = [];
 
-        if (permissionCanEdit || (permissionCanDelete && isRemoved)) {
+        if ((permissionCanEdit || (permissionCanDelete && isRemoved)) && props.repoItem.status !== "Archived") {
             buttons.push(props.saveEditButton)
         }
 
-        if (formIsDraft && !isRemoved && !needsToBeFinished) {
+        if (repoItemIsDraft && !isRemoved && !needsToBeFinished) {
             buttons.push(props.saveAndPublishButton)
         }
 
-        if (permissionCanPublish && (formIsSubmitted || formIsRevising)) {
+        if (permissionCanPublish && (repoItemIsSubmitted || repoItemIsRevising)) {
             buttons.push(props.reviseButton)
         }
 
         return buttons;
     }
 
-    function getDeleteButton() {
-        const canDeleteUnpublishedPublications =  permissionCanDelete && !isRemoved && !formIsPublished
-        const canDeletePublishedPublications = permissionCanPublish && formIsPublished
+    function getArchiveButton() {
+        if (!permissionCanArchive) {
+            return
+        }
 
-        if ((formIsPublished && canDeletePublishedPublications) || (!formIsPublished && canDeleteUnpublishedPublications)) {
+        if (repoItemIsArchived) {
+            return <IconButtonText
+                faIcon={faUndo}
+                onClick={props.restorePublicationFromArchive}
+            />
+        } else {
+            return <IconButtonText
+                faIcon={faArchive}
+                onClick={props.archivePublication}
+            />
+        }
+    }
+
+    function getDeleteButton() {
+        const canDeleteUnpublishedPublications =  permissionCanDelete && !isRemoved && !repoItemIsPublished
+        const canDeletePublishedPublications = permissionCanPublish && repoItemIsPublished
+
+        if ((repoItemIsPublished && canDeletePublishedPublications) || (!repoItemIsPublished && canDeleteUnpublishedPublications)) {
             return (
                 <IconButtonText
                     faIcon={faTrash}
@@ -110,17 +130,21 @@ function DefaultPublicationViewHeader({showOnlyRequiredFields, setShowOnlyRequir
             )
         }
 
-        if (formIsPublished && isAuthor && !permissionCanDelete) {
+        if ((repoItemIsPublished || repoItemIsArchived) && isOwner && !permissionCanDelete) {
             return (
                 <SURFButton
                     padding={"0px 32px"}
                     backgroundColor={'transparent'}
                     textColor={spaceCadet}
                     border={`${spaceCadet} 2px solid`}
-                    text={"Verwijderverzoek"}
+                    text={t("publication.delete_request.title")}
                     onClick={() => {
-                        const confirmAction = () => { if (props.requestDeletePublication) { props.requestDeletePublication() } }
-                        VerificationPopup.show(t('verification.repoItem.delete_request.title'), t('verification.repoItem.delete_request.subtitle'), confirmAction)
+                        const confirmAction = (reason) => {
+                            if (props.requestDeletePublication) {
+                                props.requestDeletePublication(reason)
+                            }
+                        }
+                        DeletePublicationPopup.show(confirmAction)
                     }}
                 />
             )

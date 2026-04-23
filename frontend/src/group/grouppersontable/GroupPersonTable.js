@@ -7,7 +7,8 @@ import Toaster from "../../util/toaster/Toaster";
 import AddPersonToGroupPopup from "../addpersontogrouppopup/AddPersonToGroupPopup";
 import PersonTableWithSearch from "../../components/persontablewithsearch/PersonTableWithSearch";
 import VerificationPopup from "../../verification/VerificationPopup";
-import {useHistory} from "react-router-dom";
+import {useNavigate} from "react-router-dom";
+import {useNavigation} from "../../providers/NavigationProvider";
 
 function GroupPersonTable(props) {
     const [sortOrder, setSortOrder] = useState([]);
@@ -18,7 +19,7 @@ function GroupPersonTable(props) {
     const [isLoading, setIsLoading] = useState(true);
     const {t} = useTranslation();
     const personCount = props.group ? props.group.amountOfPersons : 0
-    const history = useHistory()
+    const navigate = useNavigation()
 
     const onReloadData = useCallback((sortBy, pageIndex, pageCount) => {
         setPageNumber(pageIndex + 1)
@@ -52,7 +53,6 @@ function GroupPersonTable(props) {
                 allowSearch={true}
                 pageCount={pageCount}
                 showDelete={true}
-                history={props.history}
                 canEdit={props.group && props.group.userPermissions.canEdit}
                 showAddElement={props.group && props.group.userPermissions.canEdit}
                 isLoading={isLoading}
@@ -100,13 +100,13 @@ function GroupPersonTable(props) {
             setIsLoading(false)
             Toaster.showServerError(error)
             if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             }
         }
 
         function onLocalFailure(error) {
             setIsLoading(false);
-            Toaster.showDefaultRequestError();
+            Toaster.showServerError(error);
         }
     }
 
@@ -117,6 +117,7 @@ function GroupPersonTable(props) {
         const config = {
             params: {
                 'fields[persons]': 'name,imageURL,primaryRole,primaryInstitute,hasLoggedIn,permissions,groupCount',
+                'fields[personSummaries]': 'firstName,surname,position,rootInstitutesSummary,permissions,persistentIdentifier,isni,orcid,hasLoggedIn,groupCount',
                 'filter[group]': props.group.id,
                 'filter[search]': query,
                 'filter[isRemoved]': false,
@@ -145,13 +146,13 @@ function GroupPersonTable(props) {
             setIsLoading(false)
             Toaster.showServerError(error)
             if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             }
         }
 
         function onLocalFailure(error) {
             setIsLoading(false);
-            Toaster.showDefaultRequestError();
+            Toaster.showServerError(error);
         }
     }
 
@@ -165,7 +166,7 @@ function GroupPersonTable(props) {
         const onCancelPopup = () => {
         }
 
-        AddPersonToGroupPopup.show(props.group, history, onPersonAdded, onCancelPopup)
+        AddPersonToGroupPopup.show(props.group, navigate, onPersonAdded, onCancelPopup)
 
     }
 }

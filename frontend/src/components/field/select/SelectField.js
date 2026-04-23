@@ -43,13 +43,10 @@ export function SelectField(props) {
     }, [props.formState])
 
     useEffect(() => {
-        // Hack to display the information popup for access right field
-        setTimeout(() => {
-            if (props.attributeKey === "AccessRight") {
-                props.setValue(props.name, props.defaultValue)
-            }
-        }, 0)
-    }, [props.defaultValue])
+        if (props.attributeKey === "AccessRight") {
+            props.setValue(props.name, props.defaultValue)
+        }
+    }, [])
 
     const setAccessRightMessage = (formState) => {
         const accessRightState = Object.values(formState).find(state => state.field.attributeKey === 'AccessRight')
@@ -100,6 +97,10 @@ export function SelectField(props) {
             borderColor={borderColor}
             name={props.name}
             type={props.type}
+            dependencyKey={props.dependencyKey}
+            dependencyGroupKeys={props.dependencyGroupKeys}
+            dependencyGroupLabels={props.dependencyGroupLabels}
+            getValues={props.getValues}
         />
 
         { message &&

@@ -15,10 +15,13 @@ import {CheckboxGroup} from "../checkboxgroup/CheckboxGroup";
 import {HelperFunctions} from "../../../util/HelperFunctions";
 import i18n from "i18next";
 import LoadingIndicator from "../../loadingindicator/LoadingIndicator";
+import {useNavigation} from "../../../providers/NavigationProvider";
 
 function VocabularyPopupContent(props) {
 
     const {t} = useTranslation()
+    const navigate = useNavigation()
+
     let label = t('language.current_code') === 'nl' ? 'labelNL' : 'labelEN';
 
     return (
@@ -67,6 +70,9 @@ function VocabularyPopupContent(props) {
                 searchMetaFieldOptions(parentOption ? parentOption.id : null, currentQuery, (response) => {
                     setOptions(response.data);
                     setNoOptionsTextAndHideLoader(response)
+                }, (error) => {
+                    console.log(error);
+                    Toaster.showServerError(error)
                 })
             }
             firstUpdate.current = false;
@@ -335,18 +341,20 @@ function VocabularyPopupContent(props) {
 
     function getVocabulary(props, parentOptionId ,onSuccess) {
 
+        const errorCallback = (error) => {
+            Toaster.showServerError(error)
+            GlobalPageMethods.setFullScreenLoading(false)
+        }
         function onValidate(response) {}
         function onLocalFailure(error) {
-            Toaster.showDefaultRequestError()
-            GlobalPageMethods.setFullScreenLoading(false)
+            errorCallback(error)
         }
 
         function onServerFailure(error) {
-            Toaster.showServerError(error)
             if (error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                props.history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             }
-            GlobalPageMethods.setFullScreenLoading(false)
+            errorCallback(error)
         }
 
         const vocabularyCallConfig = {
@@ -355,7 +363,7 @@ function VocabularyPopupContent(props) {
                 "filter[ParentOption]": parentOptionId ?? 'null',
                 "filter[isRemoved][EQ]": 0,
                 'page[number]': 1,
-                'page[size]': 1000,
+                'page[size]': 100,
             }
         };
 
@@ -367,17 +375,15 @@ function VocabularyPopupContent(props) {
         Api.jsonApiGet('metaFieldOptions', onValidate, onSuccess, onLocalFailure, onServerFailure, vocabularyCallConfig);
     }
 
-    function searchMetaFieldOptions(parentOptionId, searchQuery, onSuccess) {
+    function searchMetaFieldOptions(parentOptionId, searchQuery, onSuccess, errorCallback = () => {}) {
 
         function onValidate(response) {}
         function onLocalFailure(error) {
-            console.log(error);
-            Toaster.showDefaultRequestError()
+            errorCallback(error)
         }
 
         function onServerFailure(error) {
-            console.log(error);
-            Toaster.showServerError(error)
+            errorCallback(error)
         }
 
         const config = {
@@ -387,7 +393,7 @@ function VocabularyPopupContent(props) {
                 "filter[value][LIKE]": '%' + searchQuery + '%',
                 "filter[isRemoved][EQ]": 0,
                 'page[number]': 1,
-                'page[size]': 1000,
+                'page[size]': 100,
             }
         };
 

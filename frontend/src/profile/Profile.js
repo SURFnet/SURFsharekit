@@ -2,7 +2,7 @@ import React, {useEffect, useLayoutEffect, useRef, useState} from "react";
 import './profile.scss'
 import AppStorage, {StorageKey, useAppStorageState} from "../util/AppStorage";
 import Page, {GlobalPageMethods} from "../components/page/Page";
-import {Redirect, useHistory, useLocation} from "react-router-dom";
+import {Navigate, useNavigate, useLocation, useParams} from "react-router-dom";
 import {useTranslation} from "react-i18next";
 import HorizontalTabList from "../components/horizontaltablist/HorizontalTabList";
 import ProfileContent from "./profilecontent/ProfileContent";
@@ -12,7 +12,7 @@ import {createAndNavigateToRepoItem, goToEditPublication} from "../publications/
 import LoadingIndicator from "../components/loadingindicator/LoadingIndicator";
 import ProfileRolesRightsContent from "./profilerolesrights/ProfileRolesRightsContent";
 import IconButtonText from "../components/buttons/iconbuttontext/IconButtonText";
-import {faChevronDown, faPlus} from "@fortawesome/free-solid-svg-icons";
+import {faArrowRight, faChevronDown, faPlus} from "@fortawesome/free-solid-svg-icons";
 import ReactPublicationTable from "../components/reacttable/tables/publication/ReactPublicationTable";
 import PageHeader from "../styled-components/PageHeader";
 import MarginWrapper from "../styled-components/MarginWrapper";
@@ -20,9 +20,8 @@ import SURFButton from "../styled-components/buttons/SURFButton";
 import styled from "styled-components";
 import {Tooltip} from "../components/field/FormField";
 import {ProfileNotificationsContent} from "./notifications/ProfileNotificationsContent";
-import {spaceCadetLight, SURFShapeLeft, SURFShapeRight, white} from "../Mixins";
+import {majorelle, majorelleLight, spaceCadet, spaceCadetLight, SURFShapeLeft, SURFShapeRight, white} from "../Mixins";
 import VerificationPopup from "../verification/VerificationPopup";
-import Dropdown from "../components/dropdown/Dropdown";
 import ModalButton, {
     MODAL_ALIGNMENT as DropdownListShape,
     MODAL_ALIGNMENT, MODAL_VERTICAL_ALIGNMENT
@@ -34,6 +33,10 @@ import SaveIcon from "../resources/icons/ic-save.svg";
 import EyeIcon from "../resources/icons/ic-eye.svg";
 import TrashIcon from "../resources/icons/ic-trash.svg";
 import ProfileDetailsPopup from "./profiledetailspopup/ProfileDetailsPopup";
+import {useNavigation} from "../providers/NavigationProvider";
+import Swal from "sweetalert2";
+import ProfileOrcidPopup from "./profileorcidpopup/ProfileOrcidPopup";
+import profiles from "../profiles/Profiles";
 
 export default function Profile(props) {
     const [user] = useAppStorageState(StorageKey.USER);
@@ -42,10 +45,12 @@ export default function Profile(props) {
     const [personsToMerge, setPersonsToMerge] = useAppStorageState(StorageKey.PERSONS_TO_MERGE)
     const [profileData, setProfileData] = useState(null);
     const [notifications, setNotifications] = useState(null);
-    const history = useHistory();
+    const navigate = useNavigation();
+    const location = useLocation();
+    const params = useParams()
 
     const [tabSelectedIndex, setTabSelectedIndex] = useState()
-    const paramUserId = props.match.params.id;
+    const paramUserId = params.id;
     const userIsSiteManager = userRoles ? userRoles.find(role => {return role === "Siteadmin"}) : false;
     const userCanSeeOwnInstitutes = userRoles ? userRoles.find(role => {return role === "Siteadmin" || role === "Staff"}) : false;
     const {t} = useTranslation()
@@ -53,6 +58,20 @@ export default function Profile(props) {
     const notificationFormRef= useRef();
     const profileDataFormRef = useRef();
     const makingNewProfile = props.profileData === undefined
+    const shouldShowMergeOption = (userIsSiteManager && user.id !== profileData?.id && !profileData?.hasLoggedIn)
+
+    const isOwnProfile = profileData && (profileData.id === user.id)
+
+    useEffect(() => {
+        const queryParams = new URLSearchParams(location.search);
+        const orcidVerified = queryParams.get('orcid_verified');
+
+        if (orcidVerified === '1' && profileData) {
+            ProfileOrcidPopup.show(profileData.orcid)
+            // Clean the URL
+            navigate(location.pathname, {replace: true});
+        }
+    }, [location, navigate, t, profileData]);
 
     useEffect(() => {
         if (!isUserRefreshed) {
@@ -64,7 +83,7 @@ export default function Profile(props) {
     }, [props.location, profileData] /* This will make sure user id in url or own user id will be used */);
 
     if (user === null) {
-        return <Redirect to={'login?redirect=profile'}/>
+        return <Navigate to={'login?redirect=profile'}/>
     }
 
     let content;
@@ -73,6 +92,7 @@ export default function Profile(props) {
             <MarginWrapper bottom={'50px'}>
                 <PageHeader
                     title={profileData.name}
+                    active={Boolean(profileData.hasLoggedIn)}
                     button={actions()}
                 />
             </MarginWrapper>
@@ -98,8 +118,8 @@ export default function Profile(props) {
 
     function actions() {
         const dropdownItems = [
-            new DropdownItemWithIcon(LayersIcon, t("profile.profile_merge"), () => { addProfileDataToMergeList() }),
-            new DropdownItemWithIcon(EyeIcon, t("profile.details"),  () => { ProfileDetailsPopup.show(profileData) }),
+            ...(shouldShowMergeOption ? [new DropdownItemWithIcon(LayersIcon, t("profile.profile_merge"), () => { addProfileDataToMergeList() })] : []),
+            new DropdownItemWithIcon(EyeIcon, t("profile.details"), () => { ProfileDetailsPopup.show(profileData) }),
         ];
 
         if (userIsSiteManager && profileData.permissions.canDelete === true && paramUserId && user.id !== paramUserId) {
@@ -112,28 +132,48 @@ export default function Profile(props) {
             }))
         }
 
-        return <ModalButton
-            modalHorizontalAlignment={MODAL_ALIGNMENT.RIGHT}
-            modalVerticalAlignment={MODAL_VERTICAL_ALIGNMENT.BOTTOM}
-            modalButtonSpacing={4}
-            modal={
-                <BasicDropdownList
-                    listShape={DropdownListShape.LEFT}
-                    listWidth={'196px'}
-                    dropdownItems={dropdownItems}
+        return (
+            <ButtonContainer>
+                {/* ORCID Button */}
+                { isOwnProfile && (profileData && profileData.orcidRegisterDate === null) &&
+                    <SURFButton
+                        backgroundColor={majorelle}
+                        highlightColor={majorelleLight}
+                        width={'auto'}
+                        padding={"20px"}
+                        iconEnd={faArrowRight}
+                        iconEndSize={"12px"}
+                        iconEndColor={'white'}
+                        iconEndRotation={'315deg'}
+                        text={t("profile.register_orcid")}
+                        onClick={redirectToOrcidRegistrationPage}
+                    />
+                }
+                <ModalButton
+                    modalHorizontalAlignment={MODAL_ALIGNMENT.RIGHT}
+                    modalVerticalAlignment={MODAL_VERTICAL_ALIGNMENT.BOTTOM}
+                    modalButtonSpacing={4}
+                    modal={
+                        <BasicDropdownList
+                            listShape={DropdownListShape.LEFT}
+                            listWidth={'196px'}
+                            dropdownItems={dropdownItems}
+                        />
+                    }
+                    button={
+                        <SURFButton
+                            shape={SURFShapeRight}
+                            highlightColor={spaceCadetLight}
+                            text={"Opties"}
+                            iconEnd={faChevronDown}
+                            iconEndColor={'white'}
+                            padding={'0px 24px 0px 32px'}
+                        />
+                    }
                 />
-            }
-            button={
-                <SURFButton
-                    shape={SURFShapeRight}
-                    highlightColor={spaceCadetLight}
-                    text={"Opties"}
-                    iconEnd={faChevronDown}
-                    iconEndColor={'white'}
-                    padding={'0px 24px 0px 32px'}
-                />
-            }
-        />
+            </ButtonContainer>
+        )
+
     }
 
     function buttonRow() {
@@ -166,8 +206,11 @@ export default function Profile(props) {
         return tabSelectedIndex === 0 ? profileDataFormRef.current : notificationFormRef.current
     }
 
+    function redirectToOrcidRegistrationPage() {
+        window.location.href = process.env.REACT_APP_API_URL + 'register/orcid';
+    }
+
     return <Page id="profile"
-                 history={props.history}
                  showBackButton={true}
                  breadcrumbs={[
                      {
@@ -195,7 +238,7 @@ export default function Profile(props) {
     }
 
     function onClickEditPublication(itemProps) {
-        goToEditPublication(props, itemProps)
+        goToEditPublication(navigate, itemProps)
     }
 
     function getProfile() {
@@ -211,13 +254,17 @@ export default function Profile(props) {
 
         Api.jsonApiGet('persons/' + userId, onValidate, onSuccess, onLocalFailure, onServerFailure, config);
 
+        const errorCallback = (error) => {
+            Toaster.showServerError(error);
+        }   
+
         function onValidate(response) {
         }
 
         function onSuccess(response) {
             setIsUserRefreshed(true)
             if (response.data.isRemoved) {
-                props.history.replace('/removed');
+                navigate('/removed', {replace: true});
             } else {
                 setProfileData(response.data);
             }
@@ -225,31 +272,32 @@ export default function Profile(props) {
 
         function onServerFailure(error) {
             console.log(error);
-            Toaster.showServerError(error)
+            errorCallback(error)
             if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                props.history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             } else if (error && error.response && (error.response.status === 404 || error.response.status === 400)) { //The object to access does not exist
-                props.history.replace('/notfound');
+                navigate('/notfound', {replace: true});
             } else if (error && error.response && (error.response.status === 423)) { //The object is inaccesible
-                props.history.replace('/removed');
+                navigate('/removed', {replace: true});
             } else if (error && error.response && error.response.status === 403) { //The object to access is forbidden to view
-                props.history.replace('/forbidden');
+                navigate('/forbidden', {replace: true});
             } else { //The object to access does not exist
-                props.history.replace('/unauthorized');
+                navigate('/unauthorized', {replace: true});
             }
         }
 
         function onLocalFailure(error) {
-            Toaster.showDefaultRequestError()
             console.log(error);
+            errorCallback(error);
         }
     }
+
 
     function getNotifications() {
         const config = {
             params: {
                 'include': "notificationCategory,notificationSettings",
-                "filter[notificationVersion][LE]": profileData.config.notificationVersion,
+                "filter[notificationVersion][LE]": profileData.config?.notificationVersion ?? null,
             }
         };
 
@@ -268,7 +316,7 @@ export default function Profile(props) {
         }
 
         function onLocalFailure(error) {
-            Toaster.showDefaultRequestError()
+            Toaster.showServerError(error)
             console.log(error);
         }
     }
@@ -282,16 +330,14 @@ export default function Profile(props) {
         }
 
         function onLocalFailure(error) {
-            Toaster.showDefaultRequestError()
-            errorCallback()
+            errorCallback(error)
         }
 
         function onServerFailure(error) {
-            Toaster.showServerError(error)
             if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             }
-            errorCallback()
+            errorCallback(error)
         }
 
         const config = {
@@ -317,10 +363,10 @@ export default function Profile(props) {
         return VerificationPopup.show(t("verification.profile.delete.title"), t("verification.profile.delete.subtitle"), () => {
             deleteProfileWithCallback(profileData.id, (responseData) => {
                 GlobalPageMethods.setFullScreenLoading(false)
-                history.push("/profiles");
-            }, () => {
+                navigate("/profiles");
+            }, (error) => {
                 GlobalPageMethods.setFullScreenLoading(false)
-                Toaster.showDefaultRequestError();
+                Toaster.showServerError(error);
             })
         })
     }
@@ -329,6 +375,7 @@ export default function Profile(props) {
 function TabContent(props) {
     const {t} = useTranslation();
     const location = useLocation();
+    const navigate = useNavigation()
 
     useEffect(() => {
         if (location.hash === "#owner"){
@@ -375,7 +422,7 @@ function TabContent(props) {
             {<Visibility visible={props.tabSelectedIndex === 1} content={
                 <OwnedPublicationsContent key={props.profileData.id} {...props}/>}
             />}
-            {<Visibility visible={props.tabSelectedIndex === 2} content={<MentionedPublicationsContent key={props.profileData.id} {...props}/>}/>}
+            {<Visibility visible={props.tabSelectedIndex === 2} content={<MentionedPublicationsContent navigate={navigate} key={props.profileData.id} {...props}/>}/>}
             {<Visibility visible={props.tabSelectedIndex === 3}
                          content={<ProfileRolesRightsContent key={props.profileData.id} groups={props.profileData.groups}/>}/>}
             {<Visibility visible={props.tabSelectedIndex === 4}
@@ -398,6 +445,7 @@ function TabContent(props) {
     }
 }
 
+// Not being used
 function PublicationsContent(props) {
     const {t} = useTranslation();
 
@@ -418,7 +466,6 @@ function PublicationsContent(props) {
         </div>
         <ReactPublicationTable
             onClickEditPublication={props.onClickEditPublication}
-            history={props.history}
             filterOnUserId={props.paramUserId ?? props.user.id}
             hideEmptyStateButton={!!(props.paramUserId)}
             enablePagination={true}
@@ -429,6 +476,7 @@ function PublicationsContent(props) {
 
 function MentionedPublicationsContent(props) {
     const {t} = useTranslation();
+    const navigate = useNavigation()
 
     return <div id={"tab-publications"} className={"tab-content-container"}>
         <h2 className={"tab-title"}>{t("profile.tab_mentioned_publications")}</h2>
@@ -437,7 +485,7 @@ function MentionedPublicationsContent(props) {
                                                    buttonText={t("my_publications.add_publication")}
                                                    onClick={() => {
                                                        GlobalPageMethods.setFullScreenLoading(true)
-                                                       createAndNavigateToRepoItem(props, () => {
+                                                       createAndNavigateToRepoItem(navigate, props, () => {
                                                                GlobalPageMethods.setFullScreenLoading(false)
                                                            },
                                                            () => {
@@ -447,7 +495,6 @@ function MentionedPublicationsContent(props) {
         </div>
         <ReactPublicationTable
             onClickEditPublication={props.onClickEditPublication}
-            history={props.history}
             searchOutOfScope={true}
             searchAddition={props.paramUserId ?? props.user.id}
             hideEmptyStateButton={!!(props.paramUserId)}
@@ -459,6 +506,7 @@ function MentionedPublicationsContent(props) {
 
 function OwnedPublicationsContent(props) {
     const {t} = useTranslation();
+    const navigate = useNavigation()
 
     return <div id={"tab-publications"} className={"tab-content-container"}>
         <h2 className={"tab-title"}>{t("profile.tab_owned_publications")}</h2>
@@ -467,7 +515,7 @@ function OwnedPublicationsContent(props) {
                                                    buttonText={t("my_publications.add_publication")}
                                                    onClick={() => {
                                                        GlobalPageMethods.setFullScreenLoading(true)
-                                                       createAndNavigateToRepoItem(props, () => {
+                                                       createAndNavigateToRepoItem(navigate, props, () => {
                                                                GlobalPageMethods.setFullScreenLoading(false)
                                                            },
                                                            () => {
@@ -477,7 +525,6 @@ function OwnedPublicationsContent(props) {
         </div>
         <ReactPublicationTable
             onClickEditPublication={props.onClickEditPublication}
-            history={props.history}
             filterOnUserId={props.paramUserId ?? props.user.id}
             hideEmptyStateButton={!!(props.paramUserId)}
             enablePagination={true}
@@ -515,4 +562,14 @@ const SURFButtonRow = styled.div`
     flex-direction: row;
     gap: 24px;
     align-items: center;
+`;
+
+const ButtonContainer = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 15px;
+`;
+
+const ORCIDButton = styled.button`
+    
 `;

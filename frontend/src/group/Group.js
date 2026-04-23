@@ -7,11 +7,15 @@ import Toaster from "../util/toaster/Toaster";
 import HorizontalTabList from "../components/horizontaltablist/HorizontalTabList";
 import GroupPermissionTab from "./grouppermissiontable/GroupPermissionTab";
 import GroupPersonTable from "./grouppersontable/GroupPersonTable";
+import {useParams} from "react-router-dom";
+import {useNavigation} from "../providers/NavigationProvider";
 
 function Group(props) {
     const {t} = useTranslation();
     const [group, setGroup] = useState(null);
     const [currentIndex, setCurrentIndex] = useState(0);
+    const params = useParams()
+    const navigate = useNavigation()
 
     useEffect(() => {
         getGroupObjectFromApi()
@@ -30,7 +34,7 @@ function Group(props) {
                     key={"group-person-table"}
                     group={group}
                     reloadGroup={() => getGroupObjectFromApi(false)}
-                    history={props.history}/>),
+                />),
             (currentIndex === 1 &&
                 <GroupPermissionTab
                     key={"group-permission-table"}
@@ -50,7 +54,6 @@ function Group(props) {
     </div>;
 
     return <Page id="group"
-                 history={props.history}
                  activeMenuItem={"group"}
                  breadcrumbs={[
                      {
@@ -76,7 +79,12 @@ function Group(props) {
                 'include': 'partOf'
             }
         }
-        Api.jsonApiGet('groups/' + props.match.params.id, onValidate, onSuccess, onLocalFailure, onServerFailure, config);
+        Api.jsonApiGet('groups/' + params.id, onValidate, onSuccess, onLocalFailure, onServerFailure, config);
+
+        const errorCallback = (error) => {
+            showLoader && GlobalPageMethods.setFullScreenLoading(false)
+            Toaster.showServerError(error)
+        }
 
         function onValidate(response) {
         }
@@ -87,24 +95,22 @@ function Group(props) {
         }
 
         function onServerFailure(error) {
-            showLoader && GlobalPageMethods.setFullScreenLoading(false)
-            Toaster.showServerError(error)
+            errorCallback(error)
             if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                props.history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             } else if (error && error.response && (error.response.status === 404 || error.response.status === 400)) { //The object to access does not exist
-                props.history.replace('/notfound');
+                navigate('/notfound', {replace: true});
             } else if (error && error.response && (error.response.status === 423)) { //The object is inaccesible
-                props.history.replace('/removed');
+                navigate('/removed', {replace: true});
             } else if (error && error.response && error.response.status === 403) { //The object to access is forbidden to view
-                props.history.replace('/forbidden');
+                navigate('/forbidden', {replace: true});
             } else { //The object to access does not exist
-                props.history.replace('/unauthorized');
+                navigate('/unauthorized', {replace: true});
             }
         }
 
         function onLocalFailure(error) {
-            showLoader && GlobalPageMethods.setFullScreenLoading(false)
-            Toaster.showDefaultRequestError()
+            errorCallback(error)
         }
     }
 }

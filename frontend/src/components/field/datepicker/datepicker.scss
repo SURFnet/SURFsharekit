@@ -1,0 +1,115 @@
+@import "../../../sass/theme/constants";
+@import "../../../sass/theme/fonts";
+@import "../../../sass/theme/mixins";
+@import "../../../sass/utils/mixins";
+
+.field-input-wrapper {
+  .datepicker-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    border: 1px solid $input-border-color !important;
+    border-radius: 2px 15px 15px !important;
+    min-height: 50px;
+    background: white;
+    padding: 0 12px;
+
+    .svg-inline--fa {
+      height: 16px;
+    }
+
+    .rmdp-container {
+      flex: 1;
+    }
+
+    &.readonly {
+      background: none !important;
+      border: none !important;
+    }
+  }
+
+  &.invalid {
+    .datepicker-wrapper {
+      border-color: $flame !important;
+    }
+  }
+}
+
+.rmdp-input {
+  width: 100%;
+  font-weight: 400;
+  font-size: 12px !important;
+  line-height: 14px;
+  outline: none;
+  border-radius: 2px 15px 15px !important;
+  padding: 0 8px !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+
+  &::placeholder {
+    color: $space-cadet;
+    opacity: 1;
+    font-size: 12px;
+  }
+}
+
+.rmdp-calendar {
+  .rmdp-arrow-container {
+    align-items: center;
+
+    &:hover {
+      background: $majorelle;
+      box-shadow: none !important;
+
+      i {
+        border-color: white !important;
+      }
+    }
+
+    i {
+      margin-top: 0 !important;
+      border-color: $majorelle !important;
+    }
+
+    &.rmdp-left {
+      i {
+        margin-left: 1px !important;
+      }
+    }
+  }
+
+  .rmdp-week-day {
+    color: $majorelle;
+  }
+
+  .rmdp-day {
+    span {
+      box-shadow: none !important;
+      color: $space-cadet;
+      border-radius: 8px 2px 8px 8px !important;
+    }
+
+    &.rmdp-selected {
+      span {
+        background-color: $majorelle !important;
+      }
+    }
+
+    &.rmdp-today {
+      span {
+        background-color: $maximum-yellow !important;
+      }
+    }
+
+    &:hover {
+      span {
+        background-color: rgba($majorelle, 0.32) !important;
+        color: $space-cadet !important;
+      }
+    }
+  }
+}
+
+.rmdp-ep-arrow {
+  display: none;
+}

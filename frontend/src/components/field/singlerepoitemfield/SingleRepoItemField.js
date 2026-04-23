@@ -5,7 +5,7 @@ export function SingleRepoItemField(props) {
     const hiddenInputPersonRef = useRef();
 
     useEffect(() => {
-        props.register({name:props.name})
+        props.register(props.name)
         props.setValue(props.name, JSON.stringify(props.relatedRepoItem ?? props.defaultValue))
     }, []);
 

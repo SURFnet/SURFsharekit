@@ -1,11 +1,11 @@
-import React, {useState} from "react";
-import {Redirect} from "react-router-dom";
-import AppStorage, {StorageKey, useAppStorageState} from "../util/AppStorage";
+import React from "react";
+import {Navigate} from "react-router-dom";
+import {StorageKey, useAppStorageState} from "../util/AppStorage";
 
 function AutoRedirect() {
     const [user] = useAppStorageState(StorageKey.USER);
     if (!user) {
-        return <Redirect to={'/401'}/>
+        return <Navigate to={'/401'}/>
     }
     //else if(noPermissionToViewPage){
         //return <Redirect to={'/403'}/>

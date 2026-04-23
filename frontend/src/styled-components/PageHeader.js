@@ -1,17 +1,21 @@
 import React from 'react';
 import styled from "styled-components";
 import {ThemedH1} from "../Elements";
+import StatusIcon from "../components/statusicon/StatusIcon";
+import {useTranslation} from "react-i18next";
 
 function PageHeader (props) {
+
+    const {t} = useTranslation()
 
     return (
         <PageHeaderRoot>
             <TextContainer>
                 <Text>{props.title}</Text>
+                <StatusIcon color={props.active ? 'green' : 'red'} text={props.active ? t('person.active') : t('person.inactive')} backgroundColor={'white'}/>
             </TextContainer>
 
             {props.button}
-
         </PageHeaderRoot>
     )
 }
@@ -25,7 +29,9 @@ const PageHeaderRoot = styled.div`
 `;
 
 const TextContainer = styled.div`
-    
+    display: flex;
+    align-items: center;
+    gap: 15px;
 `;
 
 const Text = styled(ThemedH1)``;

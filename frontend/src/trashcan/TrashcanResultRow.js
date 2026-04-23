@@ -5,15 +5,16 @@ import './trashcanresultsrow.scss'
 import {ProfileBanner} from "../components/profilebanner/ProfileBanner";
 import Toaster from "../util/toaster/Toaster";
 import Api from "../util/api/Api";
-import {useHistory} from "react-router-dom";
+import {useNavigate} from "react-router-dom";
 import RepoItemHelper from "../util/RepoItemHelper";
 import VerificationPopup from "../verification/VerificationPopup";
 import {useTranslation} from "react-i18next";
 import {GlobalPageMethods} from "../components/page/Page";
+import {useNavigation} from "../providers/NavigationProvider";
 
 export function TrashcanResultRow(props) {
     const {t} = useTranslation();
-    const history = useHistory();
+    const navigate = useNavigation();
 
     function SearchResultIcon() {
         let iconContent;
@@ -97,13 +98,13 @@ export function TrashcanResultRow(props) {
         VerificationPopup.show(t("verification.restored.title"), t("verification.restored.message"), () => {
             switch (type) {
                 case 'repoItem':
-                    history.push('/publications/' + id)
+                    navigate('/publications/' + id)
                     break;
                 case 'group':
-                    history.push('/groups/' + id)
+                    navigate('/groups/' + id)
                     break;
                 case 'person':
-                    history.push('/profile/' + id)
+                    navigate('/profile/' + id)
                     break;
                 default:
                     return;
@@ -137,17 +138,21 @@ export function TrashcanResultRow(props) {
                 showRestoreFinishedPopup(type, id)
             }
 
-            function onLocalFailure(error) {
-                Toaster.showDefaultRequestError()
+            const errorCallback = (error) => {
+                Toaster.showServerError(error);
                 console.log(error);
+            };
+
+            function onLocalFailure(error) {
+                errorCallback(error);
             }
 
             function onServerFailure(error) {
-                console.log(error);
+                errorCallback(error);
                 if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                    history.push('/login?redirect=' + window.location.pathname);
+                    navigate('/login?redirect=' + window.location.pathname);
                 } else {
-                    history.push("/forbidden");
+                    navigate("/forbidden");
                 }
             }
 
@@ -176,17 +181,21 @@ export function TrashcanResultRow(props) {
             props.onReload()
         }
 
-        function onLocalFailure(error) {
-            Toaster.showDefaultRequestError()
+        const errorCallback = (error) => {
+            Toaster.showServerError(error);
             console.log(error);
+        };
+
+        function onLocalFailure(error) {
+            errorCallback(error);
         }
 
         function onServerFailure(error) {
-            console.log(error);
+            errorCallback(error);
             if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             } else {
-                history.push("/forbidden");
+                navigate("/forbidden");
             }
         }
 

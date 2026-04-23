@@ -9,17 +9,21 @@ import {faInfoCircle} from "@fortawesome/free-solid-svg-icons";
 import IconButton from "../components/buttons/iconbutton/IconButton";
 import {useTranslation} from "react-i18next";
 import ButtonText from "../components/buttons/buttontext/ButtonText";
-import {useHistory} from "react-router-dom";
 import Api from "../util/api/Api";
 import {useGlobalState} from "../util/GlobalState";
 import styled from "styled-components";
+import {useNavigation} from "../providers/NavigationProvider";
+import { getCurrentConfig } from "../config/environment";
+import {Link} from "react-router-dom";
+import {majorelle, majorelleLight, openSans, openSansBold} from "../Mixins";
 
 function Login(props) {
     const [, setUser] = useAppStorageState(StorageKey.USER);
     const [, setUserInstitute] = useAppStorageState(StorageKey.USER_INSTITUTE);
+    const [, setMemberData] = useAppStorageState(StorageKey.MEMBER_DATA);
     const [isTopMenuVisible, setTopMenuVisible] = useGlobalState('isTopMenuVisible', true);
     const [method, setMethod] = useGlobalState('method', null);
-    const history = useHistory()
+    const navigate = useNavigation()
     const {t} = useTranslation();
     const loginDisabled = (process.env.REACT_APP_DISABLE_LOGIN === "true");
 
@@ -109,12 +113,24 @@ function Login(props) {
                                                                }}/>}
 
                         </LoginButtons>
-                        <IconButton className={"icon-button-login-info"}
-                                    text={t('onboarding.login.help')}
-                                    icon={faInfoCircle}
-                                    onClick={() => {
-                                        openInfoPage()
-                                    }}/>
+                        <Info>
+                            <IconButton className={"icon-button-login-info"}
+                                        text={t('onboarding.login.help')}
+                                        icon={faInfoCircle}
+                                        onClick={() => {
+                                            openInfoPage()
+                                        }}/>
+                            <IconButton className={"icon-button-login-info"}
+                                        text={t('onboarding.login.privacy')}
+                                        icon={faInfoCircle}
+                                        onClick={() => {
+                                            window.open(
+                                                "https://servicedesk.surf.nl/wiki/spaces/WIKI/pages/248316093/Privacyverklaring",
+                                                '_blank',
+                                                'noopener,noreferrer'
+                                            );
+                                        }}/>
+                        </Info>
                     </LoginButtonContainer>
                 </div>
             </div>
@@ -123,7 +139,6 @@ function Login(props) {
 
     return (
         <EmptyPage id="login"
-                   history={props.history}
                    content={content}
                    style={{backgroundImage: `url('` + Background + `')`}}
         />
@@ -139,7 +154,7 @@ function Login(props) {
 
         // When user presses on "Login met SRAM"
         if (type === "sram") {
-            const scopes = ["openid", "profile", "email", "eduperson_entitlement", "eduperson_scoped_affiliation", "schac_home_organization", "voperson_external_affiliation"];
+            const scopes = ["openid", "profile", "email", "eduperson_entitlement", "eduperson_scoped_affiliation", "schac_home_organization", "voperson_external_affiliation", "voperson_external_id"];
             //Get OpenIdCode from Surf Conext, we need this code to log in the user into our system
             window.location.href = sramLoginUrl + "&redirect_uri=" + openIdCallbackUrl + "&scope=" + scopes.join("%20") + "&state=1";
 
@@ -156,60 +171,124 @@ function Login(props) {
         setUser(null);
         setUserInstitute(null);
 
+        const envConfig = getCurrentConfig();
         const loginType = localStorage.getItem('loginType') || '';
+        const loginUrl = envConfig.api.baseURL + `login/${loginType}?code=` + openIdCode + '&redirect_uri=' + openIdCallbackUrl;
+        
+        console.log('Attempting login to:', loginUrl); // Debug log
 
-        //Code is available, trying to authenticate with api
-        fetch(process.env.REACT_APP_API_URL + `login/${loginType}?code=` + openIdCode + '&redirect_uri=' + openIdCallbackUrl, {
+        fetch(loginUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
+            credentials: 'include',
             mode: 'cors'
-        }).then(response => {
+        }).then(async response => {
+            console.log('Login response status:', response.status); // Debug log
             if (!response.ok) {
                 GlobalEmptyPageMethods.setFullScreenLoading(false)
-                throw response
+                
+                // Try to parse error response body
+                let errorData;
+                try {
+                    const responseText = await response.text();
+                    // Check if response is a stringified JSON object and parse it
+                    if (responseText && responseText.trim().startsWith('{')) {
+                        errorData = JSON.parse(responseText);
+                    }
+                } catch (parseError) {
+                    // If parsing fails, create generic error
+                    errorData = null;
+                }
+                
+                // Create error object with response details
+                const error = new Error(`HTTP error! status: ${response.status}`);
+                error.status = response.status;
+                error.response = {
+                    status: response.status,
+                    data: errorData
+                };
+                
+                throw error;
             }
-            return response.json()  //we only get here if there is no error
+            return response.json()
         }).then(json => {
+            console.log('Login successful, user data:', json); // Debug log
             const newUser = {
                 id: json.id,
-                accessToken: json.token,
                 name: json.name
             };
 
             AppStorage.set(StorageKey.USER, newUser);
 
-            ApiRequests.getExtendedPersonInformation(newUser, history,
+            // All subsequent API calls will automatically include the cookie
+            ApiRequests.getExtendedPersonInformation(newUser, navigate,
                 (data) => {
                     GlobalEmptyPageMethods.setFullScreenLoading(false)
                     AppStorage.set(StorageKey.USER_ROLES, data.groups.map(group => group.roleCode).filter(r => !!r && r !== 'null'));
 
-                    if (data.hasFinishedOnboarding && data.hasFinishedOnboarding === 1) {
+                    if (data.hasFinishedOnboarding && (data.hasFinishedOnboarding === true || data.hasFinishedOnboarding === 1)) {
                         if (redirect) {
                             if (isRedirectPrivate) {
                                 Api.downloadFileWithAccessTokenAndPopup(redirect, null)
                                 saveAsState(undefined, false)
-                                props.history.push('dashboard');
+                                navigate('/dashboard');
                             } else {
-                                props.history.push(redirect);
+                                navigate(redirect);
                             }
                         } else {
-                            props.history.push('dashboard');
+                            navigate('/dashboard');
                         }
                     } else {
-                        props.history.push({
-                            pathname: '/onboarding',
-                            state: {memberData: data}
-                        });
+                        setMemberData(data);
+                        navigate({pathname: '/onboarding', state: {memberData: data}});
                     }
-                }, () => {
+                }, (error) => {
                     GlobalEmptyPageMethods.setFullScreenLoading(false)
-                    Toaster.showDefaultRequestError()
+                    Toaster.showServerError(error)
                 }
             );
         }).catch(error => {
+            console.error('Login error:', error); // Debug log
             GlobalEmptyPageMethods.setFullScreenLoading(false)
+            
+            // More specific error handling
+            if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+                console.error('Network error - Is the backend running?');
+                Toaster.showToaster({
+                    type: "error",
+                    message: "Cannot connect to the server. Please check if the backend is running."
+                });
+            } else if (error.status === 401) {
+                // Check if we have an error message from the response body
+                const errorMessage = error.response?.data?.error || error.response?.data?.message;
+                Toaster.showToaster({
+                    type: "error",
+                    message: errorMessage || t('login.error.unauthorized')
+                });
+            } else {
+                // For errors with technical details (like error_description with authorization codes),
+                // don't show the raw technical message - use standard server error instead
+                if (error.response?.data?.error_description) {
+                    // Create a modified error without the technical message/error_description
+                    const sanitizedError = {
+                        ...error,
+                        response: {
+                            ...error.response,
+                            data: {
+                                ...error.response.data,
+                                message: undefined,
+                                error_description: undefined
+                            }
+                        }
+                    };
+                    Toaster.showServerError(sanitizedError);
+                } else {
+                    // For other errors, use standard server error handling
+                    Toaster.showServerError(error);
+                }
+            }
         });
     }
 }
@@ -226,6 +305,10 @@ const LoginButtons = styled.div`
     display: flex;
     flex-direction: row;
     gap: 15px;
+`
+
+const Info = styled.div`
+    display: flex;
 `
 
 export default Login;

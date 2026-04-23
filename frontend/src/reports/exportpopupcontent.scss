@@ -33,7 +33,8 @@
                 flex-direction: column;
 
                 .field-label-radio-group {
-                    @include form-field-label-style
+                    @include form-field-label-style;
+                    text-transform: uppercase;
                 }
 
                 .export-radio-group {
@@ -50,15 +51,16 @@
             }
 
             .save-button-wrapper {
+                display: flex;
+                justify-content: flex-end;
                 margin-top: 20px;
+
+                .call-to-action {
+                    cursor: pointer;
+                }
             }
         }
 
-        .form-field {
-            &:nth-child(2) {
-                padding-left: 20px;
-            }
-        }
 
         .form-column {
 

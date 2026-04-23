@@ -86,7 +86,7 @@ form {
                         max-width: 200px;
                     }
 
-                    .decline-reason-text {
+                    .decline-reason-text, .delete-reason-text {
                         @include open-sans;
                         font-size: 14px;
                         max-width: 200px;
@@ -127,4 +127,14 @@ form {
     .status {
         display: flex;
     }
+}
+
+.pencil-icon {
+  margin: auto 0 auto 5px;
+  width: 12px;
+  height: 12px;
+  min-width: 12px;
+  min-height: 12px;
+  flex-shrink: 0;
+  cursor: pointer;
 }

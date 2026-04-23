@@ -92,7 +92,7 @@ export class HelperFunctions {
         return dateTimeFormat.formatToParts(dateObj).reduce(f_date, {});
     }
 
-    static getGetOptionsCallForFieldKey(fieldKey, mapper) {
+    static getGetOptionsCallForFieldKey(fieldKey, fieldName, mapper) {
         return function (searchQuery = '', callback = () => {
         }) {
 
@@ -108,15 +108,15 @@ export class HelperFunctions {
                 callback([])
             }
 
-            let labelSort = i18n.t('language.current_code') === 'nl' ? 'labelNL' : 'labelEN';
-
+            // If field is of type language, then we should sort on sortOrder
+            let labelSort = fieldName === 'language' ? 'sortOrder' : i18n.t('language.current_code') === 'nl' ? 'labelNL' : 'labelEN';
 
             const config = {
                 params: {
                     'filter[FieldKey][EQ]': fieldKey,
                     'filter[IsRemoved][EQ]': 0,
                     'sort': labelSort,
-                    'page[size]': 50,
+                    'page[size]': fieldName === 'language' ? 200 : 50,
                     'page[number]': 1,
                 }
             };
@@ -139,5 +139,15 @@ export class HelperFunctions {
         }
 
         return input;
+    }
+
+    /**
+     * Transforms a string to a string with a capital letter
+     * eg: 'string' or 'STRING' would be => 'String'
+     * @param str
+     * @returns {string}
+     */
+    static capitalize(str){
+        return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
     }
 }

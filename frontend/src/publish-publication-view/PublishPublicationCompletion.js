@@ -8,7 +8,7 @@ import {ThemedH1} from "../Elements";
 import {useTranslation} from "react-i18next";
 import SURFButton from "../styled-components/buttons/SURFButton";
 import {majorelle, majorelleLight, white} from "../Mixins";
-import {useHistory} from "react-router-dom";
+import {replace, useNavigate} from "react-router-dom";
 import {GlobalPageMethods} from "../components/page/Page";
 import IconButtonText from "../components/buttons/iconbuttontext/IconButtonText";
 import {
@@ -22,6 +22,7 @@ import Api from "../util/api/Api";
 import ValidationError from "../util/ValidationError";
 import AddPublicationPopup from "../publications/addpublicationpopup/AddPublicationPopup";
 import {copyRepoItem} from "../components/reacttable/tables/publication/ReactPublicationTable";
+import {useNavigation} from "../providers/NavigationProvider";
 
 
 function PublishPublicationCompletion(props){
@@ -29,7 +30,7 @@ function PublishPublicationCompletion(props){
     const [isLoading, setIsLoading] = useState(false)
 
     const {t} = useTranslation()
-    const history = useHistory()
+    const navigate = useNavigation()
 
     const getChannels = () => {
         if (props.repoItem){
@@ -69,17 +70,15 @@ function PublishPublicationCompletion(props){
         const user = AppStorage.get(StorageKey.USER);
 
         function onLocalFailure(error) {
-            Toaster.showDefaultRequestError()
-            errorCallback()
+            errorCallback(error)
         }
 
         function onServerFailure(error) {
-            Toaster.showServerError(error)
             if (error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                props.history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             }
 
-            errorCallback()
+            errorCallback(error)
         }
 
         function getUserWithGroups() {
@@ -138,7 +137,7 @@ function PublishPublicationCompletion(props){
                 params: {
                     'filter[distinctTemplates]': "1",
                     "filter[scope]": institutes.map(i => i.id).join(","),
-                    "fields[institutes]": "title,permissions"
+                    "fields[institutes]": "title,permissions,lmsEnabled"
                 }
             };
 
@@ -174,10 +173,13 @@ function PublishPublicationCompletion(props){
                             createRepoItem(instituteAndType.institute, instituteAndType.selectedPublicationType)
                         }, (repoItemToCopy) => {
                             setIsLoading(true)
-                            copyRepoItem(repoItemToCopy.id, props.history, (response) => {
+                            copyRepoItem(repoItemToCopy.id, navigate, (response) => {
                                 setIsLoading(false)
-                                props.history.push(`../publications/${response.data.id}`)
+                                navigate(`../publications/${response.data.id}`)
                                 successCallback()
+                            }, (error) => {
+                                setIsLoading(false)
+                                Toaster.showServerError(error)
                             })
                         }, () => {
                             successCallback()
@@ -204,7 +206,7 @@ function PublishPublicationCompletion(props){
             function onSuccess(response) {
                 setIsLoading(false)
                 const repoItemData = response.data.data
-                isProject ? props.history.push(`../projects/${repoItemData.id}`, {isProject: true}) : props.history.push(`../publications/${repoItemData.id}`)
+                isProject ? navigate(`../projects/${repoItemData.id}`, {isProject: true}) : navigate(`../publications/${repoItemData.id}`)
                 successCallback()
             }
 
@@ -258,7 +260,7 @@ function PublishPublicationCompletion(props){
                         textColor={white}
                         padding={"0 30px"}
                         onClick={() => {
-                            history.replace("/dashboard")
+                            navigate("/dashboard", { replace: true })
                         }}
                     />
                     <IconButtonText
@@ -270,8 +272,9 @@ function PublishPublicationCompletion(props){
                             createAndNavigateToRepoItem(props, () => {
                                     setIsLoading(false)
                                 },
-                                () => {
+                                (error) => {
                                     setIsLoading(false)
+                                    Toaster.showServerError(error)
                                 })
                         }}
                     />

@@ -15,8 +15,9 @@ import Api from "../../util/api/Api";
 import Toaster from "../../util/toaster/Toaster";
 import LoadingIndicator from "../../components/loadingindicator/LoadingIndicator";
 import {GlobalPageMethods} from "../../components/page/Page";
-import {useHistory} from "react-router-dom";
+import {useNavigate} from "react-router-dom";
 import i18n from "../../i18n";
+import {useNavigation} from "../../providers/NavigationProvider";
 
 function ClaimRequestPopupContent(props) {
     const [profileData, setProfileData] = useState(null);
@@ -25,8 +26,9 @@ function ClaimRequestPopupContent(props) {
     const person = props.person
     const [canClaim, setCanClaim] = useState(false);
     const user = AppStorage.get(StorageKey.USER)
-    const {formState, register, handleSubmit, errors, setValue, reset, trigger} = useForm();
+    const {register, handleSubmit, formState: { errors}, setValue} = useForm();
     const {t} = useTranslation()
+    const navigate = useNavigation()
 
     useEffect(() => {
         getProfile()
@@ -53,57 +55,50 @@ function ClaimRequestPopupContent(props) {
                     </Header>
 
                     <FormTitle>{t("profile.claim_popup.subtitle")}</FormTitle>
-                    {!canClaim &&
-                        <ClaimDisclaimerText>{t("profile.claim_popup.cant_merge")}</ClaimDisclaimerText>
-                    }
+                    {!canClaim && <ClaimDisclaimerText>{t("profile.claim_popup.cant_merge")}</ClaimDisclaimerText>}
                     <Form>
-                        <div className={"organisation form-column flex-column"}>
-                            <FormFieldContainer className={"form-row flex-row form-field-container"}>
-                                <FormField key={"rootInstitutes"}
-                                           classAddition={''}
-                                           type={"dropdown"}
-                                           options={profileData ? RealList() : []}
-                                           label={t('profile.organisation')}
-                                           isRequired={true}
-                                           readonly={profileData && RealList().length === 0}
-                                           error={errors["institute"]}
-                                           name={"rootInstitutes"}
-                                           register={register}
-                                           setValue={setValue}
-                                           defaultValue={profileData && profileData.length === 1 ? RealList() : []}
-                                />
-                                <Tooltip text={t("profile.claim_popup_tooltip")}/>
-                            </FormFieldContainer>
-
-                        </div>
+                        <FormFieldContainer className={"form-row flex-row form-field-container"}>
+                            <FormField key={"rootInstitutes"}
+                                       classAddition={''}
+                                       type={"dropdown"}
+                                       options={profileData ? RealList() : []}
+                                       label={t('profile.organisation')}
+                                       isRequired={true}
+                                       readonly={profileData && RealList().length === 0}
+                                       error={errors["institute"]}
+                                       name={"rootInstitutes"}
+                                       register={register}
+                                       setValue={setValue}
+                                       defaultValue={profileData && profileData.length === 1 ? RealList() : []}
+                                       tooltip={t("profile.claim_popup_tooltip")}
+                            />
+                        </FormFieldContainer>
                     </Form>
                 </>
             )}
 
 
             <Footer>
-                <>
-                    <SURFButton
-                        text={t("action.cancel")}
-                        backgroundColor={spaceCadet}
-                        highlightColor={spaceCadetLight}
-                        width={"170px"}
-                        onClick={() => {
-                            SwalClaimRequestPopup.close()
-                        }}
-                    />
+                <SURFButton
+                    text={t("action.cancel")}
+                    backgroundColor={spaceCadet}
+                    highlightColor={spaceCadetLight}
+                    width={"170px"}
+                    onClick={() => {
+                        SwalClaimRequestPopup.close()
+                    }}
+                />
 
-                    <SURFButton
-                        text={t("action.confirm")}
-                        backgroundColor={majorelle}
-                        highlightColor={majorelleLight}
-                        disabled={!canClaim}
-                        width={"170px"}
-                        onClick={() => {
-                            handleSubmit((formData) => postClaimPersonAction(formData))()
-                        }}
-                    />
-                </>
+                <SURFButton
+                    text={t("action.confirm")}
+                    backgroundColor={majorelle}
+                    highlightColor={majorelleLight}
+                    disabled={!canClaim}
+                    width={"170px"}
+                    onClick={() => {
+                        handleSubmit((formData) => postClaimPersonAction(formData))()
+                    }}
+                />
             </Footer>
         </ClaimRequestPopupContentRoot>
     )
@@ -135,18 +130,21 @@ function ClaimRequestPopupContent(props) {
             SwalClaimRequestPopup.close()
         }
 
-        function onServerFailure(error) {
+        const errorCallback = (error) => {
             GlobalPageMethods.setFullScreenLoading(false)
             Toaster.showServerError(error)
+            console.log(error);
+        };
+
+        function onServerFailure(error) {
+            errorCallback(error);
             if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                props.history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             }
         }
 
         function onLocalFailure(error) {
-            GlobalPageMethods.setFullScreenLoading(false)
-            Toaster.showDefaultRequestError()
-            console.log(error);
+            errorCallback(error);
         }
     }
 
@@ -167,7 +165,7 @@ function ClaimRequestPopupContent(props) {
 
         function onSuccess(response) {
             if (response.data.isRemoved) {
-                props.history.replace('/removed');
+                navigate('/removed', {replace: true});
             } else {
                 setProfileData(response.data);
                 console.log(response.data)
@@ -175,25 +173,28 @@ function ClaimRequestPopupContent(props) {
             }
         }
 
-        function onServerFailure(error) {
+        const errorCallback = (error) => {
             console.log(error);
             Toaster.showServerError(error)
+        };
+
+        function onServerFailure(error) {
+            errorCallback(error);
             if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                props.history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             } else if (error && error.response && (error.response.status === 404 || error.response.status === 400)) { //The object to access does not exist
-                props.history.replace('/notfound');
+                navigate('/notfound', {replace: true});
             } else if (error && error.response && (error.response.status === 423)) { //The object is inaccesible
-                props.history.replace('/removed');
+                navigate('/removed', {replace:true});
             } else if (error && error.response && error.response.status === 403) { //The object to access is forbidden to view
-                props.history.replace('/forbidden');
+                navigate('/forbidden', {replace: true});
             } else { //The object to access does not exist
-                props.history.replace('/unauthorized');
+                navigate('/unauthorized', {replace: true});
             }
         }
 
         function onLocalFailure(error) {
-            Toaster.showDefaultRequestError()
-            console.log(error);
+            errorCallback(error);
         }
     }
 
@@ -224,17 +225,16 @@ function ClaimRequestPopupContent(props) {
     }
 }
 
-const ClaimRequestPopupContentRoot = styled.div`
-    width: 100%;
-    height: 431px;
-    display: flex;
-    flex-direction: column;
-    text-align: left;
+const ClaimRequestPopupContentRoot = styled.div`    
+    padding: 15px;
+    position: relative;
 `;
 
 const Header = styled.div`
-    width: 100%;
-    margin-bottom: 36px;
+    padding: 0 0 10px 0;
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
 `;
 
 const Form = styled.form`
@@ -242,11 +242,11 @@ const Form = styled.form`
 `;
 
 const FormTitle = styled(ThemedH4)`
-    margin-bottom: 25px;
 `;
 
 const Title = styled(ThemedH3)`
-margin-top: 35px
+    margin: 0;
+    flex-grow: 1;
 `;
 
 const Footer = styled.div`
@@ -261,20 +261,27 @@ const Footer = styled.div`
 
 const CloseButtonContainer = styled.div`
     position: absolute;
-    top: 0;
-    right: 0;
-    padding: 24px;
+    top: 10px;
+    right: 10px;
+    padding: 10px;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    
+    &:hover {
+        opacity: 0.7;
+    }
 `;
 
 const ClaimDisclaimerText = styled.p `
     color: red;
     font-size: 12px;
-    margin-top: -10px;
 `;
 
 const FormFieldContainer = styled.div `
-    width: 467px;
 `;
 
 export default ClaimRequestPopupContent;

@@ -1,6 +1,6 @@
 import {useTranslation} from "react-i18next";
 import {StorageKey, useAppStorageState} from "../util/AppStorage";
-import {Redirect} from "react-router-dom";
+import {Navigate} from "react-router-dom";
 import Page from "../components/page/Page";
 import React from "react";
 import {ReactTemplatesTable} from "./ReactTemplatesTable";
@@ -13,7 +13,7 @@ function Templates(props) {
     useDocumentTitle("Templates")
 
     if (user === null) {
-        return <Redirect to={'login?redirect=templates'}/>
+        return <Navigate to={'login?redirect=templates'}/>
     }
 
     const content = <div>
@@ -27,7 +27,6 @@ function Templates(props) {
     </div>;
 
     return <Page id="publications"
-                 history={props.history}
                  activeMenuItem={"templates"}
                  breadcrumbs={[
                      {

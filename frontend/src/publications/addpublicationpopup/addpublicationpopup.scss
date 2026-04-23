@@ -2,25 +2,35 @@
 @import "../../sass/theme/fonts";
 @import "../../sass/utils/mixins";
 
-.swal2-container.add-publication-container {
+.swal2-container .swal2-html-container {
+    all: unset;
+    padding: 0;
+}
 
+.swal2-popup {
+    padding: 0;
+}
+
+.close-button-container {
+    position: absolute;
+    right: 13px;
+    top: 4px;
+    padding: 7px;
+    cursor: pointer;
+}
+
+.swal2-container.add-publication-container {
     .swal2-popup.add-publication-popup {
         padding: 25px 35px;
         width: 45em;
         min-height: 200px;
         justify-content: flex-start;
 
-        .add-publication-content {
-            text-align: left;
+        .header-container {
+            margin-bottom: 40px;
+        }
 
-            .close-button-container {
-                position: absolute;
-                right: 13px;
-                top: 4px;
-                padding: 7px;
-                cursor: pointer;
-            }
-
+        .add-publication-popup-content {
             .popup-title {
                 margin-bottom: 20px;
             }
@@ -46,6 +56,10 @@
                     padding: 13px 50px 13px 30px;
                     margin-bottom: 9px;
                     cursor: pointer;
+
+                    &:hover {
+                        background-color: $majorelle-super-light;
+                    }
 
                     .status-color-indicator {
                         position: absolute;

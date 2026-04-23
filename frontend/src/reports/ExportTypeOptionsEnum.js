@@ -4,8 +4,8 @@ export function ExportTypeOptionsEnum() {
     return [
         {
             key: "export",
-            labelNL: "Export",
-            labelEN: "Export"
+            labelNL: "Metadata",
+            labelEN: "Metadata"
         },
         {
             key: "statistics",

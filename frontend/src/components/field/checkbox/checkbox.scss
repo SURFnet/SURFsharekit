@@ -67,6 +67,22 @@ $selectable-size: 16px;
         cursor: auto;
     }
 
+    // Styling for readonly/disabled state
+    &.disabled {
+        [type="checkbox"] + label:before {
+            opacity: 0.33;
+            cursor: not-allowed;
+        }
+
+        label {
+            cursor: not-allowed;
+            color: #999;
+            opacity: 0.7;
+        }
+
+        pointer-events: none;
+    }
+
     .option:first-child {
         margin-top: 5px;
     }

@@ -2,24 +2,26 @@ import React, {useState} from "react";
 import './profiles.scss'
 import {StorageKey, useAppStorageState} from "../util/AppStorage";
 import Page from "../components/page/Page";
-import {Redirect} from "react-router-dom";
+import {Navigate} from "react-router-dom";
 import {useTranslation} from "react-i18next";
 import {faPlus} from "@fortawesome/free-solid-svg-icons";
 import IconButtonText from "../components/buttons/iconbuttontext/IconButtonText";
 import {UserPermissions} from "../util/UserPermissions";
 import PersonTable from "../components/reacttable/tables/person/PersonTable";
 import useDocumentTitle from "../util/useDocumentTitle";
+import {useNavigation} from "../providers/NavigationProvider";
 
 function Profiles(props) {
     const {t} = useTranslation();
     const [user] = useAppStorageState(StorageKey.USER);
     const [userPermissions] = useAppStorageState(StorageKey.USER_PERMISSIONS);
     const [searchCount, setSearchCount] = useState(0);
+    const navigate = useNavigation()
 
     useDocumentTitle('Persons')
 
     if (user === null) {
-        return <Redirect to={'unauthorized?redirect=profiles'}/>
+        return <Navigate to={'unauthorized?redirect=profiles'}/>
     }
 
     function onTableFiltered(itemProps) {
@@ -37,13 +39,12 @@ function Profiles(props) {
                 <IconButtonText faIcon={faPlus}
                                 buttonText={t("profiles.add_profile")}
                                 onClick={() => {
-                                    props.history.push("./profiles/newprofile")
+                                    navigate("./profiles/newprofile")
                                 }}/>
             }
         </div>
         <PersonTable
             props={props}
-            history={props.history}
             onTableFiltered={onTableFiltered}
             hideDelete={true}
             claimIconEnabled={true}
@@ -51,7 +52,6 @@ function Profiles(props) {
     </div>;
 
     return <Page id="profiles"
-                 history={props.history}
                  breadcrumbs={[
                      {
                          path: './dashboard',

@@ -3,7 +3,7 @@ import Dropdown from "../../dropdown/Dropdown";
 import React, {useEffect, useState} from "react";
 import Api from "../../../util/api/Api";
 import {useTranslation} from "react-i18next";
-import {useHistory} from "react-router-dom";
+import {useNavigation} from "../../../providers/NavigationProvider";
 
 export function LectorateField(props) {
     let classAddition = '';
@@ -12,7 +12,7 @@ export function LectorateField(props) {
     classAddition += (props.hasError ? ' invalid' : '');
     const [lectorates, setLectorates] = useState(props.defaultValue ? [props.defaultValue] : [])
     const [showError, setShowError] = useState(false)
-    const history = useHistory();
+    const navigate = useNavigation();
 
     useEffect(() => {
         if (!props.readonly) {
@@ -42,11 +42,12 @@ export function LectorateField(props) {
             allowNullValue={true}
             defaultValue={props.defaultValue ? props.defaultValue.id : undefined}
             disableDefaultSort={false} // Set to true to disable sorting alphabetically
-            options={lectorates.map(dis => {
+            options={lectorates.filter(d => d != null).map(dis => {
+                const label = dis?.summary?.title ?? t('organisation.unknown');
                 return {
                     value: dis.id,
-                    labelNL: dis.summary.title,
-                    labelEN: dis.summary.title
+                    labelNL: label,
+                    labelEN: label
                 }
             })}
             setValue={(name, value, options) => {
@@ -82,7 +83,7 @@ export function LectorateField(props) {
         function onServerFailure(error) {
             setShowError(true)
             if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             }
         }
 

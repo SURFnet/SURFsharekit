@@ -1,5 +1,10 @@
 version: "1.0"
+failThreshold: 0
+linter: jetbrains/qodana-js:2024.3
 profile:
-  name: qodana.starter
-bootstrap: |
-  npm install
+  path: .qodana/qodana-custom.yml
+exclude:
+  - name: CheckDependencyLicences
+include:
+  - name: VulnerableLibrariesGlobal
+  - name: JvmTaintAnalysis

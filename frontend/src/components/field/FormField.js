@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from "react";
+import React, {useEffect, useMemo, useRef, useState} from "react";
 import './formfield.scss'
 import FormFieldHelper from "../../util/FormFieldHelper";
 import {useTranslation} from "react-i18next";
@@ -26,7 +26,7 @@ import {SelectField} from "./select/SelectField";
 import {TextAreaField} from "./textarea/TextArea";
 import {TagField} from "./tag/TagField";
 import {TextField} from "./text/TextField";
-import {EmailField} from "./email/EmailField";
+import { EmailField } from "./email/EmailField";
 import {DisciplineField} from "./discipline/DisciplineField";
 import {LectorateField} from "./lectorate/LectorateField";
 import {SwitchRowField} from "./switchrow/SwitchRowField";
@@ -46,13 +46,11 @@ import {ThemedA, ThemedH3, ThemedH4, ThemedH5} from "../../Elements";
 import {
     spaceCadet,
     nunitoExtraBold,
-    cultured,
-    greyLight,
     greyLighter,
     majorelle,
     maxNumberOfLines,
     openSans,
-    roundedBackgroundPointyUpperLeft, SURFShapeLeft, SURFShapeRight
+    SURFShapeLeft,
 } from "../../Mixins";
 import {useForm} from "react-hook-form";
 import i18n from "i18next";
@@ -62,76 +60,168 @@ import RestrictedAccessIcon from "../../resources/icons/ic-restricted-access.png
 import ClosedAccessIcon from "../../resources/icons/ic-closed-access.png";
 import {Accordion} from "../Accordion";
 import {CopyMetaFieldValueEvent, SetCopiedMetaField} from "../../util/events/Events";
+import CCBY from "../../resources/icons/rightofusedropdown/cc-by.svg";
+import CCBY0 from "../../resources/icons/rightofusedropdown/cc-by-0.svg";
+import CCBYNC from "../../resources/icons/rightofusedropdown/cc-by-nc.svg";
+import CCBYNCND from "../../resources/icons/rightofusedropdown/cc-by-nc-nd.svg";
+import CCBYNCSA from "../../resources/icons/rightofusedropdown/cc-by-nc-sa.svg";
+import CCBYND from "../../resources/icons/rightofusedropdown/cc-by-nd.svg";
+import CCBYSA from "../../resources/icons/rightofusedropdown/cc-by-sa.svg";
+import PublicDomain from "../../resources/icons/rightofusedropdown/publicdomain.svg";
+import VideoAndSound from "../../resources/icons/rightofusedropdown/videoandsound.svg";
+import Youtube from "../../resources/icons/rightofusedropdown/youtube.svg";
+import DatePicker from "./datepicker/DatePicker";
+import {OrcidBanner} from "../../styled-components/orcidbanner/OrcidBanner";
+import {RichTextEditor} from "./richtexteditor/RichTextEditor";
+
+function buildDependencyGroupsFromSections(sections) {
+    const groups = {};
+    if (!sections) {
+        return groups;
+    }
+    sections.forEach((section) => {
+        section?.fields?.forEach((field) => {
+            const key = field?.dependencyKey;
+            if (key) {
+                if (!groups[key]) {
+                    groups[key] = [];
+                }
+                if (!groups[key].includes(field.key)) {
+                    groups[key].push(field.key);
+                }
+            }
+        });
+    });
+    return groups;
+}
+
+function buildFieldKeyToLabelFromSections(sections, language) {
+    const map = {};
+    if (!sections) {
+        return map;
+    }
+    const isDutch = (language ?? '').toLowerCase().startsWith('nl');
+
+    sections.forEach((section) => {
+        const sectionLabelPrimary = (isDutch ? section?.titleNL : section?.titleEN) ?? '';
+        const sectionLabelSecondary = (!isDutch ? section?.titleNL : section?.titleEN) ?? '';
+        const sectionLabel =
+            (typeof sectionLabelPrimary === 'string' && sectionLabelPrimary.trim().length > 0)
+                ? sectionLabelPrimary.trim()
+                : (typeof sectionLabelSecondary === 'string' ? sectionLabelSecondary.trim() : '');
+
+        section?.fields?.forEach((field) => {
+            // Prefer labelNL/labelEN, fallback to titleNL/titleEN (some APIs only provide titles)
+            const primary = (isDutch ? (field?.labelNL ?? field?.titleNL) : (field?.labelEN ?? field?.titleEN)) ?? '';
+            const secondary = (!isDutch ? (field?.labelNL ?? field?.titleNL) : (field?.labelEN ?? field?.titleEN)) ?? '';
+            let label = (typeof primary === 'string' ? primary.trim() : '');
+            if (!label) label = (typeof secondary === 'string' ? secondary.trim() : '');
+            if (!label) label = sectionLabel;
+            map[field.key] = label;
+        });
+    });
+
+    return map;
+}
+
+function getDependencyGroupLabels(dependencyKey, dependencyGroups, fieldKeyToLabel) {
+    if (!dependencyKey) return [];
+    const groupKeys = dependencyGroups?.[dependencyKey] ?? [];
+    const labels = groupKeys
+        .map((k) => fieldKeyToLabel?.[k])
+        .filter((lbl) => typeof lbl === 'string' && lbl.trim().length > 0);
+    return [...new Set(labels)];
+}
+
+function isFieldInDependencyGroup(field, dependencyGroups) {
+    const dk = field?.dependencyKey;
+    return !!(dk && (dependencyGroups?.[dk]?.length ?? 0) > 1);
+}
 
 export function Form(props) {
     const formFieldHelper = new FormFieldHelper();
-    const {t} = useTranslation();
+    const {t, i18n} = useTranslation();
     const sections = RepoItemHelper.getSectionsFromSteps(props.repoItem)
-    const [extendedSections, setExtendedSections] = useState([]);
+    const [extendedSectionIds, setExtendedSectionIds] = useState([]);
+    const lastSectionId = sections && sections.length > 0 ? sections[sections.length - 1].id : null;
 
-    const allSectionsAreExtended = (extendedSections.length >= 0 && extendedSections.length < sections.length) || extendedSections.length === 0
+    const dependencyGroups = useMemo(() => buildDependencyGroupsFromSections(sections), [sections]);
+    const fieldKeyToLabel = useMemo(() => buildFieldKeyToLabelFromSections(sections, i18n?.language), [sections, i18n?.language]);
+
+    const activeSectionIds = useMemo(() => {
+        if (props.containsHiddenSections !== true) {
+            return null;
+        }
+        if (!props.sectionsToShow) {
+            return new Set();
+        }
+        return new Set(props.sectionsToShow.map((section) => section.id));
+    }, [props.containsHiddenSections, props.sectionsToShow]);
+
+    const extendedSectionIdSet = useMemo(() => new Set(extendedSectionIds), [extendedSectionIds]);
+    const shouldShowExtendAll = (extendedSectionIds?.length ?? 0) < (sections?.length ?? 0);
 
     useEffect(() => {
         if (props.repoItem) {
             if (props.isEditing || props.isPublicationFlow) {
                 extendAllSections()
             } else {
-                setExtendedSections([])
+                setExtendedSectionIds((prev) => (prev.length === 0 ? prev : []))
             }
         }
     }, [props.isEditing, props.isPublicationFlow, props.repoItem])
 
     function collapseOrExtendAllSections() {
-        if ((extendedSections.length >= 0 && extendedSections.length < sections.length) || extendedSections.length === 0) {
+        if (shouldShowExtendAll) {
             extendAllSections()
         } else {
-            setExtendedSections([])
+            setExtendedSectionIds((prev) => (prev.length === 0 ? prev : []))
         }
     }
 
     function collapseOrExtendSection(section) {
-        if (extendedSections.includes(section)){
-            setExtendedSections(extendedSections.filter((collapsedSection) => collapsedSection.id !== section.id))
-        } else {
-            setExtendedSections(collapsedSections => [...collapsedSections, section])
-        }
+        const id = section?.id;
+        if (!id) return;
+        setExtendedSectionIds((prev) => {
+            if (prev.includes(id)) {
+                return prev.filter((sid) => sid !== id);
+            }
+            return [...prev, id];
+        });
     }
 
     function extendAllSections() {
-        sections.forEach((section) => {
-            if (!extendedSections.includes(section)){
-                setExtendedSections(collapsedSections => [...collapsedSections, section])
+        const nextIds = (sections ?? []).map((s) => s.id);
+        setExtendedSectionIds((prev) => {
+            if (prev.length === nextIds.length && prev.every((id, idx) => id === nextIds[idx])) {
+                return prev;
             }
-        })
+            return nextIds;
+        });
     }
 
     function checkIfFormSectionIsActive(sectionId){
-        if (props.containsHiddenSections === true){
-            if (props.sectionsToShow) {
-                const sectionsToShowIds = props.sectionsToShow.map((section) => {
-                    return section.id
-                })
-                return sectionsToShowIds.includes(sectionId)
-            }
-            return false
-        } else {
-            return true
+        if (activeSectionIds === null) {
+            return true;
         }
+        return activeSectionIds.has(sectionId);
     }
 
-    function getSectionsFromStep(step){
-        let sections = [];
-        step.templateSections.forEach(section => {
-            sections.push(section)
-        })
-        return sections
+    function getSectionsFromStep(step) {
+        return step?.templateSections ?? [];
     }
 
     function isSectionHidden(section) {
         const sectionFields = section.fields
-        const allFieldsNotRequired = sectionFields.every(field => !field.required);
+        const containsSwitchRow = sectionFields.some(field => String(field.fieldType).toLowerCase() === 'switch-row');
 
-        return !!(allFieldsNotRequired && props.showOnlyRequiredFields);
+        // If filtering for required fields, keep the last section visible when it contains channels
+        if (props.showOnlyRequiredFields && containsSwitchRow && lastSectionId && section.id === lastSectionId) {
+            return false;
+        }
+
+        const allFieldsFilteredOut = sectionFields.every(field => !field.required && !isFieldInDependencyGroup(field, dependencyGroups));
+        return !!(allFieldsFilteredOut && props.showOnlyRequiredFields);
     }
 
     function isStepHidden(index = null) {
@@ -155,8 +245,8 @@ export function Form(props) {
                 <FoldButton onClick={() => {
                     collapseOrExtendAllSections()
                 }}>
-                    <FontAwesomeIcon icon={allSectionsAreExtended ? faChevronDown : faChevronUp}/>
-                    <div>{allSectionsAreExtended ? t("publication.sections.extend_all") : t("publication.sections.collapse_all")}</div>
+                    <FontAwesomeIcon icon={shouldShowExtendAll ? faChevronDown : faChevronUp}/>
+                    <div>{shouldShowExtendAll ? t("publication.sections.extend_all") : t("publication.sections.collapse_all")}</div>
                 </FoldButton>
             }
             <FormSectionsContainer>
@@ -193,6 +283,7 @@ export function Form(props) {
                                                 pushFieldRow(fieldsInFieldRow);
 
                                                 function pushFieldRow(fieldsInFieldRow) {
+                                                    const isLastSection = lastSectionId && section.id === lastSectionId;
                                                     fieldRows.push(
                                                         <div className={"form-field-container"} key={'container_' + fieldRows.length}>
                                                             {
@@ -203,7 +294,7 @@ export function Form(props) {
                                                                     }
 
                                                                     let fieldDescription = ((t('language.current_code') === 'nl' ? fieldInRow.descriptionNL : fieldInRow.descriptionEN) ?? '');
-
+                                                                    const isInDependencyGroup = isFieldInDependencyGroup(fieldInRow, dependencyGroups);
                                                                     if (fieldInRow.fieldType.toLowerCase() === 'switch-row') {
                                                                         return <SwitchRowField key={fieldInRow.key}
                                                                                                onValueChanged={(changedValue) => {
@@ -217,13 +308,13 @@ export function Form(props) {
                                                                                                register={props.register}
                                                                                                isRequired={fieldInRow.required}
                                                                                                readonly={props.readonly || fieldInRow.readonly === 1}
-                                                                                               hidden={fieldInRow.hidden === 1 || !fieldInRow.required && props.showOnlyRequiredFields}/>
+                                                                                               hidden={fieldInRow.hidden === 1 || (!isLastSection && props.showOnlyRequiredFields && !fieldInRow.required && !isInDependencyGroup)}/>
                                                                     } else {
                                                                         fieldLabel = fieldLabel.toUpperCase();
-                                                                        const debouncedQueryFunction = HelperFunctions.debounce(HelperFunctions.getGetOptionsCallForFieldKey(fieldInRow.key,
+                                                                        const debouncedQueryFunction = HelperFunctions.debounce(HelperFunctions.getGetOptionsCallForFieldKey(fieldInRow.key, fieldInRow.jsonKey,
                                                                             (resultOption) => {
                                                                                 return {
-                                                                                    "label": t('language.current_code') === 'nl' ? resultOption.labelNL : resultOption.labelEN,
+                                                                                    "label": t('language.current_code') === 'nl' ? (resultOption.labelNL || resultOption.labelEN) : (resultOption.labelEN || resultOption.labelNL),
                                                                                     "labelNL": resultOption.labelNL,
                                                                                     "labelEN": resultOption.labelEN,
                                                                                     "icon": resultOption.icon,
@@ -231,6 +322,7 @@ export function Form(props) {
                                                                                     "coalescedLabelEN": resultOption.coalescedLabelEN,
                                                                                     "metafieldOptionCategory": resultOption.metafieldOptionCategory,
                                                                                     "categorySort": resultOption.categorySort,
+                                                                                    "id": resultOption.id,
                                                                                     "value": resultOption.id
                                                                                 }
                                                                             }));
@@ -238,6 +330,7 @@ export function Form(props) {
                                                                         const fieldType = formFieldHelper.getFieldType(fieldInRow.fieldType)
                                                                         const fieldAnswer = formFieldHelper.getFieldAnswer(props.repoItem, fieldInRow)
                                                                         return <FormField key={fieldInRow.key}
+                                                                                          jsonKey={fieldInRow.jsonKey ?? ""}
                                                                                           hideField={(fieldType === 'repoitems') && !fieldAnswer}
                                                                                           getOptions={debouncedQueryFunction}
                                                                                           classAddition={fieldInRow.isSmallField ? 'small' : ''}
@@ -252,17 +345,23 @@ export function Form(props) {
                                                                                           defaultValue={fieldAnswer}
                                                                                           tooltip={t('language.current_code') === 'nl' ? fieldInRow.infoTextNL : fieldInRow.infoTextEN}
                                                                                           isReplicatable={fieldInRow.replicatable}
+                                                                                          dependencyKey={fieldInRow.dependencyKey}
+                                                                                          dependencyGroupKeys={dependencyGroups[fieldInRow.dependencyKey] ?? []}
+                                                                                          dependencyGroupLabels={getDependencyGroupLabels(fieldInRow.dependencyKey, dependencyGroups, fieldKeyToLabel)}
                                                                                           file={props.file}
                                                                                           person={props.person}
-                                                                                          error={props.errors[fieldInRow.key]}
+                                                                                          error={props.errors && props.errors[fieldInRow.key]}
                                                                                           name={fieldInRow.key}
                                                                                           register={props.register}
                                                                                           setValue={props.setValue}
+                                                                                          getValues={props.getValues}
                                                                                           readonly={props.readonly || fieldInRow.readOnly === 1 || fieldInRow.readOnly === true}
-                                                                                          hidden={fieldInRow.hidden === 1 || !fieldInRow.required && props.showOnlyRequiredFields}
+                                                                                          hidden={fieldInRow.hidden === 1 || (props.showOnlyRequiredFields && !fieldInRow.required && !isInDependencyGroup)}
                                                                                           repoItem={props.repoItem}
                                                                                           relatedRepoItem={props.relatedRepoItem}
                                                                                           validationRegex={fieldInRow.validationRegex}
+                                                                                          validationRegexErrorMessageNL={fieldInRow.validationRegexErrorMessageNL}
+                                                                                          validationRegexErrorMessageEN={fieldInRow.validationRegexErrorMessageEN}
                                                                                           formReducerState={props.formReducerState}
                                                                                           attributeKey={fieldInRow.attributeKey}/>
                                                                     }
@@ -281,7 +380,7 @@ export function Form(props) {
                                                         )}
                                                         subtitle={t('language.current_code') === 'nl' ? (section.subtitleNL &&`\xa0\xa0-\xa0\xa0\xa0\xa0${section.subtitleNL}`) : (section.subtitleEN && `\xa0\xa0-\xa0\xa0\xa0\xa0${section.subtitleEN}`)}
                                                         faIcon={getSectionIcon(section.icon)}
-                                                        isExtended={extendedSections.includes(section)}
+                                                        isExtended={extendedSectionIdSet.has(section.id)}
                                                         isHidden={isSectionHidden(section)}
                                                         key={section.id} id={section.id}
                                                         onChange={() => collapseOrExtendSection(section)}
@@ -327,11 +426,14 @@ export function IndependentForm(props) {
         The usage of the Form() component caused problems when we tried to make use of multiple forms on one page,
         because useForm() should only be used once in a single component.
     */
-    const {register, handleSubmit, errors, setValue, getValues, trigger} = useForm();
+    const {register, handleSubmit, formState: {errors}, setValue, getValues, trigger} = useForm();
     const formFieldHelper = new FormFieldHelper();
-    const {t} = useTranslation();
+    const {t, i18n} = useTranslation();
     const sections = RepoItemHelper.getSectionsFromSteps(props.repoItem)
     const [formState, setFormState] = useState()
+
+    const dependencyGroups = useMemo(() => buildDependencyGroupsFromSections(sections), [sections]);
+    const fieldKeyToLabel = useMemo(() => buildFieldKeyToLabelFromSections(sections, i18n?.language), [sections, i18n?.language]);
 
     useEffect(() => {
         window.addEventListener("CopyMetaFieldValueEvent", handleCopyMetaFieldValue);
@@ -465,10 +567,10 @@ export function IndependentForm(props) {
                                                                    hidden={fieldInRow.hidden === 1}/>
                                         } else {
                                             fieldLabel = fieldLabel.toUpperCase();
-                                            const debouncedQueryFunction = HelperFunctions.debounce(HelperFunctions.getGetOptionsCallForFieldKey(fieldInRow.key,
+                                            const debouncedQueryFunction = HelperFunctions.debounce(HelperFunctions.getGetOptionsCallForFieldKey(fieldInRow.key, fieldInRow.jsonKey,
                                                 (resultOption) => {
                                                     return {
-                                                        "label": t('language.current_code') === 'nl' ? resultOption.labelNL : resultOption.labelEN,
+                                                        "label": t('language.current_code') === 'nl' ? (resultOption.labelNL || resultOption.labelEN) : (resultOption.labelEN || resultOption.labelNL),
                                                         "labelNL": resultOption.labelNL,
                                                         "labelEN": resultOption.labelEN,
                                                         "icon": resultOption.icon,
@@ -476,10 +578,12 @@ export function IndependentForm(props) {
                                                         "coalescedLabelEN": resultOption.coalescedLabelEN,
                                                         "metafieldOptionCategory": resultOption.metafieldOptionCategory,
                                                         "categorySort": resultOption.categorySort,
+                                                        "id": resultOption.id,
                                                         "value": resultOption.id
                                                     }
                                                 }));
                                             return <FormField key={fieldInRow.key}
+                                                              jsonKey={fieldInRow.jsonKey ?? ""}
                                                               getOptions={debouncedQueryFunction}
                                                               classAddition={fieldInRow.isSmallField ? 'small' : ''}
                                                               type={formFieldHelper.getFieldType(fieldInRow.fieldType)}
@@ -498,6 +602,9 @@ export function IndependentForm(props) {
                                                               name={fieldInRow.key}
                                                               attributeKey={fieldInRow.attributeKey}
                                                               isReplicatable={fieldInRow.replicatable}
+                                                              dependencyKey={fieldInRow.dependencyKey}
+                                                              dependencyGroupKeys={dependencyGroups[fieldInRow.dependencyKey] ?? []}
+                                                              dependencyGroupLabels={getDependencyGroupLabels(fieldInRow.dependencyKey, dependencyGroups, fieldKeyToLabel)}
                                                               register={register}
                                                               setValue={setFieldValue}
                                                               readonly={props.readonly || fieldInRow.readOnly === 1 || fieldInRow.readOnly === true}
@@ -505,6 +612,8 @@ export function IndependentForm(props) {
                                                               repoItem={props.repoItem}
                                                               relatedRepoItem={props.relatedRepoItem}
                                                               validationRegex={fieldInRow.validationRegex}
+                                                              validationRegexErrorMessageNL={fieldInRow.validationRegexErrorMessageNL}
+                                                              validationRegexErrorMessageEN={fieldInRow.validationRegexErrorMessageEN}
                                                               formReducerState={props.formReducerState}
                                                               getValues={getValues}
                                                               formState={formState}
@@ -545,7 +654,6 @@ export function IndependentForm(props) {
 
 export function FormField(props) {
     const {t} = useTranslation();
-    const useGreyBackground = props.type === "tree-multiselect"
 
     return <div className={"form-field " + props.classAddition + ((props.hidden) ? " hidden" : "")}>
         <div className="form-row">
@@ -554,7 +662,7 @@ export function FormField(props) {
                     !props.hideRequired && <Required />
                 }
             </div>
-            <div className={`form-column ${useGreyBackground && 'grey-background'}`}>
+            <div className={`form-column`}>
                 { (props.hideField) ? null :
                     <>
                         { props.label && <Label text={props.label.toUpperCase()} hardHint={props.hardHint} />}
@@ -577,6 +685,8 @@ export function FormField(props) {
                                 onValueChanged={props.onValueChanged}
                                 onValueChangedUnchecked={props.onValueChangedUnchecked}
                                 validationRegex={props.validationRegex}
+                                validationRegexErrorMessageNL={props.validationRegexErrorMessageNL}
+                                validationRegexErrorMessageEN={props.validationRegexErrorMessageEN}
                                 file={props.file}
                                 person={props.person}
                                 register={props.register}
@@ -587,7 +697,16 @@ export function FormField(props) {
                                 setValue={props.setValue}
                                 formReducerState={props.formReducerState}
                                 inputRef={props.inputRef}
-                                formState={props.formState}/>
+                                formState={props.formState}
+                                jsonKey={props.jsonKey ?? ""}
+                                label={props.label ?? ""}
+                                hasGeneratedOrcid={props.hasGeneratedOrcid}
+                                onlyScopedInstitutes={props.onlyScopedInstitutes}
+                                dependencyKey={props.dependencyKey}
+                                dependencyGroupKeys={props.dependencyGroupKeys}
+                                dependencyGroupLabels={props.dependencyGroupLabels}
+                                getValues={props.getValues}
+                            />
                             <FlexContainer>
                                 { props.tooltip && <Tooltip text={props.tooltip}/> }
                                 { props.isReplicatable && props.index === 0 && props.repoItemCount > 1 ?
@@ -599,7 +718,7 @@ export function FormField(props) {
                                 }
                             </FlexContainer>
                         </div>
-                        <div className={"field-error " + (props.error ? '' : 'hidden')}>{props.error ? errorToLabel(props.error) : 'No error'}</div>
+                        <div className={"field-error " + (props.error ? '' : 'hidden')}>{props.error ? errorToLabel(props.error, props.validationRegexErrorMessageNL, props.validationRegexErrorMessageEN) : 'No error'}</div>
                     </>
                 }
             </div>
@@ -607,11 +726,28 @@ export function FormField(props) {
     </div>
 }
 
-export function errorToLabel(error) {
+export function errorToLabel(error, validationRegexErrorMessageNL, validationRegexErrorMessageEN) {
+    let errorMessage;
     switch (error.type) {
         case 'required':
             return i18n.t('error_message.field_required');
+        case 'pattern':
+            if (error.message && error.message.length > 0) {
+                return error.message;
+            }
+            errorMessage = i18n.language === 'nl' ? validationRegexErrorMessageNL : validationRegexErrorMessageEN;
+            if (errorMessage) {
+                return errorMessage;
+            }
+            return i18n.t('error_message.field_invalid');
         default:
+            if (error.message && error.message.length > 0) {
+                return error.message;
+            }
+            errorMessage = i18n.language === 'nl' ? validationRegexErrorMessageNL : validationRegexErrorMessageEN;
+            if (errorMessage) {
+                return errorMessage;
+            }
             return i18n.t('error_message.field_invalid');
     }
 }
@@ -630,38 +766,10 @@ export function InputField(props) {
     };
 
     switch (props.type) {
-        case "email":
-            return <EmailField readonly={props.readonly}
-                               hideInputField={props.hideInputField}
-                               defaultValue={props.defaultValue}
-                               placeholder={props.placeholder}
-                               isValid={props.isValid}
-                               isRequired={props.isRequired}
-                               hasError={props.hasError}
-                               onChange={(event) => onChange(event.target.value)}
-                               register={props.register}
-                               name={props.name}
-                               formReducerState={props.formReducerState}
-                               formState={props.formState}/>;
-        case "doi":
-            return <DoiField readonly={props.readonly}
-                             defaultValue={props.defaultValue}
-                             isRequired={props.isRequired}
-                             placeholder={props.placeholder}
-                             isValid={props.isValid}
-                             repoItem={props.repoItem}
-                             hasError={props.hasError}
-                             setValue={props.setValue}
-                             onChange={(event) => onChange(event.target.value)}
-                             onValueChangedUnchecked={props.onValueChangedUnchecked}
-                             register={props.register}
-                             name={props.name}
-                             validationRegex={props.validationRegex}
-                             formReducerState={props.formReducerState}
-                             inputRef={props.inputRef}
-                               formState={props.formState}/>;
-        case "text":
-            return <TextField readonly={props.readonly}
+        case "orcid":
+            return props.hasGeneratedOrcid ?
+                <OrcidBanner orcid={props.defaultValue} /> :
+                <TextField readonly={props.readonly}
                               defaultValue={props.defaultValue}
                               isRequired={props.isRequired}
                               hardHint={props.hardHint}
@@ -676,7 +784,74 @@ export function InputField(props) {
                               validationRegex={props.validationRegex}
                               formReducerState={props.formReducerState}
                               inputRef={props.inputRef}
-                               formState={props.formState}/>;
+                              formState={props.formState}
+                              dependencyKey={props.dependencyKey}
+                              dependencyGroupKeys={props.dependencyGroupKeys}
+                              dependencyGroupLabels={props.dependencyGroupLabels}
+                              getValues={props.getValues}/>;
+        case "email":
+            return <EmailField readonly={props.readonly}
+                               hideInputField={props.hideInputField}
+                               defaultValue={props.defaultValue}
+                               placeholder={props.placeholder}
+                               isValid={props.isValid}
+                               isRequired={props.isRequired}
+                               hasError={props.hasError}
+                               onChange={(event) => onChange(event.target.value)}
+                               register={props.register}
+                               name={props.name}
+                               formReducerState={props.formReducerState}
+                               formState={props.formState}
+                               dependencyKey={props.dependencyKey}
+                               dependencyGroupKeys={props.dependencyGroupKeys}
+                               dependencyGroupLabels={props.dependencyGroupLabels}
+                               getValues={props.getValues}/>;
+        case "doi":
+            return <DoiField readonly={props.readonly}
+                             defaultValue={props.defaultValue}
+                             isRequired={props.isRequired}
+                             placeholder={props.placeholder}
+                             isValid={props.isValid}
+                             repoItem={props.repoItem}
+                             hasError={props.hasError}
+                             setValue={props.setValue}
+                             onChange={(event) => onChange(event.target.value)}
+                             onValueChangedUnchecked={props.onValueChangedUnchecked}
+                             register={props.register}
+                             name={props.name}
+                             validationRegex={props.validationRegex}
+                             validationRegexErrorMessageNL={props.validationRegexErrorMessageNL}
+                             validationRegexErrorMessageEN={props.validationRegexErrorMessageEN}
+                             formReducerState={props.formReducerState}
+                             inputRef={props.inputRef}
+                             formState={props.formState}
+                             dependencyKey={props.dependencyKey}
+                             dependencyGroupKeys={props.dependencyGroupKeys}
+                             dependencyGroupLabels={props.dependencyGroupLabels}
+                             getValues={props.getValues}/>;
+        case "text":
+            return <TextField readonly={props.readonly}
+                              defaultValue={props.defaultValue}
+                              isRequired={props.isRequired}
+                              hardHint={props.hardHint}
+                              extraValidation={props.extraValidation}
+                              placeholder={props.placeholder}
+                              isValid={props.isValid}
+                              hasError={props.hasError}
+                              onChange={(event) => onChange(event.target.value)}
+                              onValueChangedUnchecked={props.onValueChangedUnchecked}
+                              register={props.register}
+                              name={props.name}
+                              validationRegex={props.validationRegex}
+                              validationRegexErrorMessageNL={props.validationRegexErrorMessageNL}
+                              validationRegexErrorMessageEN={props.validationRegexErrorMessageEN}
+                              formReducerState={props.formReducerState}
+                              inputRef={props.inputRef}
+                              formState={props.formState}
+                              dependencyKey={props.dependencyKey}
+                              dependencyGroupKeys={props.dependencyGroupKeys}
+                              dependencyGroupLabels={props.dependencyGroupLabels}
+                              getValues={props.getValues}/>;
         case "number":
             return <NumberField readonly={props.readonly}
                                 defaultValue={props.defaultValue}
@@ -689,9 +864,15 @@ export function InputField(props) {
                                 register={props.register}
                                 name={props.name}
                                 validationRegex={props.validationRegex}
+                                validationRegexErrorMessageNL={props.validationRegexErrorMessageNL}
+                                validationRegexErrorMessageEN={props.validationRegexErrorMessageEN}
                                 formReducerState={props.formReducerState}
                                 inputRef={props.inputRef}
-                               formState={props.formState}/>;
+                                formState={props.formState}
+                                dependencyKey={props.dependencyKey}
+                                dependencyGroupKeys={props.dependencyGroupKeys}
+                                dependencyGroupLabels={props.dependencyGroupLabels}
+                                getValues={props.getValues}/>;
         case "dropdowntag":
             return <MultiSelectDropdown readonly={props.readonly}
                                         defaultValue={props.defaultValue}
@@ -707,7 +888,12 @@ export function InputField(props) {
                                         getOptions={props.getOptions}
                                         setValue={props.setValue}
                                         delimiters={[',',';']}
-                               formState={props.formState}/>;
+                                        formState={props.formState}
+                                        type={props.type}
+                                        dependencyKey={props.dependencyKey}
+                                        dependencyGroupKeys={props.dependencyGroupKeys}
+                                        dependencyGroupLabels={props.dependencyGroupLabels}
+                                        getValues={props.getValues}/>;
         case "tag":
             return <TagField readonly={props.readonly}
                              defaultValue={props.defaultValue}
@@ -719,7 +905,11 @@ export function InputField(props) {
                              register={props.register}
                              setValue={props.setValue}
                              name={props.name}
-                               formState={props.formState}/>;
+                             formState={props.formState}
+                             dependencyKey={props.dependencyKey}
+                             dependencyGroupKeys={props.dependencyGroupKeys}
+                             dependencyGroupLabels={props.dependencyGroupLabels}
+                             getValues={props.getValues}/>;
         case "textarea":
             return <TextAreaField readonly={props.readonly}
                                   defaultValue={props.defaultValue}
@@ -730,8 +920,14 @@ export function InputField(props) {
                                   onChange={(event) => onChange(event.target.value)}
                                   register={props.register}
                                   validationRegex={props.validationRegex}
+                                  validationRegexErrorMessageNL={props.validationRegexErrorMessageNL}
+                                  validationRegexErrorMessageEN={props.validationRegexErrorMessageEN}
                                   name={props.name}
-                               formState={props.formState}/>;
+                                  formState={props.formState}
+                                  dependencyKey={props.dependencyKey}
+                                  dependencyGroupKeys={props.dependencyGroupKeys}
+                                  dependencyGroupLabels={props.dependencyGroupLabels}
+                                  getValues={props.getValues}/>;
         case "dropdown":
             return <SelectField readonly={props.readonly}
                                 isSearchable={props.isSearchable}
@@ -748,10 +944,14 @@ export function InputField(props) {
                                 name={props.name}
                                 setValue={props.setValue}
                                 attributeKey={props.attributeKey}
-                               formState={props.formState}/>;
+                                formState={props.formState}
+                                dependencyKey={props.dependencyKey}
+                                dependencyGroupKeys={props.dependencyGroupKeys}
+                                dependencyGroupLabels={props.dependencyGroupLabels}
+                                getValues={props.getValues}/>;
         case "rightofusedropdown":
             return <SelectField readonly={props.readonly}
-                                isSearchable={props.isSearchable}
+                                isSearchable={false}
                                 defaultValue={props.defaultValue}
                                 placeholder={props.placeholder}
                                 isValid={props.isValid}
@@ -765,7 +965,11 @@ export function InputField(props) {
                                 type={props.type}
                                 setValue={props.setValue}
                                 attributeKey={props.attributeKey}
-                                formState={props.formState}/>;
+                                formState={props.formState}
+                                dependencyKey={props.dependencyKey}
+                                dependencyGroupKeys={props.dependencyGroupKeys}
+                                dependencyGroupLabels={props.dependencyGroupLabels}
+                                getValues={props.getValues}/>;
         case "multiselectdropdown":
             return <MultiSelectDropdown readonly={props.readonly}
                                         defaultValue={props.defaultValue}
@@ -779,7 +983,12 @@ export function InputField(props) {
                                         name={props.name}
                                         getOptions={props.getOptions}
                                         setValue={props.setValue}
-                               formState={props.formState}/>;
+                                        formState={props.formState}
+                                        type={props.type}
+                                        dependencyKey={props.dependencyKey}
+                                        dependencyGroupKeys={props.dependencyGroupKeys}
+                                        dependencyGroupLabels={props.dependencyGroupLabels}
+                                        getValues={props.getValues}/>;
         case "multiselectsuborganisation":
             return <MultiSelectSuborganisation readonly={props.readonly}
                                                defaultValue={props.defaultValue}
@@ -792,7 +1001,11 @@ export function InputField(props) {
                                                register={props.register}
                                                name={props.name}
                                                setValue={props.setValue}
-                               formState={props.formState}/>;
+                                               formState={props.formState}
+                                               dependencyKey={props.dependencyKey}
+                                               dependencyGroupKeys={props.dependencyGroupKeys}
+                                               dependencyGroupLabels={props.dependencyGroupLabels}
+                                               getValues={props.getValues}/>;
 
         case "multiselectsuborganisationswitch":
             return <MultiSelectSuborganisation readonly={props.readonly}
@@ -807,7 +1020,11 @@ export function InputField(props) {
                                                register={props.register}
                                                name={props.name}
                                                setValue={props.setValue}
-                               formState={props.formState}/>;
+                                               formState={props.formState}
+                                               dependencyKey={props.dependencyKey}
+                                               dependencyGroupKeys={props.dependencyGroupKeys}
+                                               dependencyGroupLabels={props.dependencyGroupLabels}
+                                               getValues={props.getValues}/>;
         case "multiselectpublisherswitch":
             return <MultiSelectPublisher readonly={props.readonly}
                                          defaultValue={props.defaultValue}
@@ -821,7 +1038,12 @@ export function InputField(props) {
                                          register={props.register}
                                          name={props.name}
                                          setValue={props.setValue}
-                                         formState={props.formState}/>;
+                                         formState={props.formState}
+                                         dependencyKey={props.dependencyKey}
+                                         dependencyGroupKeys={props.dependencyGroupKeys}
+                                         dependencyGroupLabels={props.dependencyGroupLabels}
+                                         getValues={props.getValues}
+            />;
         case "multiselectpublisher":
             return <MultiSelectPublisher readonly={props.readonly}
                                          defaultValue={props.defaultValue}
@@ -834,7 +1056,11 @@ export function InputField(props) {
                                          register={props.register}
                                          name={props.name}
                                          setValue={props.setValue}
-                                         formState={props.formState}/>;
+                                         formState={props.formState}
+                                         dependencyKey={props.dependencyKey}
+                                         dependencyGroupKeys={props.dependencyGroupKeys}
+                                         dependencyGroupLabels={props.dependencyGroupLabels}
+                                         getValues={props.getValues}/>;
         case "multiselectinstitute":
             return <MultiSelectPublisher readonly={props.readonly}
                                          defaultValue={props.defaultValue}
@@ -848,7 +1074,11 @@ export function InputField(props) {
                                          name={props.name}
                                          setValue={props.setValue}
                                          formState={props.formState}
-                                         attributeKey={props.attributeKey}/>;
+                                         attributeKey={props.attributeKey}
+                                         dependencyKey={props.dependencyKey}
+                                         dependencyGroupKeys={props.dependencyGroupKeys}
+                                         dependencyGroupLabels={props.dependencyGroupLabels}
+                                         getValues={props.getValues}/>;
 
         case "discipline":
             return <DisciplineField readonly={props.readonly}
@@ -861,7 +1091,11 @@ export function InputField(props) {
                                     register={props.register}
                                     name={props.name}
                                     setValue={props.setValue}
-                               formState={props.formState}/>;
+                                    formState={props.formState}
+                                    dependencyKey={props.dependencyKey}
+                                    dependencyGroupKeys={props.dependencyGroupKeys}
+                                    dependencyGroupLabels={props.dependencyGroupLabels}
+                                    getValues={props.getValues}/>;
         case "lectorate":
             return <LectorateField readonly={props.readonly}
                                    defaultValue={props.defaultValue}
@@ -873,7 +1107,11 @@ export function InputField(props) {
                                    register={props.register}
                                    name={props.name}
                                    setValue={props.setValue}
-                               formState={props.formState}/>;
+                                   formState={props.formState}
+                                   dependencyKey={props.dependencyKey}
+                                   dependencyGroupKeys={props.dependencyGroupKeys}
+                                   dependencyGroupLabels={props.dependencyGroupLabels}
+                                   getValues={props.getValues}/>;
         case "institute":
             return <OrganisationDropdownField readonly={props.readonly}
                                               defaultValue={props.defaultValue}
@@ -886,7 +1124,13 @@ export function InputField(props) {
                                               register={props.register}
                                               name={props.name}
                                               setValue={props.setValue}
-                               formState={props.formState}/>;
+                                              onlyScopedInstitutes={props.onlyScopedInstitutes}
+                                              formState={props.formState}
+                                              dependencyKey={props.dependencyKey}
+                                              dependencyGroupKeys={props.dependencyGroupKeys}
+                                              dependencyGroupLabels={props.dependencyGroupLabels}
+                                              getValues={props.getValues}
+            />;
         case "checkbox":
             return <CheckBoxField readonly={props.readonly}
                                   defaultValue={props.defaultValue}
@@ -897,21 +1141,43 @@ export function InputField(props) {
                                   onChange={(event) => onChange(event)}
                                   register={props.register}
                                   name={props.name}
-                               formState={props.formState}/>;
-        case "singledatepicker":
-            return <SingleDatePickerField readonly={props.readonly}
-                                          defaultValue={props.defaultValue}
-                                          placeholder={props.placeholder}
-                                          isRequired={props.isRequired}
-                                          isValid={props.isValid}
-                                          options={props.options}
-                                          hasError={props.hasError}
-                                          onChange={(event) => onChange(event)}
-                                          register={props.register}
-                                          name={props.name}
-                                          setValue={props.setValue}
-                                          attributeKey={props.attributeKey}
-                               formState={props.formState}/>;
+                                  formState={props.formState}
+                                  dependencyKey={props.dependencyKey}
+                                  dependencyGroupKeys={props.dependencyGroupKeys}
+                                  dependencyGroupLabels={props.dependencyGroupLabels}
+                                  getValues={props.getValues}/>;
+        // case "singledatepicker":
+        //     return <DatePicker readonly={props.readonly}
+        //                                   defaultValue={props.defaultValue}
+        //                                   placeholder={props.placeholder}
+        //                                   isRequired={props.isRequired}
+        //                                   isValid={props.isValid}
+        //                                   options={props.options}
+        //                                   hasError={props.hasError}
+        //                                   onChange={(event) => onChange(event)}
+        //                                   register={props.register}
+        //                                   name={props.name}
+        //                                   setValue={props.setValue}
+        //                                   attributeKey={props.attributeKey}
+        //                        formState={props.formState}/>;
+        case "datepicker":
+            return <DatePicker readonly={props.readonly}
+                               defaultValue={props.defaultValue}
+                               placeholder={props.placeholder}
+                               isRequired={props.isRequired}
+                               isValid={props.isValid}
+                               options={props.options}
+                               hasError={props.hasError}
+                               onChange={(event) => onChange(event)}
+                               register={props.register}
+                               name={props.name}
+                               setValue={props.setValue}
+                               attributeKey={props.attributeKey}
+                               dependencyKey={props.dependencyKey}
+                               dependencyGroupKeys={props.dependencyGroupKeys}
+                               dependencyGroupLabels={props.dependencyGroupLabels}
+                               getValues={props.getValues}
+            />
         case "switch":
             return <SwitchField readonly={props.readonly}
                                 defaultValue={props.defaultValue}
@@ -922,7 +1188,11 @@ export function InputField(props) {
                                 setValue={props.setValue}
                                 register={props.register}
                                 name={props.name}
-                               formState={props.formState}/>;
+                                formState={props.formState}
+                                dependencyKey={props.dependencyKey}
+                                dependencyGroupKeys={props.dependencyGroupKeys}
+                                dependencyGroupLabels={props.dependencyGroupLabels}
+                                getValues={props.getValues}/>;
         case "datetime":
             return <DateTimeField readonly={props.readonly}
                                   defaultValue={props.defaultValue}
@@ -948,7 +1218,11 @@ export function InputField(props) {
                                   addText={t('personinvolved_field.add')}
                                   emptyText={t('personinvolved_field.empty')}
                                   formReducerState={props.formReducerState}
-                               formState={props.formState}/>;
+                                  formState={props.formState}
+                                  dependencyKey={props.dependencyKey}
+                                  dependencyGroupKeys={props.dependencyGroupKeys}
+                                  dependencyGroupLabels={props.dependencyGroupLabels}
+                                  getValues={props.getValues}/>;
         case "repoitemresearchobject":
             return <RepoItemField readonly={props.readonly}
                                   defaultValue={props.defaultValue}
@@ -966,7 +1240,11 @@ export function InputField(props) {
                                   addText={t('repoitemresearchobject_field.add')}
                                   emptyText={t('repoitemresearchobject_field.empty')}
                                   formReducerState={props.formReducerState}
-                               formState={props.formState}/>;
+                                  formState={props.formState}
+                                  dependencyKey={props.dependencyKey}
+                                  dependencyGroupKeys={props.dependencyGroupKeys}
+                                  dependencyGroupLabels={props.dependencyGroupLabels}
+                                  getValues={props.getValues}/>;
         case "repoitemlink":
             return <RepoItemField readonly={props.readonly}
                                   defaultValue={props.defaultValue}
@@ -984,7 +1262,11 @@ export function InputField(props) {
                                   addText={t("link_field.add")}
                                   emptyText={t('link_field.empty')}
                                   formReducerState={props.formReducerState}
-                               formState={props.formState}/>;
+                                  formState={props.formState}
+                                  dependencyKey={props.dependencyKey}
+                                  dependencyGroupKeys={props.dependencyGroupKeys}
+                                  dependencyGroupLabels={props.dependencyGroupLabels}
+                                  getValues={props.getValues}/>;
         case "repoitemlearningobject":
             return <RepoItemField readonly={props.readonly}
                                   defaultValue={props.defaultValue}
@@ -1002,7 +1284,11 @@ export function InputField(props) {
                                   addText={t("learningobject_field.add")}
                                   emptyText={t('learningobject_field.empty')}
                                   formReducerState={props.formReducerState}
-                               formState={props.formState}/>;
+                                  formState={props.formState}
+                                  dependencyKey={props.dependencyKey}
+                                  dependencyGroupKeys={props.dependencyGroupKeys}
+                                  dependencyGroupLabels={props.dependencyGroupLabels}
+                                  getValues={props.getValues}/>;
         case "attachment":
             return <RepoItemField readonly={props.readonly}
                                   defaultValue={props.defaultValue}
@@ -1019,7 +1305,11 @@ export function InputField(props) {
                                   showEmptyState={true}
                                   emptyText={t('attachment_field.empty')}
                                   formReducerState={props.formReducerState}
-                                  formState={props.formState} />;
+                                  formState={props.formState}
+                                  dependencyKey={props.dependencyKey}
+                                  dependencyGroupKeys={props.dependencyGroupKeys}
+                                  dependencyGroupLabels={props.dependencyGroupLabels}
+                                  getValues={props.getValues} />;
         case "repoitems":
             return <RepoItemField readonly={true}
                                   defaultValue={props.defaultValue}
@@ -1034,7 +1324,11 @@ export function InputField(props) {
                                   itemToComponent={getRelatedLearningObjectRepoItemRow}
                                   setValue={props.setValue}
                                   formReducerState={props.formReducerState}
-                               formState={props.formState}/>;
+                                  formState={props.formState}
+                                  dependencyKey={props.dependencyKey}
+                                  dependencyGroupKeys={props.dependencyGroupKeys}
+                                  dependencyGroupLabels={props.dependencyGroupLabels}
+                                  getValues={props.getValues}/>;
         case "file":
             return <FileField readonly={props.readonly}
                               isValid={props.isValid}
@@ -1047,7 +1341,11 @@ export function InputField(props) {
                               register={props.register}
                               name={props.name}
                               setValue={props.setValue}
-                               formState={props.formState}/>;
+                              formState={props.formState}
+                              dependencyKey={props.dependencyKey}
+                              dependencyGroupKeys={props.dependencyGroupKeys}
+                              dependencyGroupLabels={props.dependencyGroupLabels}
+                              getValues={props.getValues}/>;
         case "person":
             return <PersonField readonly={props.readonly}
                                 isValid={props.isValid}
@@ -1061,7 +1359,11 @@ export function InputField(props) {
                                 register={props.register}
                                 name={props.name}
                                 setValue={props.setValue}
-                               formState={props.formState}/>;
+                                formState={props.formState}
+                                dependencyKey={props.dependencyKey}
+                                dependencyGroupKeys={props.dependencyGroupKeys}
+                                dependencyGroupLabels={props.dependencyGroupLabels}
+                                getValues={props.getValues}/>;
         case "repoitem":
             return <SingleRepoItemField readonly={props.readonly}
                                         isValid={props.isValid}
@@ -1075,14 +1377,18 @@ export function InputField(props) {
                                         register={props.register}
                                         name={props.name}
                                         setValue={props.setValue}
-                               formState={props.formState}/>;
+                                        formState={props.formState}
+                                        dependencyKey={props.dependencyKey}
+                                        dependencyGroupKeys={props.dependencyGroupKeys}
+                                        dependencyGroupLabels={props.dependencyGroupLabels}
+                                        getValues={props.getValues}/>;
         case "tree-multiselect":
             return <TreeMultiSelectField readonly={props.readonly}
                                          defaultValue={props.defaultValue}
                                          isValid={props.isValid}
                                          hasFileDrop={false}
                                          isRequired={props.isRequired}
-                                         addText={t('vocabulary_field.add')}
+                                         addText={props.jsonKey?.includes('vocabulary') ? t('vocabulary_field.actions.add') : (t("language.current_code") === 'nl') ? `${props.label[0] + props.label.slice(1).toLowerCase()} ${t('action.add').toLowerCase()}` : `${t('action.add')} ${props.label.toLowerCase()}`}
                                          options={props.options}
                                          retainOrder={props.retainOrder}
                                          hasError={props.hasError}
@@ -1094,7 +1400,30 @@ export function InputField(props) {
                                          showEmptyState={true}
                                          emptyText={t('treemultiselect_field.empty')}
                                          formReducerState={props.formReducerState}
-                               formState={props.formState}/>;
+                                         jsonKey={props.jsonKey ?? ''}
+                                         label={props.label}
+                                         dependencyKey={props.dependencyKey}
+                                         dependencyGroupKeys={props.dependencyGroupKeys}
+                                         dependencyGroupLabels={props.dependencyGroupLabels}
+                                         getValues={props.getValues}
+            />;
+        case "richtexteditor":
+            return <RichTextEditor
+                readonly={props.readonly}
+                defaultValue={props.defaultValue}
+                isRequired={props.isRequired}
+                isValid={props.isValid}
+                hasError={props.hasError}
+                validationRegex={props.validationRegex}
+                dependencyKey={props.dependencyKey}
+                dependencyGroupKeys={props.dependencyGroupKeys}
+                dependencyGroupLabels={props.dependencyGroupLabels}
+                getValues={props.getValues}
+                onChange={(value) => onChange(value)}
+                register={props.register}
+                setValue={props.setValue}
+                name={props.name}
+            />
         default:
             return null;
     }
@@ -1267,11 +1596,15 @@ function DateTimeField(props) {
 }
 
 function getRelatedLinkRepoItemRow(valuePart, onItemAction, readonly, t) {
-    const getAccessRightTooltipText = (valuePart) => {
-        let text = `<div><div><span style="font-weight: bold;">${t('repoitem.access_right.title')}</span><span>${t(`repoitem.access_right.options.${valuePart.summary.accessRight}`, '')}</span></div>`
+    const summary = valuePart?.summary ?? {};
+    const title = summary.title ?? t('repoitem.unknown');
+    const subtitle = summary.subtitle ?? '';
 
-        if (valuePart.summary.embargoDate) {
-            const embargoDate = HelperFunctions.getDateFormat(valuePart.summary.embargoDate, {
+    const getAccessRightTooltipText = () => {
+        let text = `<div><div><span style="font-weight: bold;">${t('repoitem.access_right.title')}</span><span>${t(`repoitem.access_right.options.${summary.accessRight}`, '')}</span></div>`
+
+        if (summary.embargoDate) {
+            const embargoDate = HelperFunctions.getDateFormat(summary.embargoDate, {
                 day: "2-digit",
                 month: "2-digit",
                 year: "numeric"
@@ -1282,24 +1615,25 @@ function getRelatedLinkRepoItemRow(valuePart, onItemAction, readonly, t) {
 
         return text;
     }
+
     return <RepoItemFieldRow>
         {!readonly && <DragHandle/>}
         <SortableRow disabled={readonly}>
-            {valuePart.summary.accessRight !== null &&
+            {summary.accessRight !== null && summary.accessRight !== undefined &&
                 <Tooltip
                     isOutsideWindow={false}
-                    element={<AccessRightIcon src={resolveIcon(valuePart.summary.accessRight)}/>}
+                    element={<AccessRightIcon src={resolveIcon(summary.accessRight)}/>}
                     width={'160px'}
-                    text={getAccessRightTooltipText(valuePart)}
+                    text={getAccessRightTooltipText()}
                 />
             }
             <RelatedRepoitemTitle>
-                <MarkedupLink href={valuePart.summary.url}
-                              target={"_blank"} enabled={readonly}>{valuePart.summary.title}</MarkedupLink>
+                <MarkedupLink href={summary.url}
+                              target={"_blank"} enabled={readonly}>{title}</MarkedupLink>
             </RelatedRepoitemTitle>
-            <RelatedRepoitemSubtitle>{valuePart.summary.subtitle}</RelatedRepoitemSubtitle>
+            <RelatedRepoitemSubtitle>{subtitle}</RelatedRepoitemSubtitle>
             <RelatedRepoItemLabelContainer>
-                { valuePart.summary.important && <LinkRepoItemLabel>{t('link_field.important')}</LinkRepoItemLabel> }
+                { summary.important && <LinkRepoItemLabel>{t('link_field.important')}</LinkRepoItemLabel> }
             </RelatedRepoItemLabelContainer>
             {!readonly && <i className="fas fa-edit edit-icon" onClick={
                 () => {
@@ -1321,18 +1655,21 @@ function getRelatedLinkRepoItemRow(valuePart, onItemAction, readonly, t) {
 }
 
 function getRelatedResearchObjectRepoItemRow(valuePart, onItemAction, readonly, t) {
-    var titleElement = valuePart.summary.title
+    const summary = valuePart?.summary ?? {};
+    const summaryPermissions = summary.permissions ?? {};
+    const title = summary.title ?? t('repoitem.unknown');
+    let titleElement = title
 
-    if (valuePart.summary.repoItem !== undefined && valuePart.summary.repoItem.permissions.canView) {
+    if (summary.repoItem !== undefined && summary.repoItem?.permissions?.canView) {
         //try to link through another repoitem, e.g. RepoItemLearningObject
         titleElement =
-            <MarkedupLink href={'/publications/' + valuePart.summary.repoItem.id}
-                          target={"_blank"} enabled={readonly}>{valuePart.summary.title}</MarkedupLink>
-    } else if (valuePart.summary.permissions.canView && valuePart.summary.repoItem === undefined) {
+            <MarkedupLink href={'/publications/' + summary.repoItem.id}
+                          target={"_blank"} enabled={readonly}>{title}</MarkedupLink>
+    } else if (summaryPermissions.canView && summary.repoItem === undefined) {
         //try to link to another repoitem, e.g. LearningObject
         titleElement =
-            <MarkedupLink href={'/publications/' + valuePart.summary.id}
-                          target={"_blank"} enabled={readonly}>{valuePart.summary.title}</MarkedupLink>
+            <MarkedupLink href={'/publications/' + summary.id}
+                          target={"_blank"} enabled={readonly}>{title}</MarkedupLink>
     }
 
     return <RepoItemFieldRow>
@@ -1374,12 +1711,38 @@ function resolveIcon (accessRight){
     }
 }
 
-function getRelatedAttachmentRepoItemRow(valuePart, onItemAction, readonly, t) {
-    const getAccessRightTooltipText = (valuePart) => {
-        let text = `<div><div><span style="font-weight: bold;">${t('repoitem.access_right.title')}</span><span>${t(`repoitem.access_right.options.${valuePart.summary.accessRight}`, '')}</span></div>`
+function resolveRightOfUseIcon(rightOfUse){
+    const iconMap = {
+        'naamsvermelding': CCBY,
+        'publicdomain': CCBY0,
+        'naamsvermelding-nietcommercieel': CCBYNC,
+        'naamsvermelding-nietcommercieel-geenafgeleidewerken': CCBYNCND,
+        'naamsvermelding-nietcommercieel-gelijkdelen': CCBYNCSA,
+        'naamsvermelding-geenafgeleidewerken': CCBYND,
+        'naamsvermelding-gelijkdelen': CCBYSA,
+        'publicdomainmark': PublicDomain,
+        'beeldengeluid': VideoAndSound,
+        'youtube': Youtube
+    }
 
-        if (valuePart.summary.embargoDate) {
-            const embargoDate = HelperFunctions.getDateFormat(valuePart.summary.embargoDate, {
+    return iconMap[rightOfUse]
+}
+
+function getRelatedAttachmentRepoItemRow(valuePart, onItemAction, readonly, t) {
+    const summary = valuePart?.summary ?? {};
+    const title = summary.title ?? t('repoitem.unknown');
+    const subtitle = summary.subtitle ?? '';
+
+    const getRightOfUseTooltipText = () => {
+        return `<div><div><span style="font-weight: bold;">${t('repoitem.right_of_use.title')}</span><span>${t("language.current_code") === 'nl' ? summary.rightOfUseNL : summary.rightOfUseEN}</span></div>`
+    }
+
+    const getAccessRightTooltipText = () => {
+
+        let text = `<div><div><span style="font-weight: bold;">${t('repoitem.access_right.title')}</span><span>${t(`repoitem.access_right.options.${summary.accessRight}`, '')}</span></div>`
+
+        if (summary.embargoDate) {
+            const embargoDate = HelperFunctions.getDateFormat(summary.embargoDate, {
                 day: "2-digit",
                 month: "2-digit",
                 year: "numeric"
@@ -1388,32 +1751,52 @@ function getRelatedAttachmentRepoItemRow(valuePart, onItemAction, readonly, t) {
             text += `<br><div><span style="font-weight: bold;">${t('repoitem.visible_on')}</span><span>${embargoDate.day}/${embargoDate.month}/${embargoDate.year}</span></div></div>`
         }
 
+        if (summary.institutes && summary.institutes.length !== 0 && summary.accessRight === 'restrictedaccess') {
+            text += `<br>
+            <div style="margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0;">
+                <span style="font-weight: bold;">${t('repoitem.visible_for')}</span>
+                <ol style="margin-top: 5px; padding: 0; display: flex; flex-direction: column; gap: 2px; line-height: 1;">
+                    ${summary.institutes.map(institute => `<li style="margin: 0; padding: 0;">${institute}</li>`).join('')}
+                </ol>
+            </div>`;
+        }
+
         return text;
     }
 
     return <RepoItemFieldRow>
-        {!readonly && <DragHandle hasAccessRight={!!valuePart.summary.accessRight}/>}
+        {!readonly && <DragHandle hasAccessRight={!!summary.accessRight}/>}
         <SortableRow disabled={readonly}>
-            {valuePart.summary.accessRight !== null &&
-                <Tooltip
-                    isOutsideWindow={false}
-                    element={<AccessRightIcon src={resolveIcon(valuePart.summary.accessRight)}/>}
-                    width={'160px'}
-                    text={getAccessRightTooltipText(valuePart)}
-                />
-            }
+            <div style={{display: "flex", gap: "10px", width: "60px"}}>
+                {summary.accessRight != null &&
+                    <Tooltip
+                        isOutsideWindow={false}
+                        element={<AccessRightIcon src={resolveIcon(summary.accessRight)}/>}
+                        width={'160px'}
+                        text={getAccessRightTooltipText()}
+                    />
+                }
+                {summary.rightOfUse != null &&
+                    <Tooltip
+                        isOutsideWindow={false}
+                        element={<RightOfUseIcon src={resolveRightOfUseIcon(summary.rightOfUse)}/>}
+                        width={'160px'}
+                        text={getRightOfUseTooltipText()}
+                    />
+                }
+            </div>
             <RelatedRepoitemTitle>
-                <MarkedupLink href={valuePart.summary.url} target={"_blank"} enabled={readonly}
+                <MarkedupLink href={summary.url} target={"_blank"} enabled={readonly}
                               onClick={(e) => {
                                   e.preventDefault()
-                                  Api.downloadFileWithAccessToken(valuePart.summary.url, valuePart.summary.title, false)
-                              }}>{valuePart.summary.title}</MarkedupLink>
+                                  Api.downloadFileWithAccessToken(summary.url, title, false)
+                              }}>{title}</MarkedupLink>
             </RelatedRepoitemTitle>
             <RelatedRepoitemSubtitle>
-                {valuePart.summary.subtitle}
+                {subtitle}
             </RelatedRepoitemSubtitle>
             <RelatedRepoItemLabelContainer>
-                { valuePart.summary.important && <AttachmentRepoItemLabel>{t('attachment_field.important')}</AttachmentRepoItemLabel> }
+                { summary.important && <AttachmentRepoItemLabel>{t('attachment_field.important')}</AttachmentRepoItemLabel> }
             </RelatedRepoItemLabelContainer>
             {!readonly && <i className="fas fa-edit edit-icon" onClick={
                 () => {
@@ -1452,32 +1835,33 @@ function getValueRow(valuePart, onDelete, readonly) {
 }
 
 function getPersonInvolvedRepoItemRow(valuePart, onItemAction, readonly, t) {
-    var titleElement = valuePart.summary.title
-    if (valuePart.summary.person !== undefined && valuePart.summary.person.permissions.canView){
-        titleElement = <MarkedupLink href={'/profile/' + valuePart.summary.person.id}
-                                      target={"_blank"} enabled={readonly}>{valuePart.summary.title}</MarkedupLink>
+    const summary = valuePart?.summary ?? {};
+    const title = summary.title ?? t('repoitem.unknown');
+    let titleElement = title
+    if (summary.person !== undefined && summary.person?.permissions?.canView){
+        titleElement = <MarkedupLink href={'/profile/' + summary.person.id}
+                                      target={"_blank"} enabled={readonly}>{title}</MarkedupLink>
     }
 
-    console.log(valuePart);
     return <RepoItemFieldRow>
         {!readonly && <DragHandle/>}
         <SortableRow disabled={readonly}>
             <RelatedRepoitemTitle>{titleElement}</RelatedRepoitemTitle>
             <RelatedRepoItemLabelContainer>
-                { valuePart.summary.subtitleNL && valuePart.summary.subtitleNL !== '' && <PersonInvolvedRepoItemLabel>{valuePart.summary.subtitleNL}</PersonInvolvedRepoItemLabel> }
-                { valuePart.summary.external && <PersonInvolvedRepoItemLabel>{t('repoitem.personinvolved_field.external')}</PersonInvolvedRepoItemLabel> }
+                { summary.subtitleNL && summary.subtitleNL !== '' && <PersonInvolvedRepoItemLabel>{summary.subtitleNL}</PersonInvolvedRepoItemLabel> }
+                { summary.external && <PersonInvolvedRepoItemLabel>{t('repoitem.personinvolved_field.external')}</PersonInvolvedRepoItemLabel> }
             </RelatedRepoItemLabelContainer>
             {!readonly && <i className="fas fa-edit edit-icon" onClick={
                 () => {
                     onItemAction({
                             type: "edit",
-                            value: valuePart.summary.id
+                        value: summary.id
                         }
                     )
                 }
             }/>}
             {!readonly && <i className="fas fa-trash delete-icon" onClick={() => {
-                const confirmAction = () => onItemAction({type: "delete", value: valuePart.summary.id})
+                const confirmAction = () => onItemAction({type: "delete", value: summary.id})
                 VerificationPopup.show(t('verification.author.delete.title'), "", confirmAction)
             }}/>}
         </SortableRow>
@@ -1485,18 +1869,21 @@ function getPersonInvolvedRepoItemRow(valuePart, onItemAction, readonly, t) {
 }
 
 function getRelatedLearningObjectRepoItemRow(valuePart, onItemAction, readonly, t) {
-    var titleElement = valuePart.summary.title
+    const summary = valuePart?.summary ?? {};
+    const summaryPermissions = summary.permissions ?? {};
+    const title = summary.title ?? t('repoitem.unknown');
+    let titleElement = title
 
-    if (valuePart.summary.repoItem !== undefined && valuePart.summary.repoItem.permissions.canView) {
+    if (summary.repoItem !== undefined && summary.repoItem?.permissions?.canView) {
         //try to link through another repoitem, e.g. RepoItemLearningObject
         titleElement =
-            <MarkedupLink href={'../publications/' + valuePart.summary.repoItem.id}
-                          target={"_blank"} enabled={readonly}>{valuePart.summary.title}</MarkedupLink>
-    } else if (valuePart.summary.permissions.canView && valuePart.summary.repoItem === undefined) {
+            <MarkedupLink href={'../publications/' + summary.repoItem.id}
+                          target={"_blank"} enabled={readonly}>{title}</MarkedupLink>
+    } else if (summaryPermissions.canView && summary.repoItem === undefined) {
         //try to link to another repoitem, e.g. LearningObject
         titleElement =
-            <MarkedupLink href={'../publications/' + valuePart.summary.id}
-                          target={"_blank"} enabled={readonly}>{valuePart.summary.title}</MarkedupLink>
+            <MarkedupLink href={'../publications/' + summary.id}
+                          target={"_blank"} enabled={readonly}>{title}</MarkedupLink>
     }
 
     return <RepoItemFieldRow>
@@ -1691,8 +2078,6 @@ const SectionTitleH3 = styled(ThemedH3)`
     }
 `;
 
-
-
 const SectionDescription = styled.div``;
 
 const SectionHeader = styled.div`
@@ -1800,6 +2185,15 @@ const AccessRightIcon = styled.img`
     user-drag: none;
     height: 16px;
     width: 16px;
+`;
+
+const RightOfUseIcon = styled.img`
+    -webkit-user-drag: none;
+    -khtml-user-drag: none;
+    -moz-user-drag: none;
+    -o-user-drag: none;
+    user-drag: none;
+    height: 16px;
 `;
 
 export const WarningMessage = styled.div`

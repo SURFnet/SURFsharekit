@@ -10,12 +10,13 @@ import {faArrowRight, faPlus} from "@fortawesome/free-solid-svg-icons";
 import IconButtonText from "../buttons/iconbuttontext/IconButtonText";
 import Toaster from "../../util/toaster/Toaster";
 import {createAndNavigateToRepoItem} from "../../publications/Publications";
-import {useHistory} from "react-router-dom";
+import {useNavigate} from "react-router-dom";
+import {useNavigation} from "../../providers/NavigationProvider";
 
 function PublicationTable(props) {
     const [user] = useAppStorageState(StorageKey.USER);
     const [userPublications, setUserPublications] = useState(null);
-    const history = useHistory()
+    const navigate = useNavigation()
     const {t} = useTranslation();
 
     useEffect(() => {
@@ -60,6 +61,8 @@ function PublicationTable(props) {
         let statusIcon = <StatusIcon color="green" text={t('publication.state.draft')}/>;
         if (props.repoItem.status === 'Published') {
             statusIcon = <StatusIcon color="purple" text={t('publication.state.published')}/>;
+        } else if (props.repoItem.status === 'Archived') {
+            statusIcon = <StatusIcon color="yellow" text={t('publication.state.archived')}/>;
         }
 
         return <div className={'publication-summary'}>
@@ -116,12 +119,12 @@ function PublicationTable(props) {
         function onServerFailure(error) {
             Toaster.showServerError(error)
             if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             }
         }
 
         function onLocalFailure(error) {
-            Toaster.showDefaultRequestError()
+            Toaster.showServerError(error)
         }
     }
 
@@ -132,7 +135,7 @@ function PublicationTable(props) {
                                buttonTitle={t('dashboard.my_publications.empty.add')}
                                buttonIcon={faPlus}
                                onClick={() => {
-                                   createAndNavigateToRepoItem(props)
+                                   createAndNavigateToRepoItem(navigate, props)
                                }
                                }/>
         }

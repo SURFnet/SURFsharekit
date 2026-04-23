@@ -11,8 +11,8 @@ import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {GlobalPageMethods} from "../../components/page/Page";
 import Api from "../../util/api/Api";
 import Toaster from "../../util/toaster/Toaster";
-import {useHistory} from "react-router-dom";
 import LoadingIndicator from "../../components/loadingindicator/LoadingIndicator";
+import {useNavigation} from "../../providers/NavigationProvider";
 
 export function ProfileNotificationsContent(props) {
 
@@ -22,9 +22,31 @@ export function ProfileNotificationsContent(props) {
 
     const makingNewProfile = props.profileData === undefined
     const [personConfig, setPersonConfig] = useState(!makingNewProfile ? props.profileData.config : {});
-    const history = useHistory();
+    const navigate = useNavigation();
     const {t} = useTranslation();
-    const { register, handleSubmit, errors, watch, formState } = useForm();
+
+    const defaultValues = useMemo(() => {
+        if (!notifications) {
+            return {};
+        }
+        const values = {};
+        notifications.forEach((notification) => {
+            notification.notificationSettings.forEach((notificationSetting) => {
+                values[notificationSetting.key] = Boolean(
+                    personConfig?.enabledNotifications?.includes(notificationSetting.key)
+                );
+            });
+        });
+        return values;
+    }, [notifications, personConfig]);
+
+    const {register, handleSubmit, formState: {errors}, watch, formState, reset} = useForm({defaultValues});
+
+    useEffect(() => {
+        if (notifications) {
+            reset(defaultValues);
+        }
+    }, [notifications, defaultValues, reset]);
 
     const notificationCategories = useMemo(() => {
         if (notifications) {
@@ -83,7 +105,7 @@ export function ProfileNotificationsContent(props) {
                                                                         <NotificationListRowContentCell key={notificationSetting.id}>
                                                                             <Checkbox
                                                                                 disabled={notificationSetting.isDisabled === 1}
-                                                                                initialValue={personConfig.enabledNotifications.includes(notificationSetting.key)}
+                                                                                initialValue={personConfig?.enabledNotifications?.includes(notificationSetting.key)}
                                                                                 name={notificationSetting.key}
                                                                                 type={"checkbox"}
                                                                                 register={register}
@@ -108,8 +130,17 @@ export function ProfileNotificationsContent(props) {
 
     function saveNotificationForm(formData) {
         const results = Object.entries(formData)
-            .filter((entry) => { return entry[1] === true })
-            .map((entry) => { return entry[0] })
+            .filter((entry) => entry[1] === true)
+            .map((entry) => entry[0]);
+        const merged = new Set(results);
+        notifications.forEach((notification) => {
+            notification.notificationSettings.forEach((ns) => {
+                if (ns.isDisabled === 1 && personConfig?.enabledNotifications?.includes(ns.key)) {
+                    merged.add(ns.key);
+                }
+            });
+        });
+        const enabledNotificationKeys = Array.from(merged);
         
         GlobalPageMethods.setFullScreenLoading(true)
 
@@ -129,7 +160,7 @@ export function ProfileNotificationsContent(props) {
                 "type": "personConfig",
                 "id": props.profileData.config.id,
                 "attributes": {
-                    "enabledNotifications": JSON.stringify(results)
+                    "enabledNotifications": JSON.stringify(enabledNotificationKeys)
                 }
             }
         };
@@ -137,25 +168,28 @@ export function ProfileNotificationsContent(props) {
         Api.patch('personConfigs/' + props.profileData.config.id, () => {
         }, onSuccess, onLocalFailure, onServerFailure, config, patchData);
 
+        const errorCallback = (error) => {
+            GlobalPageMethods.setFullScreenLoading(false)
+            Toaster.showServerError(error)
+            console.log(error);
+        }
+
         function onSuccess(response) {
             const responseData = Api.dataFormatter.deserialize(response.data);
+            Toaster.showDefaultRequestSuccess()
             setPersonConfig(responseData);
             GlobalPageMethods.setFullScreenLoading(false)
         }
 
         function onServerFailure(error) {
-            GlobalPageMethods.setFullScreenLoading(false)
-            console.log(error);
-            Toaster.showServerError(error)
+            errorCallback(error)
             if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             }
         }
 
         function onLocalFailure(error) {
-            GlobalPageMethods.setFullScreenLoading(false)
-            Toaster.showDefaultRequestError()
-            console.log(error);
+            errorCallback(error)
         }
     }
 }

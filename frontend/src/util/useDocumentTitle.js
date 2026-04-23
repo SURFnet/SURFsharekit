@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react'
+import { useEffect } from 'react'
 
 function useDocumentTitle(title, prevailOnUnmount = false) {
     const defaultTitle = "SURFsharekit"
@@ -11,7 +11,7 @@ function useDocumentTitle(title, prevailOnUnmount = false) {
         if (!prevailOnUnmount) {
             document.title = defaultTitle;
         }
-    }, [])
+    }, [prevailOnUnmount])
 
     return title;
 }

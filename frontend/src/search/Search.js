@@ -8,13 +8,15 @@ import Toaster from "../util/toaster/Toaster";
 import Api from "../util/api/Api";
 import {HelperFunctions} from "../util/HelperFunctions";
 import {EmptyState} from "../components/emptystate/EmptyState";
-import {Redirect} from "react-router-dom";
+import {Navigate, useParams, useNavigate} from "react-router-dom";
 import {StorageKey, useAppStorageState} from "../util/AppStorage";
 import useDocumentTitle from "../util/useDocumentTitle";
 
 function Search(props) {
     const {t} = useTranslation();
-    const [currentQuery, setCurrentQuery] = useState(props.match.params.searchQuery ?? '');
+    const params = useParams();
+    const navigate = useNavigate();
+    const [currentQuery, setCurrentQuery] = useState(params.searchQuery ?? '');
     const [searchResults, setSearchResults] = useState([]);
     const [totalCount, setTotalCount] = useState(0);
     const debouncedQueryChange = HelperFunctions.debounce(setCurrentQuery)
@@ -32,7 +34,7 @@ function Search(props) {
     }, [currentQuery]);
 
     if (user === null) {
-        return <Redirect to={'login?redirect=search'}/>
+        return <Navigate to={'login?redirect=search'}/>
     }
 
     function SearchResultsList() {
@@ -51,17 +53,14 @@ function Search(props) {
                                 case "group":
                                     return <SearchResultRow {...searchResult}
                                                             key={searchResult.id}
-                                                            history={props.history}
                                                             subtitle={t("search.group")}/>
                                 case "repoitem":
                                     return <SearchResultRow {...searchResult}
                                                             key={searchResult.id}
-                                                            history={props.history}
                                                             subtitle={t('search.' + searchResult.repoType.toLowerCase())}/>
                                 case "person":
                                     return <SearchResultRow {...searchResult}
                                                             key={searchResult.id}
-                                                            history={props.history}
                                                             title={searchResult.name}
                                                             subtitle={t("search.user")}/>
                                 default:
@@ -85,7 +84,7 @@ function Search(props) {
                 </div>
             </div>
             <SearchInput placeholder={t("navigation_bar.search")}
-                         defaultValue={props.match.params.searchQuery}
+                         defaultValue={params.searchQuery}
                          onChange={(e) => {
                              debouncedQueryChange(e.target.value)
                          }}/>
@@ -93,15 +92,7 @@ function Search(props) {
         </div>
     );
 
-    const oldHistoryPush = props.history.push;
-    props.history.push = (url) => {
-        oldHistoryPush(url)
-        window.location.reload()
-        props.history.push = oldHistoryPush
-    }
-
     return <Page id="search"
-                 history={props.history}
                  activeMenuItem={"organisation"}
                  content={content}
                  breadcrumbs={[
@@ -113,7 +104,8 @@ function Search(props) {
                          title: 'navigation_bar.search'
                      }
                  ]}
-                 showBackButton={true}/>;
+                 showBackButton={true}
+                 onNavigate={(url) => navigate(url)}/>;
 
     function search(searchQuery) {
         GlobalPageMethods.setFullScreenLoading(true)
@@ -139,14 +131,17 @@ function Search(props) {
             setTotalCount(response.data.meta.totalCount)
         }
 
-        function onLocalFailure(error) {
+        const errorCallback = (error) => {
             GlobalPageMethods.setFullScreenLoading(false)
-            Toaster.showDefaultRequestError()
+            Toaster.showServerError(error)
+        }
+
+        function onLocalFailure(error) {
+            errorCallback(error);
         }
 
         function onServerFailure(error) {
-            GlobalPageMethods.setFullScreenLoading(false)
-            Toaster.showServerError(error)
+            errorCallback(error);
         }
 
         Api.get('search', onValidate, onSuccess, onLocalFailure, onServerFailure, config);

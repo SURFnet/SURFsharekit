@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from "react";
 import './dashboard.scss';
 import {StorageKey, useAppStorageState} from "../util/AppStorage";
-import {Redirect, useHistory, useLocation} from "react-router-dom";
+import {useNavigate, useLocation, Navigate, useParams} from "react-router-dom";
 import {useTranslation} from 'react-i18next';
 import Page, {GlobalPageMethods} from "../components/page/Page";
 import {createAndNavigateToRepoItem, goToEditPublication} from "../publications/Publications";
@@ -26,6 +26,8 @@ import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {useGlobalState} from "../util/GlobalState";
 import {PublicationTableSort} from "../components/reacttable/tables/publication/ReactPublicationTable";
 import DashboardFilters from "./components/filters/DashboardFilters";
+import {useNavigation} from "../providers/NavigationProvider";
+import DashboardSearch from "./components/search/DashboardSearch";
 
 function Dashboard(props) {
     const {t} = useTranslation();
@@ -38,9 +40,11 @@ function Dashboard(props) {
     const [filteredTaskCount, setFilteredTaskCount] = useState(null)
     const [taskFilters, setTaskFilters] = useState({})
     const [taskFilterStates, setTaskFilterStates] = useState({})
+    const [taskSearch, setTaskSearch] = useState(null)
     const [completedTasksCount, setCompletedTasksCount] = useState(0);
     const [isSideMenuCollapsed, setIsSideMenuCollapsed] = useGlobalState('isSideMenuCollapsed', false);
-    const history = useHistory();
+    const params = useParams();
+    const navigate = useNavigation();
     const location = useLocation();
     const userIsSiteAdminOrSupporter = userRoles ? userRoles.find(role => role === 'Supporter' || role === 'Siteadmin') : false;
 
@@ -54,7 +58,7 @@ function Dashboard(props) {
 
     useEffect(() => {
         if (typeof (user) !== 'undefined' && user != null) {
-            ApiRequests.getExtendedPersonInformation(user, history,
+            ApiRequests.getExtendedPersonInformation(user, navigate,
                 (data) => {
                     setUserRoles(data.groups.map(group => group.roleCode).filter(role => !!role && role !== 'null'))
                 }, () => {}
@@ -71,7 +75,7 @@ function Dashboard(props) {
         return Object.entries(appliedFilters).length > 0;
     }
 
-    function handleRepoItemFileDownload(id) {
+    function handleRepoItemFileDownload(id, errorCallback = () => {}) {
         GlobalPageMethods.setFullScreenLoading(true)
 
         function onValidate(response) {
@@ -83,46 +87,45 @@ function Dashboard(props) {
         }
 
         function onLocalFailure(error) {
-            console.log(error);
-            GlobalPageMethods.setFullScreenLoading(false)
-            Toaster.showDefaultRequestError()
+            errorCallback(error)
         }
 
         function onServerFailure(error) {
-            console.log(error);
-            GlobalPageMethods.setFullScreenLoading(false)
             if (error.response.status === 403) {
-                history.replace('/forbiddenfile');
-            } else {
-                Toaster.showServerError(error)
+                navigate('/forbiddenfile', {replace:true});
             }
+            errorCallback(error)
         }
 
-        Api.get('repoItemFiles/' + id, onValidate, onSuccess, onLocalFailure, onServerFailure);
+        Api.get('repoItemFiles/' + id + `?utm_source=${window.location.hostname}`, onValidate, onSuccess, onLocalFailure, onServerFailure);
     }
 
 
     useEffect(() => {
         if (typeof (user) !== 'undefined' && user != null) {
-            if (props.match.params.type === 'publicationfiles' && props.match.params.id !== undefined && props.match.params.id !== '') {
-                handleRepoItemFileDownload(props.match.params.id)
+            if (params.type === 'publicationfiles' && params.id !== undefined && params.id !== '') {
+                handleRepoItemFileDownload(params.id, (error) => {
+                    console.log(error);
+                    GlobalPageMethods.setFullScreenLoading(false)
+                    Toaster.showServerError(error)
+                })
             }
         }
     }, [])
 
     if (user === null) {
-        if (props.match.params.type && props.match.params.id) {
-            return <Redirect to={'/login?redirect=' + window.location.pathname}/>
+        if (params.type && params.id) {
+            return <Navigate to={'/login?redirect=' + window.location.pathname}/>
         } else if (location.search) {
-            return <Redirect to={'/login' + location.search}/>
+            return <Navigate to={'/login' + location.search}/>
         } else {
-            return <Redirect to={'/login'}/>
+            return <Navigate to={'/login'}/>
         }
     }
 
     function createRepoItem() {
         GlobalPageMethods.setFullScreenLoading(true)
-        createAndNavigateToRepoItem(props,
+        createAndNavigateToRepoItem(navigate, props,
             () => {
                 GlobalPageMethods.setFullScreenLoading(false)
             },
@@ -133,7 +136,7 @@ function Dashboard(props) {
 
 
     function onClickEditPublication(itemProps) {
-        goToEditPublication(props, itemProps)
+        goToEditPublication(navigate, itemProps)
     }
 
     function getStudentHeaderContent() {
@@ -153,7 +156,7 @@ function Dashboard(props) {
                             icon={faFileInvoice}
                             text={t("dashboard.button.my_publications")}
                             onClick={() => {
-                                history.push('/profile#owner')
+                                navigate('/profile#owner')
                             }}
                 />
             </StudentHeader>
@@ -169,33 +172,28 @@ function Dashboard(props) {
                     <IconButton className={"icon-button-publications"}
                                 icon={faFileInvoice}
                                 text={t("dashboard.button.new_publication")}
-                                onClick={() => {
-                                    createRepoItem()
-                                }}
+                                onClick={() => createRepoItem()}
                     />
                 }
                 <IconButton className={"icon-button-publications"}
                             icon={faUser}
                             text={t("dashboard.button.manage_groups")}
                             onClick={() => {
-                                history.push('/organisation#groups')
+                                navigate('/organisation#groups')
                             }}
                 />
                 <IconButton className={"icon-button-publications"}
                             icon={faFileInvoice}
                             text={t("dashboard.button.my_publications")}
                             onClick={() => {
-                                history.push('/profile#owner')
+                                navigate('/profile#owner')
                             }}
                 />
                 <IconButton className={"icon-button-profile"}
                             icon={faFileInvoice}
                             text={t("dashboard.button.draft")}
                             onClick={() => {
-                                history.push({
-                                    pathname: "/publications",
-                                    state: {detail: [PublicationTableSort.STATUS_CONCEPT]}
-                                })
+                                navigate("/publications", { state: { detail: [PublicationTableSort.STATUS_CONCEPT] } });
                             }}
                 />
             </SiteAdminHeader>
@@ -226,10 +224,11 @@ function Dashboard(props) {
         if (repoItem.permissions.canCopy) {
             VerificationPopup.show(t("publication.copy_confirmation.title"), t("publication.copy_confirmation.subtitle"), () => {
                 GlobalPageMethods.setFullScreenLoading(true)
-                copyRepoItem(repoItem.id, history, (responseData) => {
+                copyRepoItem(repoItem.id, navigate, (responseData) => {
                     GlobalPageMethods.setFullScreenLoading(false)
-                }, () => {
+                }, (error) => {
                     GlobalPageMethods.setFullScreenLoading(false)
+                    Toaster.showServerError(error);
                 })
             })
         }
@@ -240,15 +239,15 @@ function Dashboard(props) {
         if (repoItem.permissions.canDelete) {
             VerificationPopup.show(t("publication.delete_popup.title"), t("publication.delete_popup.subtitle"), () => {
                 GlobalPageMethods.setFullScreenLoading(true)
-                deleteRepoItem(repoItem.id, history, (responseData) => {
+                deleteRepoItem(repoItem.id, navigate, (responseData) => {
                     GlobalPageMethods.setFullScreenLoading(false)
                     const tempUserPublications = userPublications.filter((tempRepoItem) => {
                         return tempRepoItem.id !== responseData.data.id;
                     });
                     setUserPublications(tempUserPublications);
-                }, () => {
+                }, (error) => {
                     GlobalPageMethods.setFullScreenLoading(false)
-                    Toaster.showDefaultRequestError();
+                    Toaster.showServerError(error);
                 })
             })
         }
@@ -277,14 +276,14 @@ function Dashboard(props) {
         }
 
         function onServerFailure(error) {
-            Toaster.showServerError(error)
             if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             }
+            Toaster.showServerError(error)
         }
 
         function onLocalFailure(error) {
-            Toaster.showDefaultRequestError()
+            Toaster.showServerError(error)
         }
     }
 
@@ -311,12 +310,15 @@ function Dashboard(props) {
                                     {tasksCount}
                                 </div>}
                             </div>
-                            <div className={'filter-row'}>
-                                <DashboardFilters filters={taskFilters} onFilterChange={(filters) => setTaskFilterStates(filters)}/>
-                            </div>
+                            { tasksCount > 0 &&
+                                <div className={'filter-row'}>
+                                    <DashboardSearch onSearchChange={(val) => setTaskSearch(val?.length > 0 ? val : null)} />
+                                     <DashboardFilters filters={taskFilters} onFilterChange={(filters) => setTaskFilterStates(filters)}/>
+                                </div>
+                            }
                         </div>
                         <ReactTaskTable
-                            history={history}
+                            search={taskSearch}
                             filters={taskFilterStates}
                             onTableFiltered={(metaObject) => {
                                 if (metaObject && metaObject.count) {
@@ -342,7 +344,6 @@ function Dashboard(props) {
                         <CompletedTaskContainer viewCompletedTasks={viewCompletedTasks}>
                             <ReactTaskTable
                                 isDone={true}
-                                history={history}
                                 onTableFiltered={(metaObject) => {
                                     if (metaObject && metaObject.count) {
                                         setCompletedTasksCount(metaObject.count)
@@ -368,7 +369,6 @@ function Dashboard(props) {
 
                         <DashboardUserPublicationTable
                             userId={user.id}
-                            history={history}
                             onClickEditPublication={() => onClickEditPublication}
                         />
                     </>
@@ -378,7 +378,6 @@ function Dashboard(props) {
         </>;
 
     return <Page id="dashboard"
-                 history={history}
                  content={content}
                  menuButtonColor='white'
                  showDarkGradientOverlay={false}
@@ -424,8 +423,8 @@ const DashboardContainer = styled.div `
 export const TaskHeaderIcon = styled.div`
     background: ${white};
     ${SURFShapeLeft};
-    width: 47px;
-    height: 47px;
+    width: ${props => props.width ?? "47px"};
+    height: ${props => props.height ?? "47px"};
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -434,7 +433,7 @@ export const TaskHeaderIcon = styled.div`
 `;
 
 export const Icon = styled.img`
-    width: 18px;
+    width: ${props => props.width ?? "18px"};
 `;
 
 export default Dashboard;

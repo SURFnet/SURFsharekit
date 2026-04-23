@@ -5,10 +5,12 @@ import './searchresultsrow.scss'
 import {useTranslation} from "react-i18next";
 import IconButtonText from "../components/buttons/iconbuttontext/IconButtonText";
 import {ProfileBanner} from "../components/profilebanner/ProfileBanner";
+import {useNavigation} from "../providers/NavigationProvider";
 
 export function SearchResultRow(props) {
 
     const {t} = useTranslation();
+    const navigate = useNavigation()
 
     function getHrefLink(){
         switch (props.type.toLowerCase()) {
@@ -27,13 +29,13 @@ export function SearchResultRow(props) {
     function navigateToSearchResultDetailPage() {
         switch (props.type.toLowerCase()) {
             case 'repoitem':
-                props.history.push(`../publications/${props.id}`)
+                navigate(`../publications/${props.id}`)
                 break;
             case 'group':
-                props.history.push(`../groups/${props.id}`)
+                navigate(`../groups/${props.id}`)
                 break;
             case 'person':
-                props.history.push(`../profile/${props.id}`)
+                navigate(`../profile/${props.id}`)
                 break;
             default:
                 return null;

@@ -5,20 +5,14 @@ import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {useTranslation} from "react-i18next";
 import ButtonText from "../components/buttons/buttontext/ButtonText";
 import IconButton from "../components/buttons/iconbutton/IconButton";
+import {useNavigation} from "../providers/NavigationProvider";
 
 function Unauthorized(props) {
     const {t} = useTranslation();
     const currentUrl = new URL(window.location);
     const redirect = currentUrl.searchParams.get("redirect");
     const hrefUrl = '/login' + (redirect ? '?redirect=' + redirect : '');
-
-    function navigateToLogin() {
-        props.history.push(hrefUrl)
-    }
-
-    function helpPressed() {
-
-    }
+    const navigate = useNavigation()
 
     return (
         <div id={"not-found"} className="main">
@@ -34,10 +28,11 @@ function Unauthorized(props) {
                                 <div className={"buttons-wrapper"}>
                                     <ButtonText text={t("error_pages.login")}
                                                 buttonType={"callToAction"}
-                                                onClick={navigateToLogin}/>
+                                                onClick={() => navigate(hrefUrl)}
+                                    />
                                     <IconButton icon={faInfoCircle}
                                                 text={t("error_pages.help")}
-                                                onClick={helpPressed}/>
+                                    />
                                 </div>
                             </div>
                         </div>

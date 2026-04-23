@@ -8,15 +8,17 @@ const SwalMergeProfilesPopup = withReactContent(Swal)
 
 class MergeProfilePopup {
 
-    static show(history) {
-
+    static show(navigate, isOnboarding = false, onSuccess = null) {
         SwalMergeProfilesPopup.fire({
             html: (
                 <MergeProfilePopupContent
-                    history={history}
                     onCancel={() => {
                         SwalMergeProfilesPopup.clickCancel();
-                    }}/>
+                    }}
+                    navigate={navigate}
+                    isOnboarding={isOnboarding}
+                    onSuccess={onSuccess}
+                />
             ),
             heightAuto: false,
             showCancelButton: false,

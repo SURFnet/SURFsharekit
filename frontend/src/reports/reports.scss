@@ -6,35 +6,48 @@
 @import "../sass/grid/z-span";
 @import "../resources/fontawesome/css/all.css";
 
-#reports {
-    background: $page-background-gradient;
+.surf-dropdown {
+    min-width: 200px;
+}
 
-    .actions-row {
+.reports-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+
+    > div {
         display: flex;
-        justify-content: center;
-
-        .report-export-button {
-            margin-top: 15px;
-            margin-bottom: 45px;
-        }
+        align-items: center;
     }
+}
 
-    .explanation-text {
-        margin-top: 20px;
-        margin-bottom: 20px;
+.table-row-actions {
+    display: flex;
+    justify-content: flex-end;
+    column-gap: 16px;
+
+    button {
+        background: transparent;
     }
+}
 
-    .report-count-blocks-row {
-        display: flex;
-        justify-content: space-between;
+.search-count {
+    display: flex;
+    margin-left: 16px;
+    font-size: 12px;
+    color: white;
+    width: 34px;
+    height: 34px;
+    align-items: center;
+    justify-content: center;
+    @include open-sans-bold;
+    @include rounded-background-pointy-upper-left($space-cadet, 8px);
+}
 
-        .report-count-block:last-child {
-            margin-right: 0;
-        }
-
-        .report-count-block {
-            flex-grow: 1;
-            margin-right: 20px;
-        }
-    }
+.description {
+  font-size: 14px;
+  font-family: 'Nunito', sans-serif;
+  line-height: 1.5;
+  margin-bottom: 40px;
 }

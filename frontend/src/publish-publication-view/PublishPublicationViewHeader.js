@@ -4,7 +4,7 @@ import styled from "styled-components";
 import SURFButton from "../styled-components/buttons/SURFButton";
 import {desktopSideMenuWidth, majorelle, majorelleLight, oceanGreen, spaceCadet, white} from "../Mixins";
 import AppStorage, {StorageKey} from "../util/AppStorage";
-import {useHistory} from "react-router-dom";
+import {useNavigate} from "react-router-dom";
 import {useTranslation} from "react-i18next";
 import {useGlobalState} from "../util/GlobalState";
 import ModalButton, {

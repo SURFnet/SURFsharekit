@@ -21,7 +21,7 @@ export class Mod11Helper {
                 check = 11 - rem
             }
         }
-        return check == checkDigit;
+        return check.toString() === checkDigit;
     }
 
     static mod11_2Validator(value) {
@@ -41,6 +41,6 @@ export class Mod11Helper {
         if (result === 10) {
             result = 'X'
         }
-        return result == checkDigit;
+        return result.toString() === checkDigit;
     }
 }

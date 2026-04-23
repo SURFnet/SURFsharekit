@@ -5,6 +5,7 @@ import Api from "../../../util/api/Api";
 import { GlobalPageMethods } from "../../page/Page";
 import Toaster from "../../../util/toaster/Toaster";
 import VerificationPopup from "../../../verification/VerificationPopup";
+import {validateDependencyKeyGroup} from "../../../util/DependencyKeyValidation";
 
 export function DoiField(props) {
     let classAddition = '';
@@ -46,11 +47,14 @@ export function DoiField(props) {
 
     function generateDoi() {
         VerificationPopup.show(t("publication.generate_doi_confirmation.title"), t("publication.generate_doi_confirmation.subtitle"), () => {
-            doGenerateDoi()
+            doGenerateDoi((error) => {
+                GlobalPageMethods.setFullScreenLoading(false)
+                Toaster.showServerError(error)
+            })
         })
     }
 
-    function doGenerateDoi() {
+    function doGenerateDoi(errorCallback = () => {}) {
         GlobalPageMethods.setFullScreenLoading(true)
 
         function onValidate(response) {
@@ -59,24 +63,16 @@ export function DoiField(props) {
         function onSuccess(response) {
             GlobalPageMethods.setFullScreenLoading(false)
             const parsedDoi = Api.dataFormatter.deserialize(response.data);
-            props.register({
-                name: props.name
-            }, {
-                required: props.isRequired,
-                validate: (v => validateWithRegex(v, props.validationRegex))
-            })
             props.setValue(props.name, parsedDoi.doi)
             setGeneratedDoi(parsedDoi.doi)
         }
 
         function onLocalFailure(error) {
-            GlobalPageMethods.setFullScreenLoading(false)
-            Toaster.showDefaultRequestError()
+            errorCallback(error)
         }
 
         function onServerFailure(error) {
-            GlobalPageMethods.setFullScreenLoading(false)
-            Toaster.showServerError(error)
+            errorCallback(error)
         }
 
         Api.get('repoItems/' + props.repoItem.id + '/doi', onValidate, onSuccess, onLocalFailure, onServerFailure);
@@ -108,10 +104,20 @@ export function DoiField(props) {
 
                      oldValue = e.target.value;
                  }}
-                 ref={props.register && props.register({
-                     required: props.isRequired,
-                     validate: (v => validateWithRegex(v, props.validationRegex))
-                 })}
+                   {...props.register(props.name, {
+                       required: props.isRequired,
+                       validate: (v) => {
+                           if (!validateWithRegex(v, props.validationRegex)) {
+                               return false;
+                           }
+                           return validateDependencyKeyGroup({
+                               dependencyKey: props.dependencyKey,
+                               dependencyGroupKeys: props.dependencyGroupKeys,
+                               dependencyGroupLabels: props.dependencyGroupLabels,
+                               getValues: props.getValues
+                           });
+                       }
+                   })}
                  name={props.name}
                  onClick={(e) => {
                      e.stopPropagation()

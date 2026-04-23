@@ -6,6 +6,18 @@
 .multi-select-dropdown-container {
     flex-grow: 1;
 
+    // Don't remove this
+    .surf-multi-select__input {
+        width: 0 !important;
+    }
+
+    // Allow typing when the control is focused
+    .surf-multi-select__control--is-focused {
+        .surf-multi-select__input {
+            width: auto !important;
+        }
+    }
+
     &.readonly {
         .surf-multi-select-dropdown {
             .surf-multi-select__control {
@@ -17,7 +29,7 @@
                 .surf-multi-select__indicators {
                     display: none;
                 }
-                
+
                 .surf-multi-select__value-container {
                     .surf-multi-select__placeholder {
                         position: static;

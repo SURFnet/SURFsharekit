@@ -7,7 +7,7 @@ import {
     ReactTableLoadingIndicator,
     ReactTableSortIcon} from "../../components/reacttable/reacttable/ReactTable";
 import {HelperFunctions} from "../../util/HelperFunctions";
-import {useHistory} from "react-router-dom";
+import {useNavigate} from "react-router-dom";
 import {ReactTypeTableCell} from "../../components/reacttable/cells/ReactTypeTableCell";
 import {GlobalPageMethods} from "../../components/page/Page";
 import {ReactTableSearchInput} from "../../components/reacttable/filterrow/ReacTableFilterItems";
@@ -16,6 +16,7 @@ import Api from "../../util/api/Api";
 import VerificationPopup from "../../verification/VerificationPopup";
 import {ReactStatusTableCell} from "../../components/reacttable/cells/ReactStatusTableCell";
 import RepoItemHelper from "../../util/RepoItemHelper";
+import {useNavigation} from "../../providers/NavigationProvider";
 
 function DashboardPublicationTable(props) {
     const [user] = useAppStorageState(StorageKey.USER);
@@ -25,7 +26,7 @@ function DashboardPublicationTable(props) {
     const [query, setQuery] = useState('');
     const debouncedQueryChange = HelperFunctions.debounce(setQuery)
     const [currentSortBy, setCurrentSortBy] = useState([]);
-    const history = useHistory()
+    const navigate = useNavigation()
     const {t} = useTranslation();
     const paginationCountRef = useRef();
     const tableRows = userPublications;
@@ -145,16 +146,16 @@ function DashboardPublicationTable(props) {
         if (repoItem.permissions.canDelete) {
             VerificationPopup.show(t("publication.delete_popup.title"), t("publication.delete_popup.subtitle"), () => {
                 GlobalPageMethods.setFullScreenLoading(true)
-                deleteRepoItem(repoItem.id, history, (responseData) => {
+                deleteRepoItem(repoItem.id, navigate, (responseData) => {
                     GlobalPageMethods.setFullScreenLoading(false)
 
                     const tempUserPublications = userPublications.filter((tempRepoItem) => {
                         return tempRepoItem.id !== responseData.data.id;
                     });
                     setUserPublications(tempUserPublications);
-                }, () => {
+                }, (error) => {
                     GlobalPageMethods.setFullScreenLoading(false)
-                    Toaster.showDefaultRequestError();
+                    Toaster.showServerError(error);
                 })
             })
         }
@@ -164,11 +165,12 @@ function DashboardPublicationTable(props) {
         if (repoItem.permissions.canCopy) {
             VerificationPopup.show(t("publication.copy_confirmation.title"), t("publication.copy_confirmation.subtitle"), () => {
                 GlobalPageMethods.setFullScreenLoading(true)
-                copyRepoItem(repoItem.id, history, (responseData) => {
+                copyRepoItem(repoItem.id, navigate, (responseData) => {
                     getUserPublications(currentSortBy);
                     GlobalPageMethods.setFullScreenLoading(false)
-                }, () => {
+                }, (error) => {
                     GlobalPageMethods.setFullScreenLoading(false)
+                    Toaster.showServerError(error);
                 })
             })
         }
@@ -221,6 +223,11 @@ function DashboardPublicationTable(props) {
         setUserPublications([])
         setIsLoading(true)
 
+        const errorCallback = (error) => {
+            setIsLoading(false)
+            Toaster.showServerError(error)
+        }
+
         function onValidate(response) {
         }
 
@@ -238,16 +245,14 @@ function DashboardPublicationTable(props) {
         }
 
         function onServerFailure(error) {
-            setIsLoading(false)
-            Toaster.showServerError(error)
+            errorCallback(error)
             if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             }
         }
 
         function onLocalFailure(error) {
-            setIsLoading(false);
-            Toaster.showDefaultRequestError();
+            errorCallback(error)
         }
 
         const config = {
@@ -302,7 +307,7 @@ function DashboardPublicationTable(props) {
     }
 }
 
-export function deleteRepoItem(repoItemId, history, successCallback, errorCallback = () => {
+export function deleteRepoItem(repoItemId, navigate, successCallback, errorCallback = () => {
 }) {
 
     function onValidate(response) {
@@ -313,16 +318,14 @@ export function deleteRepoItem(repoItemId, history, successCallback, errorCallba
     }
 
     function onLocalFailure(error) {
-        Toaster.showDefaultRequestError()
-        errorCallback()
+        errorCallback(error)
     }
 
     function onServerFailure(error) {
-        Toaster.showServerError(error)
         if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-            history.push('/login?redirect=' + window.location.pathname);
+            navigate('/login?redirect=' + window.location.pathname);
         }
-        errorCallback()
+        errorCallback(error)
     }
 
     const config = {
@@ -344,7 +347,7 @@ export function deleteRepoItem(repoItemId, history, successCallback, errorCallba
     Api.patch(`repoItems/${repoItemId}`, onValidate, onSuccess, onLocalFailure, onServerFailure, config, patchData);
 }
 
-export function copyRepoItem(repoItemId, history, successCallback, errorCallback = () => {
+export function copyRepoItem(repoItemId, navigate, successCallback, errorCallback = () => {
 }) {
 
     function onValidate(response) {
@@ -355,16 +358,14 @@ export function copyRepoItem(repoItemId, history, successCallback, errorCallback
     }
 
     function onLocalFailure(error) {
-        Toaster.showDefaultRequestError()
-        errorCallback()
+        errorCallback(error)
     }
 
     function onServerFailure(error) {
-        Toaster.showServerError(error)
         if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-            history.push('/login?redirect=' + window.location.pathname);
+            navigate('/login?redirect=' + window.location.pathname);
         }
-        errorCallback()
+        errorCallback(error)
     }
 
     const config = {

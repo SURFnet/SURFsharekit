@@ -9,8 +9,8 @@ import Toaster from "../../../util/toaster/Toaster";
 
 export function FileField(props) {
     const {t} = useTranslation();
-    const hiddenInputFileRef = useRef();
-    const [file, setFile] = useState(props.file ?? null);
+    const inputRef = useRef();
+    const [file, setFile] = useState(props.file instanceof File ? props.file : null);
     const [serverFile, setServerFile] = useState((props.defaultValue && props.defaultValue[0]) ? props.defaultValue[0] : null)
 
     function getFileTitle() {
@@ -18,10 +18,10 @@ export function FileField(props) {
             if (file.name) {
                 return file.name
             }
-        } else if (serverFile) {
-            if (serverFile.summary.title) {
-                return serverFile.summary.title
-            }
+        }
+        
+        if (serverFile?.summary?.title) {
+            return serverFile.summary.title
         }
         return null
     }
@@ -30,24 +30,26 @@ export function FileField(props) {
     const fileTitleStyle = {
         color: hasFile ? "initial" : Constants.textColorError
     }
-
+    
     useEffect(() => {
-        props.register({name: props.name})
-        props.setValue(props.name, file)
-    }, [props.register, file])
+        if (props.setValue && file !== props.value) {
+            props.setValue(props.name, file);
+        }
+    }, [file]);
 
     const handleNewFileUploadClick = () => {
-        hiddenInputFileRef.current.click()
+        inputRef.current?.click();
     }
 
     const fileChanged = (event) => {
-        if (event && event.target && event.target.files && event.target.files.length > 0) {
+        if (event?.target?.files?.length > 0) {
             const changedFile = event.target.files[0];
             const sizeInMB = changedFile.size / 1048576; //1024*1024
             if (sizeInMB > 10240) {
                 Toaster.showDefaultRequestError(t('error_message.file_too_large'));
                 return;
             }
+            setServerFile(null);
             setFile(changedFile);
             props.onChange(changedFile);
         }
@@ -60,7 +62,7 @@ export function FileField(props) {
     }
 
     return (
-        <div className={"file-field-container"} ref={props.register}>
+        <div className={"file-field-container"}>
             <div className={"file-container"}>
                 <FontAwesomeIcon icon={faFile}/>
                 <div className={"file-title"} style={fileTitleStyle}>
@@ -75,10 +77,13 @@ export function FileField(props) {
             <div className={"new-file-upload-button"}>
                 <ButtonText text={serverFile !== null ? t("attachment_popup.change") : t("attachment_popup.new_upload")} className={"upload-file-button"} onClick={handleNewFileUploadClick}/>
             </div>
-            <input type="file"
-                   ref={hiddenInputFileRef}
-                   onChange={fileChanged}
-                   style={{display: "none"}}/>
+            <input 
+                type="file"
+                ref={inputRef}
+                {...(props.register && (file instanceof File || serverFile instanceof File) ? props.register(props.name) : {})}
+                onChange={fileChanged}
+                style={{display: "none"}}
+            />
         </div>
     )
 }

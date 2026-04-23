@@ -85,6 +85,7 @@ export const cultured = "#F8F8F8";
 export const spaceCadetLight = "#435075";
 export const flame = "#E35F3C";
 export const flameLight = "#F69E90";
+export const independence = "#435075";
 export const majorelle = "#7344EE";
 export const majorelleLight = "#906AF1";
 export const maximumYellow = "#F3BA5A";
@@ -100,6 +101,8 @@ export const greyMedium = "#D2D2D2";
 export const greyDark = "#A5AAAE";
 export const greyDarker = "#899194";
 export const white = "#FFF"
+
+export const black = "000"
 
 export const textColor = spaceCadet; //used for text on background-color
 export const textColorActive = majorelle;

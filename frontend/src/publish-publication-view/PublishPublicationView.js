@@ -2,7 +2,7 @@ import React, {useEffect, useRef, useState} from "react";
 import './publish-publication.scss'
 import {StorageKey, useAppStorageState} from "../util/AppStorage";
 import Page, {GlobalPageMethods} from "../components/page/Page";
-import {Link, Redirect, useHistory} from "react-router-dom";
+import {Navigate, useLocation, useParams} from "react-router-dom";
 import {useTranslation} from "react-i18next";
 import styled from "styled-components";
 import {Form} from "../components/field/FormField";
@@ -22,46 +22,41 @@ import {
     showRepoItemPopup
 } from "../components/field/repoitem/RelatedRepoItemHandles";
 import VerificationPopup from "../verification/VerificationPopup";
-import {useDirtyNavigationCheck} from "../util/hooks/useDirtyNavigationCheck";
 import ValidationHelper, {VALIDATION_RESULT} from "../util/ValidationHelper";
 import {useGlobalState} from "../util/GlobalState";
 import PublishPublicationViewHeader from "./PublishPublicationViewHeader";
 import {PublicationViewMode} from "../publication/Publication";
 import PublicationFlowFooter from "../components/publicationflowfooter/PublicationFlowFooter";
 import {CollapsePersonMergeFooterEvent} from "../util/events/Events";
-import PublishPublicationCompletion from "./PublishPublicationCompletion";
 import {deleteRepoItem} from "../components/reacttable/tables/publication/ReactPublicationTable";
-import MergeProfilePopup from "../profile/mergeprofilespopup/MergeProfilesPopup";
 import CheckDetailsPopup from "./popup/CheckDetailsPopup";
 import axios from "axios";
 import {SwalRepoItemPopup} from "../components/field/relatedrepoitempopup/RelatedRepoItemPopup";
+import {useNavigation} from "../providers/NavigationProvider";
+import ReactRouterPrompt from "react-router-prompt";
+import {isFilledForDependency} from "../util/DependencyKeyValidation";
 
 function PublishPublicationView(props) {
     const repoItemApiRequests = new RepoItemApiRequests();
     const {t} = useTranslation();
     const [isSideMenuCollapsed, setIsSideMenuCollapsed] = useGlobalState('isSideMenuCollapsed', false);
     const [user] = useAppStorageState(StorageKey.USER);
-    const {formState, register, handleSubmit, errors, setValue, getValues, trigger, reset, clearErrors} = useForm();
-    const {dirtyFields} = formState
-    const history = useHistory()
+    const {formState, register, handleSubmit, formState: { errors, isDirty }, setValue, getValues, trigger, reset} = useForm();
+    const navigate = useNavigation()
+    const location = useLocation()
+    const params = useParams()
     const formFieldHelper = new FormFieldHelper();
-    const formSubmitButton = useRef();
-    const formSaveAndSubmitButton = useRef();
-    const formApproveOrDeclineButton = useRef();
-    const [published, setPublished] = useState(false)
     const [formSubmitActionType, setFormSubmitActionType] = useState(null);
     const [declineReason, setDeclineReason] = useState("");
     const [currentIndex, setCurrentIndex] = useState(0);
     const [validatedStepIds, setValidatedStepIds] = useState([]);
     const [currentSelectedStep, setCurrentSelectedStep] = useState(props.repoItem ? props.repoItem.steps[0] : null)
-    const isProject = !!(history.location.state && history.location.state.isProject)
+    const isProject = !!(location.state && location.state.isProject)
     let repoItemSections = props.repoItem ? RepoItemHelper.getSectionsFromSteps(props.repoItem) : [];
     const [showOnlyRequiredFields, setShowOnlyRequiredFields] = useState(0)
 
     const formReducerStateRef = useRef();
     formReducerStateRef.current = props.formReducerState
-
-    useDirtyNavigationCheck(history, dirtyFields)
 
     useEffect(() => {
         if (props.repoItem){
@@ -114,14 +109,14 @@ function PublishPublicationView(props) {
     }, [currentSelectedStep])
 
     useEffect(() => {
-        if (Object.keys(errors).length > 0) {
+        if (errors && Object.keys(errors).length > 0) {
             VerificationPopup.show(t("publication.required_error.title"), t("publication.required_error.subtitle"), () => {
             }, true)
         }
     }, [errors])
 
     if (user === null) {
-        return <Redirect to={'/unauthorized?redirect=publications/' + props.match.params.id}/>
+        return <Navigate to={'/unauthorized?redirect=publications/' + params.id}/>
     }
 
     let content;
@@ -149,14 +144,16 @@ function PublishPublicationView(props) {
                           currentlySelectedStep={currentIndex}
                           containsHiddenSections={true}
                           showSectionHeaders={true}
-                          errors={errors}
                           onValueChanged={formFieldValueChanged}
                           onSubmit={handleSubmit(() => changeFormPublishState(getValues()))}
                           register={register}
+                          errors={errors}
                           setValue={setValue}
+                          getValues={getValues}
                           formReducerState={formReducerStateRef.current}
                           readonly={!formEditable}
-                          showOnlyRequiredFields={showOnlyRequiredFields}/>
+                          showOnlyRequiredFields={showOnlyRequiredFields}
+                    />
                 </div>
                 <PublicationFlowFooter
                     isSideMenuCollapsed={isSideMenuCollapsed}
@@ -174,37 +171,49 @@ function PublishPublicationView(props) {
     }
 
     return (
-        <Page id="add-publication"
-              fixedElements={[
-                <PublishPublicationViewHeader
-                    title={currentSelectedStep && t('language.current_code') === 'nl' ? currentSelectedStep.titleNL : currentSelectedStep.titleEN}
-                    subtitle={currentSelectedStep && t('language.current_code') === 'nl' ? currentSelectedStep.subtitleNL : currentSelectedStep.subtitleEN}
-                    onSave={() => saveForm(getValues())}
-                    onStop={() => history.push('/publications')}
-                    onDelete={() => deletePublication()}
-                    onCheckDetails={() => CheckDetailsPopup.show(props.repoItem)}
-                    showOnlyRequiredFields={showOnlyRequiredFields}
-                    setShowOnlyRequiredFields={setShowOnlyRequiredFields}
-                />
-              ]}
-              history={history}
-              activeMenuItem={isProject ? "projects" : "publications"}
-              breadcrumbs={[
-                  {
-                      path: '../dashboard',
-                      title: 'side_menu.dashboard'
-                  },
-                  {
-                      path: isProject ? '../projects' : '../publications',
-                      title: isProject ? 'side_menu.projects' : 'side_menu.my_publications'
-                  },
-                  {
-                      path: isProject ? './projects' : './publications',
-                      title: props.repoItem === null ? '' : (props.repoItem.title && props.repoItem.title !== "") ? props.repoItem.title : (isProject ? 'projects.new_project' : 'add_publication.popup.title')
-                  }
-              ]}
-              content={content}
-              showBackButton={true}/>
+        <>
+            <ReactRouterPrompt when={isDirty}>
+                {({ onConfirm, onCancel }) => {
+                    VerificationPopup.show(
+                        t("verification.unsaved_changes.title"),
+                        t("verification.unsaved_changes.subtitle"),
+                        onConfirm,
+                        onCancel
+                    );
+                    return null;
+                }}
+            </ReactRouterPrompt>
+            <Page id="add-publication"
+                  fixedElements={[
+                    <PublishPublicationViewHeader
+                        title={currentSelectedStep && t('language.current_code') === 'nl' ? currentSelectedStep.titleNL : currentSelectedStep.titleEN}
+                        subtitle={currentSelectedStep && t('language.current_code') === 'nl' ? currentSelectedStep.subtitleNL : currentSelectedStep.subtitleEN}
+                        onSave={() => saveForm(getValues())}
+                        onStop={() => navigate('/publications')}
+                        onDelete={() => deletePublication()}
+                        onCheckDetails={() => CheckDetailsPopup.show(props.repoItem)}
+                        showOnlyRequiredFields={showOnlyRequiredFields}
+                        setShowOnlyRequiredFields={setShowOnlyRequiredFields}
+                    />
+                  ]}
+                  activeMenuItem={isProject ? "projects" : "publications"}
+                  breadcrumbs={[
+                      {
+                          path: '../dashboard',
+                          title: 'side_menu.dashboard'
+                      },
+                      {
+                          path: isProject ? '../projects' : '../publications',
+                          title: isProject ? 'side_menu.projects' : 'side_menu.my_publications'
+                      },
+                      {
+                          path: isProject ? './projects' : './publications',
+                          title: props.repoItem === null ? '' : (props.repoItem.title && props.repoItem.title !== "") ? props.repoItem.title : (isProject ? 'projects.new_project' : 'add_publication.popup.title')
+                      }
+                  ]}
+                  content={content}
+                  showBackButton={true}/>
+        </>
     );
 
     function getRequiredFieldKeysFromStep(){
@@ -231,22 +240,78 @@ function PublishPublicationView(props) {
         }
     }
 
+    function getGlobalDependencyGroups() {
+        const steps = props.repoItem?.steps ?? [];
+        const allFields = steps
+            .map((step) => step?.templateSections ?? [])
+            .flat(1)
+            .map((section) => section?.fields ?? [])
+            .flat(1)
+            .filter((f) => !!f?.dependencyKey);
+
+        const groupsByKey = {};
+        allFields.forEach((f) => {
+            const dk = f.dependencyKey;
+            if (!groupsByKey[dk]) {
+                groupsByKey[dk] = [];
+            }
+            if (!groupsByKey[dk].includes(f.key)) {
+                groupsByKey[dk].push(f.key);
+            }
+        });
+
+        // Only real "either/or" groups
+        Object.keys(groupsByKey).forEach((dk) => {
+            if (groupsByKey[dk].length < 2) {
+                delete groupsByKey[dk];
+            }
+        });
+
+        return groupsByKey; // { dependencyKey: [fieldKey, ...] }
+    }
+
+    function getDependencyKeysInCurrentStep() {
+        if (!currentSelectedStep) {
+            return [];
+        }
+        const fields = currentSelectedStep.templateSections
+            .map((section) => section.fields)
+            .flat(1)
+            .filter((f) => !!f?.dependencyKey);
+        return [...new Set(fields.map((f) => f.dependencyKey))];
+    }
+
     function checkForRequiredFields(){
-        const getFilledRequiredFields = Object.entries(getValues(getRequiredFieldKeysFromStep()))
+        const requiredKeys = getRequiredFieldKeysFromStep() ?? [];
+        const requiredValues = Object.entries(getValues(requiredKeys))
+
         let hasRequiredFieldsBeenFilled = true
-        getFilledRequiredFields.forEach((field) => {
-            if (field[1] === null || field[1] === "" || field[1] === undefined || field[1] === false) {
+        requiredValues.forEach((field) => {
+            if (!isFilledForDependency(field[1])) {
                 hasRequiredFieldsBeenFilled = false
             }
-        })
+        });
 
-        if (hasRequiredFieldsBeenFilled){
+        const globalDependencyGroups = getGlobalDependencyGroups();
+        const dependencyKeysToCheck = getDependencyKeysInCurrentStep();
+        const hasDependencyGroupsSatisfied = dependencyKeysToCheck.every((dk) => {
+            const groupKeys = globalDependencyGroups[dk] ?? [];
+            // If it's not a real group globally, it shouldn't block step completion
+            if (groupKeys.length < 2) {
+                return true;
+            }
+            return groupKeys.some((key) => isFilledForDependency(getValues(key)));
+        });
+
+        const isStepValid = hasRequiredFieldsBeenFilled && hasDependencyGroupsSatisfied;
+
+        if (isStepValid) {
             if (!(validatedStepIds.indexOf(currentSelectedStep.id) > -1)) {
                 setValidatedStepIds([...validatedStepIds, currentSelectedStep.id])
             }
         } else {
             if (validatedStepIds.indexOf(currentSelectedStep.id) > -1) {
-                validatedStepIds.splice(currentSelectedStep.id, 1);
+                setValidatedStepIds(validatedStepIds.filter((id) => id !== currentSelectedStep.id))
             }
         }
     }
@@ -277,7 +342,7 @@ function PublishPublicationView(props) {
             if(props.repoItem.isHistoricallyPublished) {
                 props.setViewMode(PublicationViewMode.DEFAULT)
             } else {
-                history.goBack()
+                navigate(-1)
             }
         }
     }
@@ -293,23 +358,22 @@ function PublishPublicationView(props) {
         GlobalPageMethods.setFullScreenLoading(true)
         setCurrentSelectedStep(currentSelectedStep)
         patchRepoItem(currentRepoItem, formData, props.repoItem.status);
-    }
 
-    function checkDetails() {
-
+        /** Used to reset the dirtfields **/
+        reset(getValues());
     }
 
     function deletePublication() {
         const title = isProject ? t("projects.delete_popup.title") : t("publication.delete_popup.title")
         const subtitle = isProject ? t("projects.delete_popup.subtitle") : t("publication.delete_popup.subtitle")
 
-        const deleteFunction = () => deleteRepoItem(props.repoItem.id, history, (responseData) => {
+        const deleteFunction = () => deleteRepoItem(props.repoItem.id, navigate, (responseData) => {
             reset();
             GlobalPageMethods.setFullScreenLoading(false)
-            history.replace('/publications')
+            navigate('/publications', {replace: true})
         }, (error) => {
             GlobalPageMethods.setFullScreenLoading(false)
-            Toaster.showDefaultRequestError();
+            Toaster.showServerError(error);
         })
 
         VerificationPopup.show(title, subtitle, () => {
@@ -428,9 +492,9 @@ function PublishPublicationView(props) {
                             null,
                             repoItemList
                         );
-                    })).catch(errors => {
+                    })).catch(error => {
                         SwalRepoItemPopup.close()
-                        Toaster.showDefaultRequestError()
+                        Toaster.showServerError(error)
                     })
                 } else {
                     showRepoItemPopup(
@@ -444,7 +508,7 @@ function PublishPublicationView(props) {
                         props.repoItem,
                         fieldValuesAsArray,
                         (onSuccess, onFailure) => {
-                            createRelatedRepoItem(repoTypeMap[fieldType], props.repoItem.relatedTo.id, history, onSuccess, onFailure)
+                            createRelatedRepoItem(repoTypeMap[fieldType], props.repoItem.relatedTo.id, navigate, onSuccess, onFailure)
                         }
                     )
                 }
@@ -484,7 +548,6 @@ function PublishPublicationView(props) {
 
     function patchRepoItem(currentRepoItem, formData, status) {
         const answers = (formData) ? formFieldHelper.getAllFormAnswersForRepoItem(props.repoItem, formData) : null;
-
         const shouldCheckChannelDependencyErrors = ValidationHelper.shouldCheckChannelDependencyErrors(status)
 
         if (shouldCheckChannelDependencyErrors) {
@@ -516,14 +579,14 @@ function PublishPublicationView(props) {
         function onServerFailure(error) {
             GlobalPageMethods.setFullScreenLoading(false)
             Toaster.showServerError(error)
-            if (error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                history.push('/login?redirect=' + window.location.pathname);
+            if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
+                navigate('/login?redirect=' + window.location.pathname);
             }
         }
 
         function onLocalFailure(error) {
             GlobalPageMethods.setFullScreenLoading(false)
-            Toaster.showDefaultRequestError();
+            Toaster.showServerError(error);
         }
 
         const config = {

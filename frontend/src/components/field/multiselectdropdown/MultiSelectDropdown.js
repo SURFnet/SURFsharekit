@@ -7,10 +7,42 @@ import {faChevronDown} from "@fortawesome/free-solid-svg-icons";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {useTranslation} from "react-i18next";
 
+import {useFormFieldRegistration} from "../../../util/hooks/useFormFieldRegistration";
+
 function MultiSelectDropdown(props) {
     const {t} = useTranslation();
-    const inputRef = useRef();
     const [selectedOptionValues, setSelectedOptionValues] = useState(getInitialValues)
+
+    function getInitialValues() {
+        if (!props.defaultValue) {
+            return [];
+        }
+
+        return props.defaultValue.map((value) => {
+            const optionId = value?.id ?? value?.value ?? value;
+            const matchingOption = props.options?.find(option => optionId === option.value || optionId === option.id);
+
+            return matchingOption ?? value;
+        });
+    }
+
+    function getRealValues() {
+        return ((!props.defaultValue || props.defaultValue.length === 0) && (!selectedOptionValues || selectedOptionValues.length === 0) ? null : selectedOptionValues);
+    }
+    const {hiddenInput} = useFormFieldRegistration(
+        props,
+        () => getRealValues()
+    );
+    const inputRef = useRef();
+
+    useEffect(() => {
+        if (props.setValue) {
+            props.setValue(props.name, getRealValues(), {shouldDirty: true})
+        }
+        if (props.onChange) {
+            props.onChange(getRealValues())
+        }
+    }, [selectedOptionValues, props.defaultValue]);
 
     let classAddition = '';
     classAddition += (props.readonly ? ' disabled readonly' : '');
@@ -32,32 +64,12 @@ function MultiSelectDropdown(props) {
         }),
         input: (base, state) => ({
             ...base,
-            display: (props.readonly) ? 'none' : 'block'
-        }),
+            display: (props.readonly) ? 'none' : 'block',
+            fontSize: '12px',
+            fontFamily: 'Open Sans, sans-serif'
+        })
     };
 
-    useEffect(() => {
-        if (props.register) {
-            props.register({name: props.name}, {required: props.isRequired})
-            props.setValue(props.name, getRealValues())
-        }
-    }, [props.register])
-
-    useEffect(() => {
-        if (props.register) {
-            props.register({name: props.name}, {required: props.isRequired})
-            props.setValue(props.name, getRealValues(), {shouldDirty: true})
-            props.onChange(getRealValues())
-        }
-    }, [selectedOptionValues])
-
-    function getInitialValues() {
-        return props.defaultValue ? (props.defaultValue.map(value => props.options.find(option => value === option.value) ?? value)) : []
-    }
-
-    function getRealValues() {
-        return ((!props.defaultValue || props.defaultValue.length === 0) && (!selectedOptionValues || selectedOptionValues.length === 0) ? null : selectedOptionValues);
-    }
 
     const DropdownChevronIcon = () => {
         return <FontAwesomeIcon icon={faChevronDown}/>;
@@ -81,27 +93,24 @@ function MultiSelectDropdown(props) {
     }
 
     const selectMultiple = (values) => {
-        values.filter((value, index, self) => self.indexOf(value) === index).forEach((v, i) => {
-            setTimeout(() => {
-                selectOption(v)
-            }, 1 * i)
-        })
+        const uniqueValues = values.filter((value, index, self) => {
+            const isUnique = self.findIndex(v => v.value === value.value) === index;
+            const isNotSelected = !selectedOptionValues?.some(selected => selected.value === value.value);
+            return isUnique && isNotSelected;
+        });
+
+        if (uniqueValues.length > 0) {
+            const newSelectedValues = [...(selectedOptionValues || []), ...uniqueValues];
+            setSelectedOptionValues(newSelectedValues);
+        }
 
         resetInputValue();
     }
 
-    const selectOption = (value) => {
-        if (selectedOptionValues && selectedOptionValues.map(o => o.value).includes(value.value)) {
-            return;
-        }
-
-        return inputRef.current?.select?.select?.selectOption(value)
-    }
-
     const resetInputValue = () => {
-        if (inputRef.current?.select?.select?.inputRef) {
+        if (inputRef.current?.inputRef) {
             setTimeout(() => {
-                inputRef.current.select.select.onInputChange('', { action: 'set-value' });
+                inputRef.current.onInputChange('', { action: 'set-value' });
             }, 100)
         }
     }
@@ -112,8 +121,19 @@ function MultiSelectDropdown(props) {
         }
     }
 
+    const handlePaste = (event) => {
+        const paste = (event.clipboardData || window.clipboardData).getData('text');
+        if (paste && paste.includes(',')) {
+            event.preventDefault();
+            handleDelimiterInput(paste);
+        }
+    }
+
     const handleDelimiterInput = (inputValue) => {
-        if (inputValue && inputValue.length && props.delimiters.some(s => inputValue.includes(s))) {
+        const hasDelimiters = props.delimiters && props.delimiters.some(s => inputValue.includes(s));
+        const isMultiselectDropdownWithComma = props.type === 'multiselectdropdown' && inputValue.includes(',');
+        
+        if (inputValue && inputValue.length && (hasDelimiters || isMultiselectDropdownWithComma)) {
             const inputValues = inputValue.split(/,|;/)
 
             const values = inputValues.map(v => v.trim()).filter(v => v.length > 0).map(v => mockOption(v))
@@ -143,18 +163,40 @@ function MultiSelectDropdown(props) {
         });
     }
 
-    function defaultValueToOptions(optionValues) {
-        return optionValues !== null && optionValues.map(optionValue => {
-            return {
-                "label": t('language.current_code') === 'nl' ? optionValue.labelNL : optionValue.labelEN,
-                "labelNL": optionValue.labelNL,
-                "labelEN": optionValue.labelEN,
-                "coalescedLabelNL": optionValue.coalescedLabelNL,
-                "coalescedLabelEN": optionValue.coalescedLabelEN,
-                "metafieldOptionCategory": optionValue.metafieldOptionCategory,
-                "value": optionValue.value
-            }
-        })
+    function getSummaryLabel(optionValue, languageCode) {
+        if (!optionValue || typeof optionValue !== 'object') {
+            return null;
+        }
+        const summary = optionValue.summary || {};
+        const localizedLabel = languageCode === 'nl' ? summary.labelNL : summary.labelEN;
+        return localizedLabel || summary.value || summary.title || null;
+    }
+
+    function valueToOptions(optionValues) {
+        if (!optionValues || optionValues.length === 0) {
+            return [];
+        }
+
+        return optionValues
+            .filter(optionValue => optionValue != null)
+            .map(optionValue => {
+                const summaryLabelNL = getSummaryLabel(optionValue, 'nl');
+                const summaryLabelEN = getSummaryLabel(optionValue, 'en');
+                const labelNL = optionValue?.labelNL || optionValue?.label || summaryLabelNL || summaryLabelEN || optionValue;
+                const labelEN = optionValue?.labelEN || optionValue?.label || summaryLabelEN || summaryLabelNL || optionValue;
+                const value = optionValue?.id ?? optionValue?.value ?? optionValue?.optionKey ?? optionValue;
+
+                return {
+                    "label": t('language.current_code') === 'nl' ? labelNL : labelEN,
+                    "labelNL": labelNL,
+                    "labelEN": labelEN,
+                    "coalescedLabelNL": optionValue?.coalescedLabelNL,
+                    "coalescedLabelEN": optionValue?.coalescedLabelEN,
+                    "metafieldOptionCategory": optionValue?.metafieldOptionCategory,
+                    "value": value,
+                    "summary": optionValue?.summary
+                }
+            });
     }
 
     let placeholder = (props.readonly) ? "-" : t('multi_select_dropdown_field.placeholder')
@@ -171,7 +213,8 @@ function MultiSelectDropdown(props) {
                     DropdownIndicator,
                     IndicatorSeparator: () => null,
                 }}
-                defaultValue={defaultValueToOptions(selectedOptionValues)}
+                value={valueToOptions(selectedOptionValues)}
+                defaultValue={valueToOptions(selectedOptionValues)}
                 cacheOptions={true}
                 defaultOptions={true}
                 loadOptions={promiseOptions}
@@ -180,6 +223,7 @@ function MultiSelectDropdown(props) {
                 placeholder={placeholder}
                 styles={style}
                 onInputChange={handleInputChange}
+                onPaste={handlePaste}
                 onChange={
                     (selection) => {
                         if (selection && selection.length > 0) {
@@ -190,6 +234,7 @@ function MultiSelectDropdown(props) {
                     }
                 }
             />
+            {hiddenInput}
         </div>
     );
 }

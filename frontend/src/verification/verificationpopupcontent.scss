@@ -2,12 +2,30 @@
 @import "../sass/theme/fonts";
 @import "../sass/theme/mixins";
 
+.swal2-container .swal2-html-container {
+    all: unset;
+}
+
 .swal2-container.verification-container {
 
     .swal2-popup.verification-popup {
         padding: 25px 35px;
         width: 45em;
         min-height: 150px;
+
+        .verification-title {
+            @include nunito-extra-bold;
+            font-size: 25px;
+        }
+
+
+        .verification-subtitle {
+            @include nunito-bold;
+            font-size: 20px;
+            margin-top: 10px;
+            max-height: 400px;
+            min-height: 100px;
+        }
 
         .verification-content {
             text-align: left;
@@ -18,21 +36,6 @@
                 top: 4px;
                 padding: 7px;
                 cursor: pointer;
-            }
-
-
-            .verification-title {
-                @include nunito-extra-bold;
-                font-size: 25px;
-            }
-
-
-            .verification-subtitle {
-                @include nunito-bold;
-                font-size: 20px;
-                margin-top: 10px;
-                max-height: 400px;
-                min-height: 100px;
             }
         }
 

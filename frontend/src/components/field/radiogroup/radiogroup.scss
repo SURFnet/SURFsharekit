@@ -4,6 +4,7 @@
 @import "../../../sass/theme/mixins";
 
 $selectable-size: 18px;
+$majorelle: #7344EE;
 
 .radio {
     //hide the original checkbox by just moving it waaaaaay left
@@ -62,5 +63,112 @@ $selectable-size: 18px;
 
     .option:not(:first-child) {
         margin-top: 10px;
+    }
+
+    .option {
+        &:hover {
+            label {
+                color: $majorelle;
+                cursor: pointer;
+            }
+
+            [type="radio"] + label:before {
+                border-color: $majorelle;
+            }
+
+            [type="radio"]:checked + label:before {
+                border-color: $majorelle;
+                border: ($selectable-size * 0.28) solid $majorelle;
+            }
+        }
+
+        [type="radio"] + label:before {
+            transition: border-color 0.2s ease, border 0.2s ease;
+        }
+
+        label {
+            transition: color 0.2s ease;
+        }
+    }
+}
+
+.square-radio {
+    [type="radio"] {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    label {
+        @include open-sans;
+        font-size: 14px;
+        position: relative;
+        line-height: $selectable-size;
+        padding-left: $selectable-size + 10px;
+        display: inline-block;
+        color: $text-color;
+    }
+
+    [type="radio"] + label:before {
+        content: '';
+        position: absolute;
+        cursor: pointer;
+        left: 0;
+        top: 0;
+        width: $selectable-size;
+        height: $selectable-size;
+        border: 1px solid $input-border-color;
+        border-radius: 0;
+        background-color: $background-color-dark;
+        transition: all 0.2s ease;
+    }
+
+    [type="radio"] + label:after {
+        content: '✓';
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: $selectable-size;
+        height: $selectable-size;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 12px;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+
+    [type="radio"]:checked + label:before {
+        background-color: $majorelle;
+        border-color: $majorelle;
+    }
+
+    [type="radio"]:checked + label:after {
+        opacity: 1;
+    }
+
+    [type="radio"]:disabled + label:before {
+        opacity: 0.33;
+        cursor: auto;
+    }
+
+    .option {
+        &:hover {
+            label {
+                color: $majorelle;
+                cursor: pointer;
+            }
+
+            [type="radio"] + label:before {
+                border-color: $majorelle;
+            }
+
+            [type="radio"]:checked + label:before {
+                background-color: $majorelle;
+                border-color: $majorelle;
+            }
+        }
     }
 }

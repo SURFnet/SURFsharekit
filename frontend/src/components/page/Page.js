@@ -17,7 +17,7 @@ import {
     spaceCadet,
     white
 } from "../../Mixins";
-import {useHistory, useLocation} from "react-router-dom";
+import {useLocation} from "react-router-dom";
 import MergeProfilePopup from "../../profile/mergeprofilespopup/MergeProfilesPopup";
 import ProfileCard from "../../styled-components/footer/ProfileCard";
 import {useTranslation} from "react-i18next";
@@ -25,6 +25,7 @@ import styled from "styled-components";
 import {useGlobalState} from "../../util/GlobalState";
 import {CollapsePersonMergeFooterEvent} from "../../util/events/Events";
 import Logout, {logout} from "../../util/authUtils";
+import {useNavigation} from "../../providers/NavigationProvider";
 
 export class GlobalPageMethods {
     static setFullScreenLoading = {}
@@ -39,7 +40,7 @@ function Page(props) {
     GlobalPageMethods.setFullScreenLoading = setIsLoading
     const [personsToMerge] = useAppStorageState(StorageKey.PERSONS_TO_MERGE);
     const {t} = useTranslation()
-    const history = useHistory();
+    const navigate = useNavigation();
     const location = useLocation()
     const pageIsDashboard = location.pathname === "/dashboard" || location.pathname === "/" || location.pathname.startsWith("/publicationfiles")
 
@@ -114,8 +115,7 @@ function Page(props) {
             style={props.style}
             isDashboard={true}
         >
-            <SideMenu history={props.history}
-                      activeMenuItem={props.activeMenuItem}
+            <SideMenu activeMenuItem={props.activeMenuItem}
                       menuButtonColor={props.menuButtonColor ?? Constants.majorelle}
             />
 
@@ -182,13 +182,13 @@ function Page(props) {
                            backgroundColor={personsToMergeExistsAndNotEmpty && personsToMerge.length > 1 ? majorelle : greyLight}
                            highlightColor={personsToMergeExistsAndNotEmpty && personsToMerge.length > 1 ? majorelleLight : undefined}
                            textColor={personsToMergeExistsAndNotEmpty && personsToMerge.length > 1 ? white : greyDark }
-                           onClick={() =>personsToMergeExistsAndNotEmpty && personsToMerge.length > 1 && MergeProfilePopup.show(history)}
+                           onClick={() =>personsToMergeExistsAndNotEmpty && personsToMerge.length > 1 && MergeProfilePopup.show(navigate)}
                        />
                    }
                    profileList={
                        <div className={"flex-row"}>
                            {personsToMergeExistsAndNotEmpty && personsToMerge.map((element, index) => {
-                               return <ProfileCard key={index} name={element.name} goToProfile={() => history.push('/profile/' + element.id)} onClick={() => removeProfileDataToMergeList(element)}/>
+                               return <ProfileCard key={index} name={element.name} goToProfile={() => navigate('/profile/' + element.id)} onClick={() => removeProfileDataToMergeList(element)}/>
                            })}
                        </div>
                    }

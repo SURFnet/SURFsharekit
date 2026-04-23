@@ -7,16 +7,16 @@
     align-items: center;
 
     .onboarding-wrapper {
-        @include rounded-background-pointy-left();
+        @include rounded-background-pointy-upper-left();
         background-color: white;
         max-width: 700px;
         width: 700px;
+        overflow: hidden;
 
         .onboarding-container {
-            display: flex;
-            justify-content: center;
-            flex-direction: column;
             padding: 40px 90px;
+            overflow-y: auto;
+            max-height: 845px;
 
             .logo-wrapper {
                 display: flex;
@@ -93,6 +93,13 @@
                 border-radius: 5px;
                 margin-top: 5px;
                 padding: 10px;
+                transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+
+                &:hover {
+                    background: color-mix(in srgb, $majorelle 5%, white);
+                    border-color: #e1e7ff;
+                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+                }
 
                 &.selected-institute {
                     border: 1px solid $majorelle;

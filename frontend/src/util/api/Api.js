@@ -5,6 +5,7 @@ import Toaster from "../toaster/Toaster";
 import VerificationPopup from "../../verification/VerificationPopup";
 import i18n from 'i18next';
 import {toast} from "react-toastify";
+import { getCurrentConfig } from "../../config/environment";
 
 function redirectToNotFound() {
     window.location = '/notfound'
@@ -14,19 +15,50 @@ function redirectToLogin() {
     window.location = "/login"
 }
 
+function handleApiError(error, onServerFailure) {
+    if (axios.isCancel(error)) {
+        console.log('Request cancelled:', error.message);
+        return;
+    }
+
+    if (error.code !== "ECONNABORTED") {
+        if (error.response) {
+            const { status } = error.response;
+            if (status === 404) {
+                redirectToNotFound();
+            } else if (status === 401) {
+                redirectToLogin();
+                toast.dismiss();
+            } else {
+                onServerFailure(error);
+            }
+        } else {
+            // Handle network errors or other non-response errors
+            onServerFailure(error);
+        }
+    }
+}
+
 class Api {
     static dataFormatter = new Jsona();
 
-    static jsonApiGet(url, validate, onSuccess, onLocalFailure, onServerFailure, config = {}) {
+    static normalizeUrl(url) {
+        // Remove trailing slashes and slashes before query parameters
+        return url.replace(/\/+(?=\?|$)/g, '');
+    }
 
+    static jsonApiGet(url, validate, onSuccess, onLocalFailure, onServerFailure, config = {}) {
         if (typeof config.cancelToken !== typeof undefined) {
             config.cancelToken.cancel("Operation canceled due to new request.");
         }
         let cancelToken = axios.CancelToken.source();
         config.cancelToken = cancelToken.token;
-        let requestConfig = this.getRequestConfig(config);
+        let requestConfig = this.getRequestConfig({
+            ...config
+        });
+        const normalizedUrl = this.normalizeUrl(url);
 
-        axios.get(url, requestConfig)
+        axios.get(normalizedUrl, requestConfig)
             .then(function (response) {
                 try {
                     response.meta = response.data.meta
@@ -41,30 +73,16 @@ class Api {
                 }
             })
             .catch(function (error) {
-                if (!axios.isCancel(error)) {
-                    // Prevent toaster is request is aborted
-                    if (error.code !== "ECONNABORTED") {
-                        if (error.response.status === 404) {
-                            redirectToNotFound()
-                        } else if (error.response.status === 401) {
-                            redirectToLogin()
-                            toast.dismiss()
-                        } else {
-                            onServerFailure(error);
-                        }
-                    }
-                } else {
-                    console.log('cancelled');
-                }
-            })
-            .then(function () {
-
+                handleApiError(error, onServerFailure);
             });
         return cancelToken;
     }
 
     static get(url, validate, onSuccess, onLocalFailure, onServerFailure, config = {}) {
-        axios.get(url, this.getRequestConfig(config))
+        const requestConfig = this.getRequestConfig(config);
+        const normalizedUrl = this.normalizeUrl(url);
+
+        axios.get(normalizedUrl, requestConfig)
             .then(function (response) {
                 try {
                     validate(response);
@@ -74,23 +92,15 @@ class Api {
                 }
             })
             .catch(function (error) {
-                if (error.response.status === 404) {
-                    redirectToNotFound()
-                } else if (error.response.status === 401) {
-                    redirectToLogin()
-                    toast.dismiss()
-                } else {
-                    onServerFailure(error);
-                }
-            })
-            .then(function () {
-                // always executed
+                handleApiError(error, onServerFailure);
             });
     }
 
     static delete(url, validate, onSuccess, onLocalFailure, onServerFailure, config = {}, data = null) {
         const finalConfig = this.getRequestConfig(config);
-        axios.delete(url, finalConfig)
+        const normalizedUrl = this.normalizeUrl(url);
+
+        axios.delete(normalizedUrl, finalConfig)
             .then(function (response) {
                 try {
                     validate(response);
@@ -100,23 +110,15 @@ class Api {
                 }
             })
             .catch(function (error) {
-                if (error.response.status === 404) {
-                    redirectToNotFound()
-                } else if (error.response.status === 401) {
-                    redirectToLogin()
-                    toast.dismiss()
-                } else {
-                    onServerFailure(error);
-                }
-            })
-            .then(function () {
-                // always executed
+                handleApiError(error, onServerFailure);
             });
     }
 
     static post(url, validate, onSuccess, onLocalFailure, onServerFailure, config = {}, data = null) {
         const finalConfig = this.getRequestConfig(config);
-        axios.post(url, data ? data : finalConfig.data, finalConfig)
+        const normalizedUrl = this.normalizeUrl(url);
+
+        axios.post(normalizedUrl, data ? data : finalConfig.data, finalConfig)
             .then(function (response) {
                 try {
                     validate(response);
@@ -126,24 +128,15 @@ class Api {
                 }
             })
             .catch(function (error) {
-                if (error.response.status === 404) {
-                    redirectToNotFound()
-                } else if (error.response.status === 401) {
-                    redirectToLogin()
-                    toast.dismiss()
-                } else {
-                    onServerFailure(error);
-                }
-            })
-            .then(function () {
-                // always executed
+                handleApiError(error, onServerFailure);
             });
     }
 
     static patch(url, validate, onSuccess, onLocalFailure, onServerFailure, config = {}, data = null) {
         const finalConfig = this.getRequestConfig(config);
+        const normalizedUrl = this.normalizeUrl(url);
 
-        axios.patch(url, data ? data : finalConfig.data, finalConfig)
+        axios.patch(normalizedUrl, data ? data : finalConfig.data, finalConfig)
             .then(function (response) {
                 try {
                     validate(response);
@@ -153,33 +146,26 @@ class Api {
                 }
             })
             .catch(function (error) {
-                if (error.response.status === 404) {
-                    redirectToNotFound()
-                } else if (error.response.status === 401) {
-                    redirectToLogin()
-                    toast.dismiss()
-                } else {
-                    onServerFailure(error);
-                }
-            })
-            .then(function () {
-                // always executed
+                handleApiError(error, onServerFailure);
             });
     }
 
     static getRequestConfig(config = {}) {
+        const envConfig = getCurrentConfig();
+        
         let defaultConfig = {
-            baseURL: process.env.REACT_APP_API_URL,
+            baseURL: envConfig.api.baseURL,
+            withCredentials: envConfig.api.withCredentials,
         };
 
-        let defaultHeaders = {};
-
-        const loggedInUser = AppStorage.get(StorageKey.USER);
-        if (loggedInUser && loggedInUser.accessToken) {
-            defaultHeaders["Authorization"] = 'Bearer ' + loggedInUser.accessToken;
+        // Add environment-specific headers
+        if (process.env.NODE_ENV === 'development') {
+            defaultConfig.headers = {
+                ...defaultConfig.headers,
+                'X-Environment': 'development'
+            };
         }
 
-        defaultConfig.headers = defaultHeaders;
         return {
             ...defaultConfig,
             ...config,
@@ -189,7 +175,6 @@ class Api {
             },
             validateStatus: function (statusCode) {
                 return statusCode >= 200 && statusCode < 300
-
             }
         };
     }
@@ -199,15 +184,17 @@ class Api {
         }
 
         function onSuccess(response) {
-            window.open(fileURL + '?accessToken=' + response.data.accessToken, '__blank')
+            let url = new URL(fileURL)
+            url.searchParams.append("accessToken", response.data.accessToken)
+            window.open(url.toString(), '__blank')
         }
 
-        function onServerFailure() {
-            Toaster.showDefaultRequestError();
+        function onServerFailure(error) {
+            Toaster.showServerError(error);
         }
 
-        function onLocalFailure() {
-            Toaster.showDefaultRequestError();
+        function onLocalFailure(error) {
+            Toaster.showServerError(error);
         }
 
         Api.get('generateAccessToken', onValidate, onSuccess, onLocalFailure, onServerFailure);
@@ -222,16 +209,18 @@ class Api {
 
         function onSuccess(response) {
             VerificationPopup.show(downloadTitle, downloadSubtitle, () => {
-                window.open(fileURL + '?accessToken=' + response.data.accessToken, '__blank')
+                var url = new URL(fileURL)
+                url.searchParams.append("accessToken", response.data.accessToken)
+                window.open(url.toString(), '__blank')
             }, false, 5 * 1000 * 60)
         }
 
-        function onServerFailure() {
-            Toaster.showDefaultRequestError();
+        function onServerFailure(error) {
+            Toaster.showServerError(error);
         }
 
-        function onLocalFailure() {
-            Toaster.showDefaultRequestError();
+        function onLocalFailure(error) {
+            Toaster.showServerError(error);
         }
 
         Api.get('generateAccessToken', onValidate, onSuccess, onLocalFailure, onServerFailure);

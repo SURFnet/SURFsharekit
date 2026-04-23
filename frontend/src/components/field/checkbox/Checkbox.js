@@ -1,6 +1,7 @@
 import React, {useState} from "react";
 import './checkbox.scss'
 import {useTranslation} from "react-i18next";
+import {validateDependencyKeyGroup} from "../../../util/DependencyKeyValidation";
 
 export function CheckBoxField(props) {
     const [selection, setSelection] = useState(props.defaultValue ?? []);
@@ -16,6 +17,11 @@ export function CheckBoxField(props) {
     }
 
     function toggleSelection(option) {
+        // Prevent changes when readonly
+        if (props.readonly) {
+            return;
+        }
+
         let newSelection = selection;
 
         if (hasDefaultValue(option)) {
@@ -37,10 +43,15 @@ export function CheckBoxField(props) {
                     type="checkbox"
                     id={`${unique}-${option.value}`}
                     onChange={() => toggleSelection(option)}
-                    disabled={props.readonly}
                     value={option.value}
-                    ref={props.register({
-                        required: props.isRequired
+                    {...props.register(props.name, {
+                        required: props.isRequired,
+                        validate: () => validateDependencyKeyGroup({
+                            dependencyKey: props.dependencyKey,
+                            dependencyGroupKeys: props.dependencyGroupKeys,
+                            dependencyGroupLabels: props.dependencyGroupLabels,
+                            getValues: props.getValues
+                        })
                     })}
                     name={props.name}/>
 

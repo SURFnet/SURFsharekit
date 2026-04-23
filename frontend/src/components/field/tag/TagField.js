@@ -4,6 +4,7 @@ import {faPlus, faTimes} from "@fortawesome/free-solid-svg-icons";
 import IconButtonText from "../../buttons/iconbuttontext/IconButtonText";
 import Api from "../../../util/api/Api";
 import {useTranslation} from "react-i18next";
+import {validateDependencyKeyGroup} from "../../../util/DependencyKeyValidation";
 
 export function TagField(props) {
     let classAddition = '';
@@ -32,7 +33,18 @@ export function TagField(props) {
 
     useEffect(() => {
         if (props.register) {
-            props.register({name: props.name}, {required: props.isRequired})
+            props.register(
+                {name: props.name},
+                {
+                    required: props.isRequired,
+                    validate: () => validateDependencyKeyGroup({
+                        dependencyKey: props.dependencyKey,
+                        dependencyGroupKeys: props.dependencyGroupKeys,
+                        dependencyGroupLabels: props.dependencyGroupLabels,
+                        getValues: props.getValues
+                    })
+                }
+            )
             props.setValue(props.name, getRealTagFieldValue())
             hadError.current = false
         }

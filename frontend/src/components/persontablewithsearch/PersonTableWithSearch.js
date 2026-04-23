@@ -18,10 +18,8 @@ import {
 import {ProfileBanner} from "../profilebanner/ProfileBanner";
 import {roleKeyToTranslationKey} from "../../util/MemberPositionOptionsHelper";
 import {ReactTableHelper} from "../../util/ReactTableHelper";
-import MergeProfilePopup from "../../profile/mergeprofilespopup/MergeProfilesPopup";
 import ClaimRequestPopup from "../../profile/claimrequest/ClaimRequestPopup";
-import {useHistory} from "react-router-dom";
-import {StorageKey, useAppStorageState} from "../../util/AppStorage";
+import {useNavigation} from "../../providers/NavigationProvider";
 
 function PersonTableWithSearch(props) {
     const sortOrder = props.sortOrder
@@ -33,7 +31,8 @@ function PersonTableWithSearch(props) {
     const [searchOutOfScope, setSearchOutOfScope] = useState(false);
     const [query, setQuery] = useState('');
     const {t} = useTranslation();
-    const history = useHistory();
+    const navigate = useNavigation();
+
     const columns = React.useMemo(
         () => {
             return [
@@ -98,13 +97,14 @@ function PersonTableWithSearch(props) {
                 },
                 {
                     Header: () => {
-                        return <div className={"border"}>{t('person.groups')}</div>
+                        return <div className={"border"}>{t('person.organization')}</div>
                     },
                     disableSortBy: true,
                     accessor: t('language.current_code') === 'nl' ? 'groupLabelsNL' : 'groupLabelsEN',
                     className: 'person-row-groups',
                     Cell: (tableInfo) => {
-                        return <div>{ReactTableHelper.concatenateCellValue(tableInfo.cell.value)}</div>
+                        const rootInstitutes = tableInfo.row.original.rootInstitutesSummary.map(rootInstitute => rootInstitute.title)
+                        return <div>{ReactTableHelper.concatenateCellValue(rootInstitutes)}</div>
                     },
                     style: {
                         width: "30%"
@@ -144,7 +144,7 @@ function PersonTableWithSearch(props) {
                     className: 'person-row-active-state',
                     Cell: (tableInfo) => {
                         if (tableInfo.cell.value) {
-                            return <StatusIcon color='purple' text={t('person.active')}/>
+                            return <StatusIcon color='green' text={t('person.active')}/>
                         } else {
                             return <StatusIcon color='red' text={t('person.inactive')}/>
                         }
@@ -170,7 +170,7 @@ function PersonTableWithSearch(props) {
                                         e.stopPropagation()
                                         const person = tableInfo.row.original.id
                                         const personInstitutes = tableInfo.row.original.rootInstitutesSummary
-                                        ClaimRequestPopup.show(history, person, personInstitutes)
+                                        ClaimRequestPopup.show(person, personInstitutes)
                                     }}
                                 />
                             }
@@ -187,7 +187,7 @@ function PersonTableWithSearch(props) {
                                              onClick={(e) => {
                                                  e.stopPropagation()
                                                  if (canEdit) {
-                                                     props.history.push('../profile/' + tableInfo.row.original.id)
+                                                     navigate('../profile/' + tableInfo.row.original.id)
                                                  }
                                              }}/>
                         </div>
@@ -211,7 +211,7 @@ function PersonTableWithSearch(props) {
 
     const reactTableLoadingIndicator = <ReactTableLoadingIndicator loadingText={t('loading_indicator.loading_text')}/>;
     const onRowClick = (row) => {
-        props.history.push('/profile/' + row.original.id)
+        navigate('/profile/' + row.original.id)
     }
 
     return <div>

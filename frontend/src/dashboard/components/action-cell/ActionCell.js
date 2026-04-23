@@ -12,8 +12,9 @@ import Toaster from "../../../util/toaster/Toaster";
 import Api from "../../../util/api/Api";
 import TaskHelper, {TASK_ACTION, TASK_ACTION_BUTTON_TYPE, TASK_TYPE} from "../../../util/TaskHelper";
 import {useTranslation} from "react-i18next";
-import {useHistory} from "react-router-dom";
+import {useNavigate} from "react-router-dom";
 import {restore} from "../../../trashcan/TrashcanResultRow";
+import {useNavigation} from "../../../providers/NavigationProvider";
 
 function ActionCell(props) {
     const {
@@ -22,7 +23,7 @@ function ActionCell(props) {
     } = props
 
     const {t} = useTranslation();
-    const history = useHistory();
+    const navigate = useNavigation();
     const [redirect, setRedirect] = useState(false)
 
     return (
@@ -60,10 +61,6 @@ function ActionCell(props) {
                     task.type === TASK_TYPE.FILL ?
                         <BasicDropdownList
                             dropdownItems={getDropdownItems("delete")}
-                        />
-                        : task.type === TASK_TYPE.RECOVER ?
-                        <BasicDropdownList
-                            dropdownItems={getDropdownItems("recover")}
                         />
                         :
                         <TextInputModal
@@ -190,7 +187,7 @@ function ActionCell(props) {
             }
 
             if (redirect) {
-                history.push(`./publications/${getRepoItemID(task)}`)
+                navigate(`./publications/${getRepoItemID(task)}`)
             }
 
             onActionSuccess(task.id)
@@ -205,13 +202,13 @@ function ActionCell(props) {
                 Toaster.showServerError(error)
             }
             if (error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             }
         }
 
         function onLocalFailure(error) {
             GlobalPageMethods.setFullScreenLoading(false)
-            Toaster.showDefaultRequestError();
+            Toaster.showServerError(error);
         }
 
         const config = {

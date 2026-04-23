@@ -1,4 +1,5 @@
 import React from "react";
+import {validateDependencyKeyGroup} from "../../../util/DependencyKeyValidation";
 
 export function TextField(props) {
     let classAddition = '';
@@ -55,9 +56,22 @@ export function TextField(props) {
 
                        oldValue = e.target.value;
                    }}
-                   ref={props.register && props.register({
+                   {...props.register(props.name, {
                        required: props.isRequired,
-                       validate: (v => validateWithRegex(v, props.validationRegex) && extraValidation(v))
+                       validate: (v) => {
+                           if (!validateWithRegex(v, props.validationRegex)) {
+                               return false;
+                           }
+                           if (!extraValidation(v)) {
+                               return false;
+                           }
+                           return validateDependencyKeyGroup({
+                               dependencyKey: props.dependencyKey,
+                               dependencyGroupKeys: props.dependencyGroupKeys,
+                               dependencyGroupLabels: props.dependencyGroupLabels,
+                               getValues: props.getValues
+                           });
+                       }
                    })}
                    name={props.name}
                    onClick={(e) => {

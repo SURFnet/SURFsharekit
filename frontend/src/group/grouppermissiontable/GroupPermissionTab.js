@@ -3,27 +3,22 @@ import './grouppermissiontable.scss'
 import '../../components/field/formfield.scss'
 import {useTranslation} from "react-i18next";
 import {useForm} from "react-hook-form";
-import ButtonText from "../../components/buttons/buttontext/ButtonText";
 import Toaster from "../../util/toaster/Toaster";
 import Api from "../../util/api/Api";
-import {GlobalPageMethods} from "../../components/page/Page";
-import {FoldButton, Tooltip} from "../../components/field/FormField";
-import {useHistory} from "react-router-dom";
 import LoadingIndicator from "../../components/loadingindicator/LoadingIndicator";
 import styled from "styled-components";
 import {Accordion} from "../../components/Accordion";
-import {Checkbox} from "../../components/Checkbox";
 import {greyLight, majorelle, nunitoRegular, openSans} from "../../Mixins";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faChevronDown, faChevronUp} from "@fortawesome/free-solid-svg-icons";
+import {useNavigation} from "../../providers/NavigationProvider";
 
 function GroupPermissionTab(props) {
     const [permissionDescriptions, setPermissionDescriptions] = useState(null)
     const [extendedSections, setExtendedSections] = useState([])
-    const {register, handleSubmit, errors, setValue, getValues, trigger} = useForm();
+    const {register, handleSubmit, formState: { errors}, setValue, getValues, trigger} = useForm();
     const {t} = useTranslation();
     const formSubmitButton = useRef()
-    const history = useHistory()
     let content = undefined;
 
     const permissionCategories = useMemo(() => {
@@ -139,7 +134,7 @@ function GroupPermissionTab(props) {
         }
 
         function onLocalFailure(error) {
-            Toaster.showDefaultRequestError()
+            Toaster.showServerError(error)
         }
 
         function onServerFailure(error) {

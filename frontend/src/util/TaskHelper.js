@@ -1,5 +1,6 @@
 import React from "react";
 import i18n from "i18next";
+import DOMPurify from "dompurify";
 import {HelperFunctions} from "./HelperFunctions";
 import {ReactComponent as IconCalendarDays} from "../resources/icons/ic-calendar-days.svg";
 import styled from "styled-components";
@@ -54,28 +55,37 @@ class TaskHelper {
 
                 return i18n.t("dashboard.tasks.task_title.claim", {
                     institute: nameOfInstituteMakingClaim,
-                    personName: `<a href='profile/${taskData.claim.claimedPerson.id}'>${nameOfPersonToClaim}</a>`
+                    personName: `<a href='profile/${taskData.claim.claimedPerson.id}'>` + DOMPurify.sanitize(nameOfPersonToClaim) + `</a>`
                 })
             }
             case TASK_TYPE.REVIEW: {
                 const repoItem = taskData.repoItem
                 const person = taskData.repoItem.author
                 return i18n.t("dashboard.tasks.task_title.review",{
-                    objectTitle: `<a href='publications/${repoItem.id}'>${HelperFunctions.truncate(repoItem.title, 50)}</a>`,
-                    personName: `<a href='profile/${person.id}'>${person.fullName}</a>`
+                    objectTitle: `<a href='publications/${repoItem.id}'>` + DOMPurify.sanitize(HelperFunctions.truncate(repoItem.title, 50)) + `</a>`,
+                    personName: `<a href='profile/${person.id}'>`+ DOMPurify.sanitize(person.fullName) + `</a>`
                 })
             }
             case TASK_TYPE.FILL: {
                 const repoItem = taskData.fillRepoItem
                 return i18n.t("dashboard.tasks.task_title.fill",{
-                    objectTitle: `<a href='publications/${repoItem.id}'>${HelperFunctions.truncate(repoItem.title, 50)}</a>`
+                    objectTitle: `<a href='publications/${repoItem.id}'>` + DOMPurify.sanitize(HelperFunctions.truncate(repoItem.title, 50)) + `</a>`
                 })
             }
             case TASK_TYPE.RECOVER: {
                 const repoItem = taskData.deleteRepoItem
-                return i18n.t("dashboard.tasks.task_title.recover", {
-                    objectTitle: `<a href='publications/${repoItem.id}'>${HelperFunctions.truncate(repoItem.title, 50)}</a>`
-                })
+                const person = taskData.deleteRepoItem.author
+
+                if (person) {
+                    return i18n.t("dashboard.tasks.task_title.recover.v2", {
+                        personName: `<a href='profile/${person.id}?source=tasks'>` + DOMPurify.sanitize(person.fullName) + `</a>`,
+                        objectTitle: `<a href='publications/${repoItem.id}?source=tasks'>` + DOMPurify.sanitize(HelperFunctions.truncate(repoItem.title, 50)) + `</a>`
+                    })
+                } else {
+                    return i18n.t("dashboard.tasks.task_title.recover.v1", {
+                        objectTitle: `<a href='publications/${repoItem.id}?source=tasks'>` + DOMPurify.sanitize(HelperFunctions.truncate(repoItem.title, 50)) + `</a>`
+                    })
+                }
             }
         }
     }

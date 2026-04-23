@@ -2,27 +2,41 @@ import React, {useEffect, useState} from 'react';
 import styled, {css, keyframes} from 'styled-components';
 import {cultured, greyDarker, greyLight, greyMedium, majorelle, majorelleLight} from "../Mixins";
 
-export function Checkbox({onChange, ...props}) {
+export function Checkbox({onChange, register, initialValue, style, name, disabled, type = "checkbox", ...rest}) {
 
-    const {
-        style,
-        initialValue
-    } = props
+    const registration = register && name ? register(name, {disabled: !!disabled}) : null
+    const rhfOnChange = registration?.onChange
+    const rhfOnBlur = registration?.onBlur
+    const rhfRef = registration?.ref
 
     const [checked, setChecked] = useState(initialValue)
 
-    const onInputChange = ({ target: { checked }}) => {
-        setChecked(checked);
+    useEffect(() => {
+        setChecked(initialValue)
+    }, [initialValue])
 
+    const onInputChange = (e) => {
+        const {checked: nextChecked} = e.target
+        setChecked(nextChecked)
+        rhfOnChange?.(e)
         if (onChange) {
-            onChange(checked)
+            onChange(nextChecked)
         }
     }
 
     return (
         <CheckboxRoot>
-            <Input id={props.name} ref={props.register} type="checkbox" {...props} onChange={onInputChange}/>
-            <CheckMark htmlFor={props.name} disabled={props.disabled} style={style} checked={checked}>
+            <Input id={name}
+                   {...rest}
+                   ref={rhfRef}
+                   type={type}
+                   name={name}
+                   disabled={disabled}
+                   style={style}
+                   checked={checked}
+                   onBlur={rhfOnBlur}
+                   onChange={onInputChange}/>
+            <CheckMark htmlFor={name} disabled={disabled} style={style} checked={checked}>
                 <CheckIcon
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 24 24"

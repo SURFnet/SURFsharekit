@@ -4,13 +4,15 @@ import DashboardPublicationTable from "./DashboardPublicationTable";
 import {useTranslation} from "react-i18next";
 import styled from "styled-components";
 import {goToEditPublication} from "../../publications/Publications";
+import {useNavigation} from "../../providers/NavigationProvider";
 
 function DashboardUserPublicationTable(props) {
     const {t} = useTranslation();
     const [selectedIndex, setSelectedIndex] = useState(0);
-
+    const navigate = useNavigation()
+    
     function onClickEditPublication(itemProps) {
-        goToEditPublication(props, itemProps)
+        goToEditPublication(navigate, itemProps)
     }
 
     const getStatusFilter = () => {
@@ -33,7 +35,6 @@ function DashboardUserPublicationTable(props) {
             repoStatusFilter={getStatusFilter()}
             filterOnUserId={props.userId}
             onClickEditPublication={onClickEditPublication}
-            history={props.history}
             enablePagination={true}
         />
 

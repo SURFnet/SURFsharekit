@@ -5,7 +5,8 @@ import {majorelleLight, openSans, SURFShapeRight} from "../../../Mixins";
 import TopMenuButton from "./TopMenuButton";
 import NotificationIcon from "../../../resources/icons/ic-notification.svg";
 import {useOutsideElementClicked} from "../../../util/hooks/useOutsideElementClicked";
-import {useHistory} from "react-router-dom";
+import {useNavigate} from "react-router-dom";
+import {useNavigation} from "../../../providers/NavigationProvider";
 
 function TopMenuSearch(props) {
 
@@ -13,7 +14,7 @@ function TopMenuSearch(props) {
     const inputRef = React.createRef()
     const [isExpanded, setExpanded] = useState(false);
     const [inputValue, setInputValue] = useState(props.defaultValue ? props.defaultValue : "")
-    const history = useHistory();
+    const navigate = useNavigation();
 
     useOutsideElementClicked(() => {
         setExpanded(false)
@@ -42,14 +43,14 @@ function TopMenuSearch(props) {
 
     function onEnterPressed(e) {
         if (e.key === 'Enter' && inputValue && inputValue.length > 0) {
-            history.push('../search/' + inputValue)
+            navigate('../search/' + inputValue)
         }
     }
 
     function onSearchButtonPressed() {
         if(isExpanded) {
             if (inputValue && inputValue.length > 0) {
-                history.push('../search/' + inputValue)
+                navigate('../search/' + inputValue)
             } else {
                 inputRef.current.focus()
             }

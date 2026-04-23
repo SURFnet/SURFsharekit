@@ -7,8 +7,6 @@ import {
     ReactTableLoadingIndicator,
     ReactTableSortIcon
 } from "../../reacttable/ReactTable";
-import {faPlus} from "@fortawesome/free-solid-svg-icons";
-import {createAndNavigateToRepoItem} from "../../../../publications/Publications";
 import {ReactStatusTableCell} from "../../cells/ReactStatusTableCell";
 import RepoItemHelper from "../../../../util/RepoItemHelper";
 import {ReactTypeTableCell} from "../../cells/ReactTypeTableCell";
@@ -18,8 +16,9 @@ import {ReactTableSearchInput} from "../../filterrow/ReacTableFilterItems";
 import Toaster from "../../../../util/toaster/Toaster";
 import Api from "../../../../util/api/Api";
 import VerificationPopup from "../../../../verification/VerificationPopup";
-import {useHistory, useLocation} from "react-router-dom";
+import {useNavigate, useLocation} from "react-router-dom";
 import {ReactTableHelper} from "../../../../util/ReactTableHelper";
+import {useNavigation} from "../../../../providers/NavigationProvider";
 
 export const PublicationTableSort = {
     STATUS_CONCEPT: {
@@ -37,11 +36,11 @@ function ReactPublicationTable(props) {
     const debouncedQueryChange = HelperFunctions.debounce(setQuery)
     const [currentSortBy, setCurrentSortBy] = useState([]);
     const location = useLocation();
-    const history = useHistory()
     const {t} = useTranslation();
     const paginationCountRef = useRef();
     const tableRows = userPublications;
     const cancelToken = useRef();
+    const navigate = useNavigation()
     const columns = React.useMemo(
         () => [
             {
@@ -63,20 +62,34 @@ function ReactPublicationTable(props) {
                 disableSortBy: true,
                 style: { width: "12.5%"},
                 Cell: (tableInfo) => {
-                    let subOrgs = tableInfo.cell.value;
-                    let publisher = tableInfo.row.original.extra.publisher
-                    if (subOrgs) {
-                        if (publisher) {
-                            if (Array.isArray(subOrgs)) {
-                                subOrgs = [publisher, ...subOrgs]
-                            } else {
-                                subOrgs = publisher + "\n" + subOrgs
+                    const list = Array.isArray(tableInfo.cell.value) ? tableInfo.cell.value : [tableInfo.cell.value]
+                    const institute = tableInfo.row.original.instituteName
+                    const publisher = tableInfo.row.original.extra.publisher
+
+                    let finalList = [];
+
+                    if (institute) {
+                        finalList.push(institute);
+                    }
+
+                    if (publisher) {
+                        if (Array.isArray(publisher)) {
+                            // Filter out the institute if given
+                            finalList.push(...publisher.filter(pub => pub !== institute));
+                        } else {
+                            if (!institute || !publisher.includes(institute)) {
+                                finalList.push(publisher);
                             }
                         }
-                    } else if (publisher) {
-                        subOrgs = [publisher]
                     }
-                    return <div>{ReactTableHelper.concatenateCellValue(subOrgs)}</div>
+
+                    list.forEach(item => {
+                        if (finalList.indexOf(item) === -1) {
+                            finalList.push(item);
+                        }
+                    });
+
+                    return <div>{ReactTableHelper.concatenateCellValue(finalList)}</div>;
                 }
             },
             {
@@ -179,16 +192,16 @@ function ReactPublicationTable(props) {
         if (repoItem.permissions.canDelete) {
             VerificationPopup.show(t("publication.delete_popup.title"), t("publication.delete_popup.subtitle"), () => {
                 GlobalPageMethods.setFullScreenLoading(true)
-                deleteRepoItem(repoItem.id, history, (responseData) => {
+                deleteRepoItem(repoItem.id, navigate, (responseData) => {
                     GlobalPageMethods.setFullScreenLoading(false)
 
                     const tempUserPublications = userPublications.filter((tempRepoItem) => {
                         return tempRepoItem.id !== responseData.data.id;
                     });
                     setUserPublications(tempUserPublications);
-                }, () => {
+                }, (error) => {
                     GlobalPageMethods.setFullScreenLoading(false)
-                    Toaster.showDefaultRequestError();
+                    Toaster.showServerError(error);
                 })
             })
         }
@@ -198,18 +211,19 @@ function ReactPublicationTable(props) {
         if (repoItem.permissions.canCopy) {
             VerificationPopup.show(t("publication.copy_confirmation.title"), t("publication.copy_confirmation.subtitle"), () => {
                 GlobalPageMethods.setFullScreenLoading(true)
-                copyRepoItem(repoItem.id, history, (responseData) => {
+                copyRepoItem(repoItem.id, navigate, (responseData) => {
                     getUserPublications(currentSortBy);
                     GlobalPageMethods.setFullScreenLoading(false)
-                }, () => {
+                }, (error) => {
                     GlobalPageMethods.setFullScreenLoading(false)
+                    Toaster.showServerError(error);
                 })
             })
         }
     }
 
     useEffect(() => {
-        if (location.state !== undefined) {
+        if (location.state !== undefined && location.state !== null) {
             setCurrentSortBy([...location.state.detail])
             getUserPublications(location.state.detail);
         } else {
@@ -260,6 +274,11 @@ function ReactPublicationTable(props) {
         setUserPublications([])
         setIsLoading(true)
 
+        const errorCallback = (error) => {
+            setIsLoading(false)
+            Toaster.showServerError(error)
+        }
+
         function onValidate(response) {
         }
 
@@ -277,16 +296,14 @@ function ReactPublicationTable(props) {
         }
 
         function onServerFailure(error) {
-            setIsLoading(false)
-            Toaster.showServerError(error)
+            errorCallback(error)
             if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             }
         }
 
         function onLocalFailure(error) {
-            setIsLoading(false);
-            Toaster.showDefaultRequestError();
+            errorCallback(error)
         }
 
         const config = {
@@ -341,21 +358,19 @@ function ReactPublicationTable(props) {
     }
 }
 
-export function requestDeleteRepoItem(repoItemId, history, successCallback, errorCallback = () => {}) {
+export function requestDeleteRepoItem(repoItemId, reason, navigate, successCallback, errorCallback = () => {}) {
     Api.post(
         'actions/requestdeleterepoitem/',
         () => {},
         (response) => {successCallback(response.data)},
         (error) => {
-            Toaster.showDefaultRequestError()
-            errorCallback()
+            errorCallback(error)
         },
         (error) => {
-            Toaster.showServerError(error)
             if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             }
-            errorCallback()
+            errorCallback(error)
         },
         {
             headers: {
@@ -366,14 +381,15 @@ export function requestDeleteRepoItem(repoItemId, history, successCallback, erro
             "data": {
                 "type": "requestdeleterepoitem",
                 "attributes": {
-                    "repoItemId": repoItemId
+                    "repoItemId": repoItemId,
+                    "reason": reason
                 }
             }
         }
     )
 }
 
-export function deleteRepoItem(repoItemId, history, successCallback, errorCallback = () => {
+export function deleteRepoItem(repoItemId, navigate, successCallback, errorCallback = () => {
 }) {
 
     function onValidate(response) {
@@ -384,16 +400,14 @@ export function deleteRepoItem(repoItemId, history, successCallback, errorCallba
     }
 
     function onLocalFailure(error) {
-        Toaster.showDefaultRequestError()
-        errorCallback()
+        errorCallback(error)
     }
 
     function onServerFailure(error) {
-        Toaster.showServerError(error)
         if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-            history.push('/login?redirect=' + window.location.pathname);
+            navigate('/login?redirect=' + window.location.pathname);
         }
-        errorCallback()
+        errorCallback(error)
     }
 
     const config = {
@@ -415,7 +429,46 @@ export function deleteRepoItem(repoItemId, history, successCallback, errorCallba
     Api.patch(`repoItems/${repoItemId}`, onValidate, onSuccess, onLocalFailure, onServerFailure, config, patchData);
 }
 
-export function copyRepoItem(repoItemId, history, successCallback, errorCallback = () => {
+export function archiveRepoItem(repoItemId, navigate, successCallback, errorCallback = () => {
+}) {
+    function onValidate(response) {
+    }
+
+    function onSuccess(response) {
+        successCallback(response.data)
+    }
+
+    function onLocalFailure(error) {
+        errorCallback(error)
+    }
+
+    function onServerFailure(error) {
+        if (error && error.response && error.response.status === 401) {
+            navigate('/login?redirect=' + window.location.pathname);
+        }
+        errorCallback(error)
+    }
+
+    const config = {
+        headers: {
+            "Content-Type": "application/vnd.api+json"
+        }
+    }
+
+    const patchData = {
+        "data": {
+            "type": "repoItem",
+            "id": repoItemId,
+            "attributes": {
+                "status": "Archived"
+            }
+        }
+    }
+
+    Api.patch(`repoItems/${repoItemId}`, onValidate, onSuccess, onLocalFailure, onServerFailure, config, patchData)
+}
+
+export function copyRepoItem(repoItemId, navigate, successCallback, errorCallback = () => {
 }) {
 
     function onValidate(response) {
@@ -426,16 +479,14 @@ export function copyRepoItem(repoItemId, history, successCallback, errorCallback
     }
 
     function onLocalFailure(error) {
-        Toaster.showDefaultRequestError()
-        errorCallback()
+        errorCallback(error)
     }
 
     function onServerFailure(error) {
-        Toaster.showServerError(error)
         if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-            history.push('/login?redirect=' + window.location.pathname);
+            navigate('/login?redirect=' + window.location.pathname);
         }
-        errorCallback()
+        errorCallback(error)
     }
 
     const config = {

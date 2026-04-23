@@ -11,6 +11,7 @@ import OpenAccessIcon from '../../resources/icons/ic-open-access.png'
 import RestrictedAccessIcon from '../../resources/icons/ic-restricted-access.png'
 import ClosedAccessIcon from '../../resources/icons/ic-closed-access.png'
 import {SetCopiedMetaField} from "../../util/events/Events";
+import {useFormFieldRegistration} from "../../util/hooks/useFormFieldRegistration";
 
 //'Right of Use' dropdown images
 import AllRightsIcon from '../../resources/icons/rightofusedropdown/allrights.svg'
@@ -26,17 +27,31 @@ import VideoAndSound from '../../resources/icons/rightofusedropdown/videoandsoun
 import Youtube from '../../resources/icons/rightofusedropdown/youtube.svg'
 import styled from "styled-components";
 
-
 function Dropdown(props) {
     const {t} = useTranslation();
-    let selectedOption = (props.options ?? []).find((option) => {
-        return option.value === props.defaultValue
-    });
+    const isRightOfUseDropdown = (props.type === 'rightofusedropdown')
+
+    const hasObjectDefaultValue = props.defaultValue && typeof props.defaultValue === 'object';
+    const defaultValueId = hasObjectDefaultValue
+        ? (props.defaultValue.id ?? props.defaultValue.value ?? props.defaultValue?.optionKey ?? null)
+        : props.defaultValue ?? null;
+
+    const defaultSummary = hasObjectDefaultValue ? props.defaultValue.summary : null;
+    const summaryLabelNL = defaultSummary?.labelNL || defaultSummary?.value || defaultSummary?.title || null;
+    const summaryLabelEN = defaultSummary?.labelEN || defaultSummary?.value || defaultSummary?.title || null;
+    const summaryOption = (summaryLabelNL || summaryLabelEN) && defaultValueId ? {
+        value: defaultValueId,
+        labelNL: summaryLabelNL,
+        labelEN: summaryLabelEN,
+        label: t('language.current_code') === 'nl' ? summaryLabelNL : summaryLabelEN
+    } : null;
+
+    let selectedOption = (props.options ?? []).find((option) => option.value === defaultValueId) || summaryOption;
 
     const [defaultOption, setDefaultOption] = useState(selectedOption);
     const [selectedOptionValue, setSelectedOptionValue] = useState(selectedOption ? selectedOption.value : null)
     const borderColor = props.borderColor ?? Constants.inputBorderColor;
-    const currentSelection = getSelectedOption()
+    const currentSelection = getSelectedOption() || defaultOption;
 
     const style = {
         control: (base, state) => ({
@@ -44,16 +59,19 @@ function Dropdown(props) {
                 border: '1px solid ' + (state.isFocused ? Constants.majorelle : borderColor) + ' !important',
                 boxShadow: 'none'
         }),
-        ...(props.type === "rightofusedropdown" && {
+        option: (base) => ({
+            ...base,
+            backgroundColor: undefined,
+            color: undefined,
+            ':active': { backgroundColor: undefined },
+            ...(isRightOfUseDropdown ? { padding: '4px 12px' } : {})
+        }),
+        ...(isRightOfUseDropdown && {
             groupHeading: (provided, state) => ({
                 ...provided,
                 color: 'black',
                 fontWeight: '700',
             }),
-            option: (base) => ({
-                ...base,
-                padding: '4px 12px'
-            })
         })
     };
 
@@ -98,33 +116,10 @@ function Dropdown(props) {
         }
     };
 
-    useEffect(() => {
-        if (props.register) {
-            props.register({name: props.name}, {required: props.isRequired})
-
-            if (selectedOptionValue !== undefined ) {
-                if (selectedOptionValue === null) {
-                    props.setValue(props.name, options[0].value)
-                } else {
-                    props.setValue(props.name, selectedOptionValue)
-                }
-            } else if (defaultOption !== undefined && defaultOption.value !== null) {
-                props.setValue(props.name, defaultOption.value)
-            } else {
-                props.setValue(props.name, null)
-            }
-        }
-    }, [props.register, defaultOption, selectedOptionValue])
-
-    const CustomSelectElement = props2 => (
-        <div className={"surf-select__custom-select-container"}>
-            {props.icon && (<div className={"surf-select__icon-wrapper"}>
-                {props.icon}
-            </div>)}
-            <div className={"surf-select__text-wrapper"}>
-                {t('language.current_code') === 'nl' ? props2.data.labelNL : props2.data.labelEN}
-            </div>
-        </div>
+    const CustomSelectElement = (props) => (
+        <span>
+            {t('language.current_code') === 'nl' ? props.data.labelNL : props.data.labelEN}
+        </span>
     );
 
     const DropdownChevronIcon = () => {
@@ -143,10 +138,9 @@ function Dropdown(props) {
         return (
             <components.Control {...props}>
                 <FlexContainer>
-                    {
-                        currentSelection && currentSelection.icon !== null &&
-                        <div style={{display: "flex", flexDirection: "row", gap: "8px"}}>
-                            <img src={IconComponent(currentSelection.icon)} alt=""/>
+                    { currentSelection && currentSelection.icon !== null &&
+                        <div>
+                            <img src={IconComponent(currentSelection.icon)}/>
                             <Divider />
                         </div>
                     }
@@ -184,9 +178,18 @@ function Dropdown(props) {
     }
 
     function getSelectedOption(options) {
-        return (options ? options : props.options).find((option) => {
-            return option.value === selectedOptionValue
-        })
+        const optionList = options ? options : props.options;
+        const matchedOption = optionList?.find((option) => option.value === selectedOptionValue);
+
+        if (matchedOption) {
+            return matchedOption;
+        }
+
+        if (defaultOption && defaultOption.value === selectedOptionValue) {
+            return defaultOption;
+        }
+
+        return null;
     }
 
     const getGroupedOptions = (options) => {
@@ -233,96 +236,64 @@ function Dropdown(props) {
         }
     }
 
+    // Use the custom hook for form field registration
+    const { hiddenInput } = useFormFieldRegistration(props, () => selectedOptionValue);
+
     let placeholder = (props.readonly) ? "-" : t('dropdown_field.placeholder')
 
     return (
         <div className={`dropdown-container ` + props.classNameSuffix}>
-            { props.type === "rightofusedropdown" ?
-                <Select
-                    key={defaultOption}
-                    isDisabled={props.readonly}
-                    className={"surf-dropdown" + ((props.readonly) ? " readonly" : "")}
-                    classNamePrefix="surf-select"
-                    components={{
-                        Control,
-                        DropdownIndicator,
-                        IndicatorSeparator: () => null,
-                        SingleValue: CustomSelectElement
-                    }}
-                    defaultValue={defaultOption}
-                    isSearchable={props.isSearchable}
-                    options={getGroupedOptions(options)}
-                    placeholder={placeholder}
-                    styles={style}
-                    formatOptionLabel={ option => (
-                        <div className={"align-center"}>
-                            <span>{option.label}</span>
-                            {option.icon && <img className={"option-image"} src={IconComponent(option.icon)} alt=""/>}
-                        </div>
-                    )}
-                    value={(selectedOptionValue && selectedOptionValue !== null ) ? getSelectedOption(options) : defaultOption}
-                    onChange={
-                        (selection) => {
-                            if (selection) {
-                                setSelectedOptionValue(selection.value);
-                                if (props.setValue) {
-                                    props.setValue(props.name, selection.value, {shouldValidate: true, shouldDirty: true})
-                                }
-
-                                props.onChange(selection.value)
-                            } else {
-                                setSelectedOptionValue(null);
-                                if (props.setValue) {
-                                    props.setValue(props.name, null, {shouldValidate: true,  shouldDirty: true})
-                                }
-                                props.onChange(null)
+            {/* Hidden input for react-hook-form registration */}
+            {hiddenInput}
+            
+            <Select
+                key={defaultOption}
+                isDisabled={props.readonly}
+                className={"surf-dropdown" + ((props.readonly) ? " readonly" : "")}
+                classNamePrefix="surf-select"
+                components={{
+                    ...(isRightOfUseDropdown ? { Control } : {}),
+                    DropdownIndicator,
+                    IndicatorSeparator: () => null,
+                    SingleValue: CustomSelectElement
+                }}
+                defaultValue={defaultOption}
+                isSearchable={props.isSearchable}
+                options={isRightOfUseDropdown ? getGroupedOptions(options) : props.disableDefaultSort === true ? getOptions() : getSortedOptions(options)}
+                placeholder={placeholder}
+                styles={style}
+                formatOptionLabel={option => (
+                    <div className={`align-center ${isRightOfUseDropdown ? 'flex-row' : 'flex-row-reverse'}`}>
+                        <span>{option.label}</span>
+                        {option.icon && <img className={"option-image"} src={IconComponent(option.icon)} alt=""/>}
+                    </div>
+                )}
+                value={(() => {
+                    const selected = getSelectedOption(options) || defaultOption;
+                    if (selected) {
+                        return selected;
+                    }
+                    return options && options.length > 0 ? options[0] : null;
+                })()}
+                onChange={
+                    (selection) => {
+                        if (selection) {
+                            setSelectedOptionValue(selection.value);
+                            if (props.setValue) {
+                                props.setValue(props.name, selection.value, {shouldValidate: true, shouldDirty: true})
                             }
+
+                            props.onChange(selection.value)
+                        } else {
+                            setSelectedOptionValue(null);
+                            if (props.setValue) {
+                                props.setValue(props.name, null, {shouldValidate: true,  shouldDirty: true})
+                            }
+                            props.onChange(null)
                         }
                     }
-                />
-                :
-                <Select
-                    key={defaultOption}
-                    isDisabled={props.readonly}
-                    className={"surf-dropdown" + ((props.readonly) ? " readonly" : "")}
-                    classNamePrefix="surf-select"
-                    components={{
-                        DropdownIndicator,
-                        IndicatorSeparator: () => null,
-                        SingleValue: CustomSelectElement
-                    }}
-                    defaultValue={defaultOption}
-                    isSearchable={props.isSearchable}
-                    options={props.disableDefaultSort === true ? getOptions() : getSortedOptions(options)}
-                    placeholder={placeholder}
-                    styles={style}
-                    formatOptionLabel={ option => (
-                        <div className={"align-center"}>
-                            {option.icon && <img className={"option-image"} src={IconComponent(option.icon)} alt=""/>}
-                            <span>{option.label}</span>
-                        </div>
-                    )}
-                    value={selectedOptionValue ? getSelectedOption(options) : options[0].value}
-                    onChange={
-                        (selection) => {
-                            if (selection) {
-                                setSelectedOptionValue(selection.value);
-                                if (props.setValue) {
-                                    props.setValue(props.name, (selection.value), {shouldValidate: true, shouldDirty: true})
-                                }
-                                props.onChange(selection.value)
-                            } else {
-                                setSelectedOptionValue(null);
-                                if (props.setValue) {
-                                    props.setValue(props.name, null, {shouldValidate: true,  shouldDirty: true})
-                                }
-                                props.onChange(null)
-                            }
-                        }
-                    }
-                />
-            }
-
+                }
+            />
         </div>
     );
 
@@ -359,10 +330,32 @@ const Divider = styled.div`
 `
 
 const FlexContainer = styled.div`
-  width: 100%;
-  display: flex;
-  flex-direction: row;
-  gap: 8px;
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    max-height: 50px !important;
+    
+    div {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+    
+    img {
+        max-height: 15px;
+    }
+    
+    span {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+    }
+    
+    input {
+        position: absolute;
+    }
 `
 
 export default Dropdown;

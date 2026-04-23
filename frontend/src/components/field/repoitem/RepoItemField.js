@@ -1,16 +1,16 @@
-import React, {useCallback, useEffect, useRef, useState} from "react";
+import React, {useCallback, useEffect, useState} from "react";
 import {useDropzone} from 'react-dropzone'
 import './repoItemField.scss'
 import {useTranslation} from "react-i18next";
-import arrayMove from 'array-move';
+import {arrayMoveImmutable} from 'array-move';
 import {SortableContainer, SortableElement, SortableHandle} from "react-sortable-hoc";
 import {faPlus} from "@fortawesome/free-solid-svg-icons";
 import IconButtonText from "../../buttons/iconbuttontext/IconButtonText";
 import Toaster from "../../../util/toaster/Toaster";
-import {cultured, spaceCadet, white} from "../../../Mixins";
+import {cultured, spaceCadet} from "../../../Mixins";
 import {ThemedH6} from "../../../Elements";
 import styled from "styled-components";
-import EllipsisIcon from "../../../resources/icons/ic-ellipsis.svg"
+import {useFormFieldRegistration} from "../../../util/hooks/useFormFieldRegistration";
 
 export function RepoItemField(props) {
 
@@ -56,13 +56,14 @@ export function RepoItemField(props) {
     }
 
     useEffect(() => {
-        props.register({name: props.name}, {required: props.isRequired})
         props.setValue(props.name, stringifiedDefaultValue)
     }, [props.register]);
 
     const isDirty = stringifiedDefaultValue !== stringifiedCurrentValue
     props.setValue(props.name, stringifiedCurrentValue, {shouldDirty: isDirty})
 
+    // Use the custom hook for form field registration
+    const { hiddenInput } = useFormFieldRegistration(props, () => stringifiedCurrentValue);
 
     let clickToAddElement;
     if (props.readonly) {
@@ -95,6 +96,9 @@ export function RepoItemField(props) {
 
     return (
         <div className={'repoitem ' + classAddition}>
+            {/* Hidden input for react-hook-form registration */}
+            {hiddenInput}
+            
             {props.readonly && !(items && items.length > 0) &&
             <>
                 {props.showEmptyState
@@ -168,7 +172,7 @@ function SortableComponent(props) {
     }, [props.items]);
 
     const onSortEnd = ({oldIndex, newIndex}) => {
-        const newlyOrderedItems = arrayMove(items, oldIndex, newIndex);
+        const newlyOrderedItems = arrayMoveImmutable(items, oldIndex, newIndex);
         const action = {
             type: 'sort change',
             value: newlyOrderedItems

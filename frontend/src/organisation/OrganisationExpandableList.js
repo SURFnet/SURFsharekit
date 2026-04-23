@@ -5,24 +5,30 @@ import {useTranslation} from "react-i18next";
 import {StorageKey, useAppStorageState} from "../util/AppStorage";
 import {ExpandableList} from "./ExpandableList";
 import {HelperFunctions} from "../util/HelperFunctions";
-import {useHistory} from "react-router-dom";
+import {useNavigate} from "react-router-dom";
+import {useNavigation} from "../providers/NavigationProvider";
 
 export function OrganisationExpandableList(props) {
     const [isLoading, setIsLoading] = useState(false)
     const [institutes, setInstitutes] = useState(null)
-    const history = useHistory();
+    const navigate = useNavigation();
     const user = useAppStorageState(StorageKey.USER)[0];
     const {t} = useTranslation();
 
     useEffect(() => {
         setIsLoading(true)
-        getMember(user.id, history, props.showInactive, (member) => {
+        getMember(user.id, navigate, props.showInactive, (member) => {
             setIsLoading(false)
             setInstitutes(HelperFunctions.getMemberRootInstitutes(member))
-        }, () => {
+        }, (error) => {
             setIsLoading(false)
+            Toaster.showServerError(error);
         })
     }, [user.id, props.showInactive]);
+
+    useEffect(() => {
+        console.log(institutes)
+    }, [institutes]);
 
     return (
         <ExpandableList data={institutes}
@@ -36,7 +42,8 @@ export function OrganisationExpandableList(props) {
     )
 }
 
-export function getMember(userId, history, showInactive, successCallback, errorCallback = null) {
+export function getMember(userId, navigate, showInactive, successCallback, errorCallback = () => {
+}) {
     function onValidate(response) {
     }
 
@@ -46,23 +53,21 @@ export function getMember(userId, history, showInactive, successCallback, errorC
     }
 
     function onLocalFailure(error) {
-        errorCallback()
-        Toaster.showDefaultRequestError();
         console.log(error);
+        errorCallback(error)
     }
 
     function onServerFailure(error) {
         console.log(error);
-        Toaster.showServerError(error)
         if (error && error.response && error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-            history.push('/login?redirect=' + window.location.pathname);
+            navigate('/login?redirect=' + window.location.pathname);
         }
-        errorCallback()
+        errorCallback(error)
     }
 
     const config = {
         params: {
-            'fields[institutes]': 'title,permissions,isRemoved,isHidden,level,abbreviation,summary,type,childrenInstitutesCount,isBaseScopeForUser',
+            'fields[institutes]': 'title,permissions,isRemoved,isHidden,level,abbreviation,summary,type,childrenInstitutesCount,totalPublicationsCount,isBaseScopeForUser',
             'fields[groups]': 'partOf',
             'filter[isHidden]': '0'
         }

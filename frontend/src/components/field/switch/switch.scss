@@ -32,6 +32,10 @@ $selectable-size: 16px;
                 margin-right: auto;
                 text-transform: uppercase;
             }
+
+            .switch-text-left {
+                left: 15px !important;
+            }
         }
 
         &.off {

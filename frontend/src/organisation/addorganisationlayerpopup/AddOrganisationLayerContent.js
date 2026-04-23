@@ -12,15 +12,16 @@ import Api from "../../util/api/Api";
 import ValidationError from "../../util/ValidationError";
 import LoadingIndicator from "../../components/loadingindicator/LoadingIndicator";
 import {OrganisationLevelOptionsEnum} from "../OrganisationLevelOptionsEnum";
-import {useHistory} from "react-router-dom";
+import {useNavigate} from "react-router-dom";
+import {useNavigation} from "../../providers/NavigationProvider";
 
 export function AddOrganisationLayerContent(props) {
 
     const [isLoading, setIsLoading] = useState(false);
     const {t} = useTranslation()
-    const {register, handleSubmit, errors, setValue, getValues, trigger} = useForm();
+    const {register, handleSubmit, formState: { errors}, setValue, getValues, trigger} = useForm();
     const formSubmitButton = useRef();
-    const history = useHistory()
+    const navigate = useNavigation();
     const formTitle = props.isEditing ? t('organisation.add_layer_popup.edit_title') : t('organisation.add_layer_popup.add_title');
     const formSubtitle = props.isEditing ? t('organisation.add_layer_popup.part_of') : t('organisation.add_layer_popup.add_to');
     const formSubmitButtonTitle = props.isEditing ? t('organisation.add_layer_popup.edit_save_button') : t('organisation.add_layer_popup.add_button');
@@ -149,6 +150,7 @@ export function AddOrganisationLayerContent(props) {
             savedInstitute.abbreviation = responseData.attributes.abbreviation;
             savedInstitute.level = responseData.attributes.level;
             savedInstitute.childrenInstitutesCount = responseData.attributes.childrenInstitutesCount;
+            savedInstitute.totalPublicationCount = responseData.attributes.totalPublicationCount;
             savedInstitute.isRemoved = responseData.attributes.isRemoved;
             savedInstitute.permissions = responseData.attributes.permissions;
             savedInstitute.childrenInstitutes = responseData.relationships.childrenInstitutes.data;
@@ -160,7 +162,7 @@ export function AddOrganisationLayerContent(props) {
         function onLocalFailure(error) {
             setIsLoading(false);
             console.log(error);
-            Toaster.showDefaultRequestError()
+            Toaster.showServerError(error)
             errorCallback()
         }
 
@@ -169,7 +171,7 @@ export function AddOrganisationLayerContent(props) {
             console.log(error.response.status);
             Toaster.showServerError(error)
             if (error.response.status === 401) { //We're not logged, thus try to login and go back to the current url
-                history.push('/login?redirect=' + window.location.pathname);
+                navigate('/login?redirect=' + window.location.pathname);
             }
             errorCallback()
         }
