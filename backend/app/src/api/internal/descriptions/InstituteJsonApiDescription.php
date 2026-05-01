@@ -157,7 +157,8 @@ class InstituteJsonApiDescription extends DataObjectJsonApiDescription {
                 $accessibleIDs = InstituteScoper::getAllCanEdit(Institute::class)->column('ID');
 
                 // 3. Only show the overlap: must be in the tree AND have permission to link publications
-                return $datalist->where("(`SurfSharekit_Institute`.`ID` IN ($subFilter) OR `SurfSharekit_Institute`.`ID` = $rootID)")
+                //    Exclude the root institute itself; only return its descendants.
+                return $datalist->where("`SurfSharekit_Institute`.`ID` IN ($subFilter) AND `SurfSharekit_Institute`.`ID` <> $rootID")
                     ->filter(['ID' => $accessibleIDs ?: -1]);
             };
         }
