@@ -117,9 +117,9 @@ function Dropdown(props) {
     };
 
     const CustomSelectElement = (props) => (
-        <span>
+        <components.SingleValue {...props}>
             {t('language.current_code') === 'nl' ? props.data.labelNL : props.data.labelEN}
-        </span>
+        </components.SingleValue>
     );
 
     const DropdownChevronIcon = () => {

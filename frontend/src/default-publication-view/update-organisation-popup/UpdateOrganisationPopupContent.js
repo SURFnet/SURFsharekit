@@ -66,7 +66,9 @@ function UpdateOrganisationPopupContent(props) {
         const config = {
             params: {
                 'filter[organisation]': rootUuid,
-                'fields[institutes]': 'title,summary,level'
+                'fields[institutes]': 'title,summary,level',
+                'page[size]': 200,
+                'page[number]': 1,
             }
         };
 
@@ -85,6 +87,7 @@ function UpdateOrganisationPopupContent(props) {
                 .sort((a, b) => (levelIndex[a._level] ?? 999) - (levelIndex[b._level] ?? 999))
                 .map(({_level, ...rest}) => rest);
 
+            console.log(finalSelection)
             setTreeOptions(finalSelection);
             setIsLoadingTree(false);
         }, () => { setIsLoadingTree(false); }, () => { setIsLoadingTree(false); }, config);
@@ -128,6 +131,7 @@ function UpdateOrganisationPopupContent(props) {
                             options={treeOptions}
                             label={t('profile.organisation')}
                             isRequired={false}
+                            isSearchable={true}
                             name="scopedInstitutes"
                             register={register}
                             setValue={setValue}
