@@ -17,6 +17,14 @@
         }
     }
 
+    .surf-select__input-container {
+        position: absolute;
+    }
+
+    &.searchable .surf-select__input-container {
+        position: static;
+    }
+
     .surf-select__control {
         @include rounded-background-pointy-upper-left($background-color);
         height: 50px;

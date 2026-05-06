@@ -199,6 +199,7 @@ const ReportsHeader = ({...props}) => {
                         options={props.institutes.map(option => {return option})}
                         className={"surf-dropdown"}
                         classNamePrefix={"surf-select"}
+                        isSearchable={false}
                         formatOptionLabel={option => (
                             <div className={"align-center"}>
                                 <span style={{fontSize: "12px"}}>{option.title}</span>

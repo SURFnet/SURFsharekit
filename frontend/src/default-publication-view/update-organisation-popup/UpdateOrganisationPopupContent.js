@@ -115,6 +115,7 @@ function UpdateOrganisationPopupContent(props) {
                             <FormField
                                 key="rootOrganisation"
                                 type="dropdown"
+                                isSearchable={false}
                                 options={rootOptions}
                                 label={t('profile.root_organisation')}
                                 isRequired={true}

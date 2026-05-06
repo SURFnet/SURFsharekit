@@ -2,7 +2,7 @@ import "../../dropdown/dropdown.scss";
 import Api from "../../../util/api/Api";
 import React, {useEffect, useState} from "react";
 import SURFButton from "../../../styled-components/buttons/SURFButton";
-import Select from "react-select";
+import Select, {components} from "react-select";
 import Toaster from "../../../util/toaster/Toaster";
 import styled from "styled-components";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
@@ -114,17 +114,19 @@ function VocabularyPopupContent2(props){
             const isDisabled = props2.data.disabled;
 
             return (
-                <div
-                    className={`surf-select__custom-select-container`}
-                    style={{
-                        pointerEvents: isDisabled ? 'none' : 'auto',
-                        opacity: isDisabled ? 0.5 : 1
-                    }}
-                >
-                    <div className={`surf-select__text-wrapper ${isDisabled ? ' disabled' : ''}`}>
-                        {t('language.current_code') === 'nl' ? props2.data.labelNL : props2.data.labelEN}
+                <components.SingleValue {...props2}>
+                    <div
+                        className={`surf-select__custom-select-container`}
+                        style={{
+                            pointerEvents: isDisabled ? 'none' : 'auto',
+                            opacity: isDisabled ? 0.5 : 1
+                        }}
+                    >
+                        <div className={`surf-select__text-wrapper ${isDisabled ? ' disabled' : ''}`}>
+                            {t('language.current_code') === 'nl' ? props2.data.labelNL : props2.data.labelEN}
+                        </div>
                     </div>
-                </div>
+                </components.SingleValue>
             );
         };
 
@@ -298,6 +300,7 @@ function VocabularyPopupContent2(props){
                             <VocabularyOptionField
                                 className={"surf-dropdown"}
                                 classNamePrefix={"surf-select"}
+                                isSearchable={false}
                                 options={getOptions()}
                                 isOptionDisabled={(option) => option.disabled}
                                 onChange={(selection) => {

@@ -249,7 +249,7 @@ function Dropdown(props) {
             <Select
                 key={defaultOption}
                 isDisabled={props.readonly}
-                className={"surf-dropdown" + ((props.readonly) ? " readonly" : "")}
+                className={"surf-dropdown" + ((props.readonly) ? " readonly" : "") + ((props.isSearchable) ? " searchable" : "")}
                 classNamePrefix="surf-select"
                 components={{
                     ...(isRightOfUseDropdown ? { Control } : {}),
