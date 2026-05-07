@@ -94,6 +94,10 @@ class GridFieldCopyAction implements GridField_ColumnProvider, GridField_ActionP
         /** @var \SilverStripe\ORM\DataObject $item */
         $clone = $item->duplicate(false);
 
+        if ($clone->hasField('Uuid')) {
+            $clone->Uuid = null;
+        }
+
         if ($clone->hasField('Title')) {
             $clone->Title = $clone->Title . " (copy)";
         }

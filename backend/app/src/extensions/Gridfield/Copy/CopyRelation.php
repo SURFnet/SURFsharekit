@@ -40,6 +40,10 @@ class CopyRelation
             /** @var DataObject $relationItem */
             $relationItemClone = $relationItem->duplicate(false);
 
+            if ($relationItemClone->hasField('Uuid')) {
+                $relationItemClone->Uuid = null;
+            }
+
             if ($this->getCallback()) {
                 $callback = $this->callback;
                 $callback($relationItemClone);
